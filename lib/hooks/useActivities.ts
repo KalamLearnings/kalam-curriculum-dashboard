@@ -1,0 +1,168 @@
+/**
+ * React Query hooks for activity operations including batch reorder
+ */
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  listArticles,
+  createArticle,
+  updateArticle,
+  deleteArticle,
+  reorderArticles,
+} from '@/lib/api/curricula';
+import type { Article, CreateArticle, UpdateArticle, BatchReorder } from '@/lib/schemas/curriculum';
+import { toast } from 'sonner';
+import { sortBySequence } from '@/lib/utils/reorder';
+
+// ============================================================================
+// QUERY HOOKS
+// ============================================================================
+
+/**
+ * Fetch all activities for a node
+ */
+export function useActivities(curriculumId: string, nodeId: string | null) {
+  return useQuery({
+    queryKey: ['activities', curriculumId, nodeId],
+    queryFn: () => listArticles(curriculumId, nodeId!),
+    enabled: !!nodeId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    select: (data) => sortBySequence(data), // Always return sorted
+  });
+}
+
+// ============================================================================
+// MUTATION HOOKS
+// ============================================================================
+
+/**
+ * Create a new activity
+ */
+export function useCreateActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      curriculumId,
+      nodeId,
+      data,
+    }: {
+      curriculumId: string;
+      nodeId: string;
+      data: CreateArticle;
+    }) => createArticle(curriculumId, { ...data, node_id: nodeId }),
+    onSuccess: (newActivity, { curriculumId, nodeId }) => {
+      // Invalidate to refetch
+      queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      toast.success('Activity created successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create activity');
+    },
+  });
+}
+
+/**
+ * Update an existing activity
+ */
+export function useUpdateActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      curriculumId,
+      nodeId,
+      activityId,
+      data,
+    }: {
+      curriculumId: string;
+      nodeId: string;
+      activityId: string;
+      data: UpdateArticle;
+    }) => updateArticle(curriculumId, activityId, data),
+    onSuccess: (_, { curriculumId, nodeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      toast.success('Activity updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update activity');
+    },
+  });
+}
+
+/**
+ * Delete an activity
+ */
+export function useDeleteActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      curriculumId,
+      nodeId,
+      activityId,
+    }: {
+      curriculumId: string;
+      nodeId: string;
+      activityId: string;
+    }) => deleteArticle(curriculumId, activityId),
+    onSuccess: (_, { curriculumId, nodeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      toast.success('Activity deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete activity');
+    },
+  });
+}
+
+/**
+ * Batch reorder activities with optimistic updates and rollback
+ */
+export function useReorderActivities(curriculumId: string, nodeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BatchReorder) => reorderArticles(curriculumId, nodeId, data),
+
+    // Optimistic update (instant UI feedback)
+    onMutate: async (newData) => {
+      // Cancel ongoing queries
+      await queryClient.cancelQueries({ queryKey: ['activities', curriculumId, nodeId] });
+
+      // Snapshot previous state for rollback
+      const previousActivities = queryClient.getQueryData<Article[]>(['activities', curriculumId, nodeId]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData<Article[]>(['activities', curriculumId, nodeId], (old) => {
+        if (!old) return old;
+
+        return old.map((activity) => {
+          const update = newData.items.find((item) => item.id === activity.id);
+          if (update) {
+            return { ...activity, sequence_number: update.sequence_number };
+          }
+          return activity;
+        }).sort((a, b) => a.sequence_number - b.sequence_number);
+      });
+
+      // Return context for rollback
+      return { previousActivities };
+    },
+
+    // Rollback on error
+    onError: (error: Error, newData, context) => {
+      if (context?.previousActivities) {
+        queryClient.setQueryData(['activities', curriculumId, nodeId], context.previousActivities);
+      }
+      toast.error('Failed to reorder activities. Changes reverted.');
+      console.error('Reorder error:', error);
+    },
+
+    // Refetch on success to ensure sync with server
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      toast.success('Activities reordered successfully');
+    },
+  });
+}
