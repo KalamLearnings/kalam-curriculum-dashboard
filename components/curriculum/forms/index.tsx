@@ -1,5 +1,6 @@
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { IntroActivityForm } from './IntroActivityForm';
+import { PresentationActivityForm } from './PresentationActivityForm';
 import { TapActivityForm } from './TapActivityForm';
 import { WriteActivityForm } from './WriteActivityForm';
 import { NameBuilderActivityForm } from './NameBuilderActivityForm';
@@ -14,6 +15,7 @@ import type { ArticleType } from '@/lib/schemas/curriculum';
 // Map of activity types to their form components
 export const activityFormComponents: Record<ArticleType, React.ComponentType<BaseActivityFormProps>> = {
   intro: IntroActivityForm,
+  presentation: PresentationActivityForm,
   tap: TapActivityForm,
   write: WriteActivityForm,
   word_builder: NameBuilderActivityForm,
@@ -54,5 +56,7 @@ function GenericActivityForm({ config, onChange }: BaseActivityFormProps) {
 }
 
 export function getActivityFormComponent(type: ArticleType) {
-  return activityFormComponents[type] || GenericActivityForm;
+  const component = activityFormComponents[type];
+  console.log('Getting form component for type:', type, 'Found:', !!component);
+  return component || GenericActivityForm;
 }

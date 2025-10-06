@@ -96,6 +96,7 @@ export const UpdateNodeSchema = CreateNodeSchema.partial();
 
 export const ArticleTypeSchema = z.enum([
   'intro',
+  'presentation',
   'tap',
   'write',
   'word_builder',

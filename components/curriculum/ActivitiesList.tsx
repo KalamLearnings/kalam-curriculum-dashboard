@@ -161,7 +161,10 @@ function SortableActivity({ activity, isSelected, onClick, onEdit, onDelete }: S
         hover:bg-gray-50 transition-colors min-h-[60px]
         ${isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white'}
       `}
-      onClick={onClick}
+      onClick={() => {
+        onClick();
+        onEdit?.();
+      }}
     >
       <button
         {...attributes}

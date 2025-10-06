@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import type { Article, CreateArticle, UpdateArticle, ArticleType } from '@/lib/schemas/curriculum';
 import { useCreateActivity, useUpdateActivity } from '@/lib/hooks/useActivities';
@@ -16,6 +16,7 @@ interface ActivityFormModalProps {
 
 const activityTypes: { value: ArticleType; label: string }[] = [
   { value: 'intro', label: 'Intro' },
+  { value: 'presentation', label: 'Presentation' },
   { value: 'tap', label: 'Tap' },
   { value: 'write', label: 'Write' },
   { value: 'word_builder', label: 'Word Builder' },
@@ -45,6 +46,25 @@ export function ActivityFormModal({
     instructionAr: activity?.instruction.ar || '',
     config: activity?.config || {},
   });
+
+  // Update form when activity prop changes
+  useEffect(() => {
+    if (activity) {
+      setFormData({
+        type: activity.type,
+        instructionEn: activity.instruction.en,
+        instructionAr: activity.instruction.ar,
+        config: activity.config || {},
+      });
+    } else {
+      setFormData({
+        type: 'intro',
+        instructionEn: '',
+        instructionAr: '',
+        config: {},
+      });
+    }
+  }, [activity]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
