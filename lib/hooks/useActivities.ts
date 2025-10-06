@@ -117,9 +117,88 @@ export function useDeleteActivity() {
 }
 
 /**
- * Batch reorder activities with optimistic updates and rollback
+ * Move activity to a different node
  */
-export function useReorderActivities(curriculumId: string, nodeId: string) {
+export function useMoveActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      curriculumId,
+      activityId,
+      sourceNodeId,
+      targetNodeId,
+    }: {
+      curriculumId: string;
+      activityId: string;
+      sourceNodeId: string;
+      targetNodeId: string;
+    }) => updateArticle(curriculumId, activityId, { node_id: targetNodeId }),
+    onSuccess: (_, { curriculumId, sourceNodeId, targetNodeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, sourceNodeId] });
+      queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, targetNodeId] });
+      toast.success('Activity moved successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to move activity');
+    },
+  });
+}
+
+/**
+ * Reorder activities within a node (for tree view drag-drop)
+ */
+export function useReorderActivities() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      curriculumId,
+      nodeId,
+      activeId,
+      overId,
+    }: {
+      curriculumId: string;
+      nodeId: string;
+      activeId: string;
+      overId: string;
+    }) => {
+      const activities = queryClient.getQueryData<Article[]>(['activities', curriculumId, nodeId]);
+      if (!activities) throw new Error('Activities not found');
+
+      const oldIndex = activities.findIndex((a) => a.id === activeId);
+      const newIndex = activities.findIndex((a) => a.id === overId);
+
+      const reordered = [...activities];
+      const [moved] = reordered.splice(oldIndex, 1);
+      reordered.splice(newIndex, 0, moved);
+
+      const changes = reordered
+        .map((activity, index) => ({
+          id: activity.id,
+          sequence_number: index + 1,
+        }))
+        .filter((item, index) => activities[index].id !== item.id);
+
+      if (changes.length === 0) return Promise.resolve();
+
+      return reorderArticles(curriculumId, nodeId, { items: changes });
+    },
+    onSuccess: (_, { curriculumId, nodeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      toast.success('Activities reordered successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to reorder activities');
+    },
+  });
+}
+
+/**
+ * Batch reorder activities with optimistic updates and rollback (for list view)
+ * @deprecated Use useReorderActivities instead
+ */
+export function useReorderActivitiesBatch(curriculumId: string, nodeId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({

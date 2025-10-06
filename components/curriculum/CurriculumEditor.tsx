@@ -11,9 +11,11 @@ import {
   DragEndEvent,
   DragStartEvent,
 } from '@dnd-kit/core';
+import { List, Network } from 'lucide-react';
 import { TopicsList } from './TopicsList';
 import { NodesList } from './NodesList';
 import { ActivitiesList } from './ActivitiesList';
+import { CurriculumTreeView } from './tree/CurriculumTreeView';
 import { TopicFormModal } from './TopicFormModal';
 import { NodeFormModal } from './NodeFormModal';
 import { ActivityFormModal } from './ActivityFormModal';
@@ -28,7 +30,10 @@ interface CurriculumEditorProps {
   curriculumId: string;
 }
 
+type ViewMode = 'list' | 'tree';
+
 export function CurriculumEditor({ curriculumId }: CurriculumEditorProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>('tree');
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<Article | null>(null);
@@ -151,121 +156,187 @@ export function CurriculumEditor({ curriculumId }: CurriculumEditorProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-[calc(100vh-4rem)] bg-gray-50">
-      {/* Left Panel: Topics */}
-      <div className="w-80 border-r bg-white flex flex-col">
-        <div className="px-4 py-3 border-b bg-gray-50">
-          <h2 className="font-semibold text-gray-900">Topics</h2>
-        </div>
-        <TopicsList
-          curriculumId={curriculumId}
-          selectedTopicId={selectedTopic?.id}
-          onTopicSelect={(topic) => {
-            setSelectedTopic(topic);
-            setSelectedNode(null); // Clear node selection when topic changes
-          }}
-          onCreateClick={() => {
-            setEditingTopic(null);
-            setTopicModalOpen(true);
-          }}
-          onEditClick={(topic) => {
-            setEditingTopic(topic);
-            setTopicModalOpen(true);
-          }}
-        />
-      </div>
-
-      {/* Middle Panel: Nodes */}
-      <div className="w-96 border-r bg-white flex flex-col">
-        <div className="px-4 py-3 border-b bg-gray-50">
-          <h2 className="font-semibold text-gray-900">
-            {selectedTopic ? selectedTopic.title.en : 'Nodes'}
-          </h2>
-        </div>
-        <NodesList
-          curriculumId={curriculumId}
-          topicId={selectedTopic?.id || null}
-          selectedNodeId={selectedNode?.id}
-          onNodeSelect={setSelectedNode}
-          onCreateClick={() => {
-            setEditingNode(null);
-            setNodeModalOpen(true);
-          }}
-          onEditClick={(node) => {
-            setEditingNode(node);
-            setNodeModalOpen(true);
-          }}
-        />
-      </div>
-
-      {/* Right Panel: Activities */}
-      <div className="flex-1 bg-white flex flex-col">
-        <div className="px-4 py-3 border-b bg-gray-50">
-          <h2 className="font-semibold text-gray-900">
-            {selectedNode ? `Activities - ${selectedNode.title.en}` : 'Activities'}
-          </h2>
-        </div>
-        <ActivitiesList
-          curriculumId={curriculumId}
-          nodeId={selectedNode?.id || null}
-          selectedActivityId={selectedActivity?.id}
-          onActivitySelect={setSelectedActivity}
-          onCreateClick={() => {
-            setEditingActivity(null);
-            setActivityModalOpen(true);
-          }}
-          onEditClick={(activity) => {
-            setEditingActivity(activity);
-            setActivityModalOpen(true);
-          }}
-        />
-      </div>
-
-      {/* Modals */}
-      <TopicFormModal
-        isOpen={topicModalOpen}
-        onClose={() => {
-          setTopicModalOpen(false);
-          setEditingTopic(null);
-        }}
-        curriculumId={curriculumId}
-        topic={editingTopic}
-      />
-
-      {selectedTopic && (
-        <NodeFormModal
-          isOpen={nodeModalOpen}
-          onClose={() => {
-            setNodeModalOpen(false);
-            setEditingNode(null);
-          }}
-          curriculumId={curriculumId}
-          topicId={selectedTopic.id}
-          node={editingNode}
-        />
-      )}
-
-      {selectedNode && (
-        <ActivityFormModal
-          isOpen={activityModalOpen}
-          onClose={() => {
-            setActivityModalOpen(false);
-            setEditingActivity(null);
-          }}
-          curriculumId={curriculumId}
-          nodeId={selectedNode.id}
-          activity={editingActivity}
-        />
-      )}
-
-      <DragOverlay>
-        {draggingActivity ? (
-          <div className="bg-white border-2 border-blue-500 rounded px-4 py-3 shadow-lg">
-            <div className="font-medium text-sm">{draggingActivity.instruction.en}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{draggingActivity.type}</div>
+      <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50">
+        {/* View Toggle */}
+        <div className="border-b bg-white px-6 py-3 flex justify-end">
+          <div className="inline-flex rounded-lg border p-1 gap-1 bg-gray-50">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              List View
+            </button>
+            <button
+              onClick={() => setViewMode('tree')}
+              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${
+                viewMode === 'tree'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Network className="w-4 h-4" />
+              Tree View
+            </button>
           </div>
-        ) : null}
-      </DragOverlay>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          {viewMode === 'list' ? (
+            <div className="flex h-full">
+              {/* Left Panel: Topics */}
+              <div className="w-80 border-r bg-white flex flex-col">
+                <div className="px-4 py-3 border-b bg-gray-50">
+                  <h2 className="font-semibold text-gray-900">Topics</h2>
+                </div>
+                <TopicsList
+                  curriculumId={curriculumId}
+                  selectedTopicId={selectedTopic?.id}
+                  onTopicSelect={(topic) => {
+                    setSelectedTopic(topic);
+                    setSelectedNode(null); // Clear node selection when topic changes
+                  }}
+                  onCreateClick={() => {
+                    setEditingTopic(null);
+                    setTopicModalOpen(true);
+                  }}
+                  onEditClick={(topic) => {
+                    setEditingTopic(topic);
+                    setTopicModalOpen(true);
+                  }}
+                />
+              </div>
+
+              {/* Middle Panel: Nodes */}
+              <div className="w-96 border-r bg-white flex flex-col">
+                <div className="px-4 py-3 border-b bg-gray-50">
+                  <h2 className="font-semibold text-gray-900">
+                    {selectedTopic ? selectedTopic.title.en : 'Nodes'}
+                  </h2>
+                </div>
+                <NodesList
+                  curriculumId={curriculumId}
+                  topicId={selectedTopic?.id || null}
+                  selectedNodeId={selectedNode?.id}
+                  onNodeSelect={setSelectedNode}
+                  onCreateClick={() => {
+                    setEditingNode(null);
+                    setNodeModalOpen(true);
+                  }}
+                  onEditClick={(node) => {
+                    setEditingNode(node);
+                    setNodeModalOpen(true);
+                  }}
+                />
+              </div>
+
+              {/* Right Panel: Activities */}
+              <div className="flex-1 bg-white flex flex-col">
+                <div className="px-4 py-3 border-b bg-gray-50">
+                  <h2 className="font-semibold text-gray-900">
+                    {selectedNode ? `Activities - ${selectedNode.title.en}` : 'Activities'}
+                  </h2>
+                </div>
+                <ActivitiesList
+                  curriculumId={curriculumId}
+                  nodeId={selectedNode?.id || null}
+                  selectedActivityId={selectedActivity?.id}
+                  onActivitySelect={setSelectedActivity}
+                  onCreateClick={() => {
+                    setEditingActivity(null);
+                    setActivityModalOpen(true);
+                  }}
+                  onEditClick={(activity) => {
+                    setEditingActivity(activity);
+                    setActivityModalOpen(true);
+                  }}
+                />
+              </div>
+
+              <DragOverlay>
+                {draggingActivity ? (
+                  <div className="bg-white border-2 border-blue-500 rounded px-4 py-3 shadow-lg">
+                    <div className="font-medium text-sm">{draggingActivity.instruction.en}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{draggingActivity.type}</div>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </div>
+          ) : (
+            <CurriculumTreeView
+              curriculumId={curriculumId}
+              onEditTopic={(topic) => {
+                setEditingTopic(topic);
+                setTopicModalOpen(true);
+              }}
+              onEditNode={(node) => {
+                setEditingNode(node);
+                setNodeModalOpen(true);
+              }}
+              onCreateTopic={() => {
+                setEditingTopic(null);
+                setTopicModalOpen(true);
+              }}
+              onCreateNode={(topicId) => {
+                setEditingNode(null);
+                setSelectedTopic({ id: topicId } as Topic);
+                setNodeModalOpen(true);
+              }}
+              onCreateActivity={(nodeId) => {
+                setEditingActivity(null);
+                setSelectedNode({ id: nodeId } as Node);
+                setActivityModalOpen(true);
+              }}
+              onEditActivity={(activity) => {
+                setEditingActivity(activity);
+                setSelectedNode({ id: activity.node_id } as Node);
+                setActivityModalOpen(true);
+              }}
+            />
+          )}
+        </div>
+
+        {/* Modals */}
+        <TopicFormModal
+          isOpen={topicModalOpen}
+          onClose={() => {
+            setTopicModalOpen(false);
+            setEditingTopic(null);
+          }}
+          curriculumId={curriculumId}
+          topic={editingTopic}
+        />
+
+        {selectedTopic && (
+          <NodeFormModal
+            isOpen={nodeModalOpen}
+            onClose={() => {
+              setNodeModalOpen(false);
+              setEditingNode(null);
+            }}
+            curriculumId={curriculumId}
+            topicId={selectedTopic.id}
+            node={editingNode}
+          />
+        )}
+
+        {selectedNode && (
+          <ActivityFormModal
+            isOpen={activityModalOpen}
+            onClose={() => {
+              setActivityModalOpen(false);
+              setEditingActivity(null);
+            }}
+            curriculumId={curriculumId}
+            nodeId={selectedNode.id}
+            activity={editingActivity}
+          />
+        )}
       </div>
     </DndContext>
   );
