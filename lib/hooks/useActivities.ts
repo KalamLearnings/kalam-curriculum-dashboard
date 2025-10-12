@@ -133,7 +133,7 @@ export function useMoveActivity() {
       activityId: string;
       sourceNodeId: string;
       targetNodeId: string;
-    }) => updateArticle(curriculumId, activityId, { node_id: targetNodeId }),
+    }) => updateArticle(curriculumId, activityId, { node_id: targetNodeId } as any),
     onSuccess: (_, { curriculumId, sourceNodeId, targetNodeId }) => {
       queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, sourceNodeId] });
       queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, targetNodeId] });

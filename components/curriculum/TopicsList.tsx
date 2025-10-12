@@ -64,7 +64,7 @@ export function TopicsList({
         )}
       </div>
 
-      <ListFooter show={hasTopics && !!onCreateClick} label="New Topic" onClick={onCreateClick!} />
+      <ListFooter show={!!(hasTopics && onCreateClick)} label="New Topic" onClick={onCreateClick!} />
 
       <ConfirmModal
         isOpen={!!topicToDelete}

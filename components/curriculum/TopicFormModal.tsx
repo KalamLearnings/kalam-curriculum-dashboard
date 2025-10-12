@@ -38,8 +38,8 @@ export function TopicFormModal({
         ar: formData.titleAr,
       },
       description: {
-        en: formData.descriptionEn || undefined,
-        ar: formData.descriptionAr || undefined,
+        en: formData.descriptionEn || '',
+        ar: formData.descriptionAr || '',
       },
     };
 

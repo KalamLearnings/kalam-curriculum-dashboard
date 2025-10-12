@@ -65,7 +65,7 @@ export function CurriculumEditor({ curriculumId, viewMode = 'tree' }: Curriculum
     const { active } = event;
     console.log('Drag start:', active.id, active.data.current?.type);
     // Check if dragging an activity (activity IDs should start with "activity_")
-    if (active.data.current?.type === 'activity') {
+    if (active.data.current?.type === 'activity' && active.data.current) {
       setDraggingActivity(active.data.current.activity);
     }
   }
@@ -89,7 +89,7 @@ export function CurriculumEditor({ curriculumId, viewMode = 'tree' }: Curriculum
     const isActivityDrop = over.data.current?.type === 'activity';
 
     // Scenario 1: Dropping activity onto a node (cross-node move)
-    if (isActivityDrag && isNodeDrop) {
+    if (isActivityDrag && isNodeDrop && active.data.current) {
       const activity = active.data.current.activity as Article;
       const targetNodeId = over.id as string;
       const oldNodeId = activity.node_id;
@@ -103,7 +103,7 @@ export function CurriculumEditor({ curriculumId, viewMode = 'tree' }: Curriculum
           curriculumId,
           nodeId: oldNodeId,
           activityId: activity.id,
-          data: { node_id: targetNodeId },
+          data: { node_id: targetNodeId } as any,
         },
         {
           onSuccess: () => {
@@ -120,7 +120,7 @@ export function CurriculumEditor({ curriculumId, viewMode = 'tree' }: Curriculum
     }
 
     // Scenario 2: Reordering activities within the same node
-    if (isActivityDrag && isActivityDrop && active.id !== over.id) {
+    if (isActivityDrag && isActivityDrop && active.id !== over.id && active.data.current && over.data.current) {
       const activeActivity = active.data.current.activity as Article;
       const overActivity = over.data.current.activity as Article;
 

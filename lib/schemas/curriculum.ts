@@ -15,6 +15,21 @@ export const LetterSchema = z.object({
   name_arabic: z.string().optional(),
 });
 
+export const ArticleTypeSchema = z.enum([
+  'intro',
+  'presentation',
+  'tap',
+  'write',
+  'word_builder',
+  'name_builder',
+  'balloon',
+  'multiple_choice',
+  'drag_drop',
+  'fishing',
+  'pizza',
+  'break',
+]);
+
 // ============================================================================
 // CURRICULUM
 // ============================================================================

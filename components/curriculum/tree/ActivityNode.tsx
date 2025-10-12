@@ -103,7 +103,6 @@ export const ActivityNode = memo(({ activity, nodeId, curriculumId, onClick }: A
         title="Delete Activity"
         message={`Are you sure you want to delete "${activity.instruction.en}"? This action cannot be undone.`}
         confirmText="Delete"
-        confirmVariant="danger"
       />
     </div>
   );

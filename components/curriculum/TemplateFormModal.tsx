@@ -93,7 +93,7 @@ export function TemplateFormModal({ isOpen, onClose, template }: TemplateFormMod
         { onSuccess: () => onClose() }
       );
     } else {
-      createTemplate(data, { onSuccess: () => onClose() });
+      createTemplate(data as any, { onSuccess: () => onClose() });
     }
   };
 
