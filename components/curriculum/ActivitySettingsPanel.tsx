@@ -1,6 +1,10 @@
 'use client';
 
-import { TreeViewBaseItem } from '@mui/x-tree-view/models';
+interface TreeViewBaseItem {
+  id: string;
+  label: string;
+  [key: string]: any;
+}
 
 interface ActivitySettingsPanelProps {
   selectedItem: TreeViewBaseItem | null;
