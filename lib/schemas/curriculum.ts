@@ -152,21 +152,6 @@ export const InstantiateTemplateSchema = z.object({
 // ARTICLE (formerly "Activity")
 // ============================================================================
 
-export const ArticleTypeSchema = z.enum([
-  'intro',
-  'presentation',
-  'tap',
-  'write',
-  'word_builder',
-  'name_builder',
-  'balloon',
-  'multiple_choice',
-  'drag_drop',
-  'fishing',
-  'pizza',
-  'break',
-]);
-
 // Config schemas per type
 const TapConfigSchema = z.object({
   targetWord: z.string().min(1),
