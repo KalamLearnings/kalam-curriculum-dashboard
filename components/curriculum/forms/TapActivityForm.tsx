@@ -1,11 +1,11 @@
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, TextInput, NumberInput } from './FormField';
+import { FormField, TextInput } from './FormField';
 
 export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const targetWord = config?.targetWord || '';
-  const targetLetter = config?.targetLetter || '';
-  const targetCount = config?.targetCount || 1;
+  const showHighlight = config?.showHighlight ?? false;
+  const highlightColor = config?.highlightColor || '#FFD700';
+  const provideFeedback = config?.provideFeedback ?? true;
 
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });
@@ -13,33 +13,40 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
 
   return (
     <div className="space-y-4">
-      <FormField label="Target Word" required hint="The Arabic word containing letters to tap">
+      <FormField label="Show Highlight" hint="Show visual highlight on correct tap">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={showHighlight}
+            onChange={(e) => updateConfig({ showHighlight: e.target.checked })}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label className="ml-2 text-sm text-gray-700">
+            Enable highlight effect
+          </label>
+        </div>
+      </FormField>
+
+      <FormField label="Highlight Color" hint="Color for the highlight effect">
         <TextInput
-          value={targetWord}
-          onChange={(value) => updateConfig({ targetWord: value })}
-          required
-          dir="rtl"
-          placeholder="كتاب"
+          value={highlightColor}
+          onChange={(value) => updateConfig({ highlightColor: value })}
+          placeholder="#FFD700"
         />
       </FormField>
 
-      <FormField label="Target Letter" required hint="The letter students should tap">
-        <TextInput
-          value={targetLetter}
-          onChange={(value) => updateConfig({ targetLetter: value })}
-          required
-          dir="rtl"
-          placeholder="ك"
-        />
-      </FormField>
-
-      <FormField label="Target Count" required hint="How many times to tap the letter">
-        <NumberInput
-          value={targetCount}
-          onChange={(value) => updateConfig({ targetCount: value })}
-          min={1}
-          required
-        />
+      <FormField label="Provide Feedback" hint="Give feedback on incorrect taps">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={provideFeedback}
+            onChange={(e) => updateConfig({ provideFeedback: e.target.checked })}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label className="ml-2 text-sm text-gray-700">
+            Enable feedback on wrong taps
+          </label>
+        </div>
       </FormField>
     </div>
   );

@@ -5,23 +5,12 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 export default function CurriculaPage() {
-  const [user, setUser] = useState<any>(null);
   const [curricula, setCurricula] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const supabase = createClient();
-
-    // Check auth
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      setUser(user);
-      loadCurricula();
-    });
 
     async function loadCurricula() {
       try {
@@ -47,44 +36,30 @@ export default function CurriculaPage() {
         setLoading(false);
       }
     }
-  }, [router]);
 
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
+    loadCurricula();
+  }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <div className="text-gray-600">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <h1 className="text-xl font-bold">Kalam Dashboard</h1>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">{user?.email}</span>
-              <button
-                onClick={handleSignOut}
-                className="text-sm text-red-600 hover:text-red-700"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Curricula</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold">Curricula</h2>
+            <button
+              onClick={() => router.push('/templates')}
+              className="text-sm text-blue-600 hover:text-blue-700 underline"
+            >
+              View Templates
+            </button>
+          </div>
           <button
             onClick={() => router.push('/curricula/new')}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
@@ -165,6 +140,5 @@ export default function CurriculaPage() {
           </div>
         )}
       </main>
-    </div>
   );
 }

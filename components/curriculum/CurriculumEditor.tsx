@@ -28,12 +28,12 @@ import { useQueryClient } from '@tanstack/react-query';
 
 interface CurriculumEditorProps {
   curriculumId: string;
+  viewMode?: 'list' | 'tree';
 }
 
 type ViewMode = 'list' | 'tree';
 
-export function CurriculumEditor({ curriculumId }: CurriculumEditorProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('tree');
+export function CurriculumEditor({ curriculumId, viewMode = 'tree' }: CurriculumEditorProps) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<Article | null>(null);
@@ -156,35 +156,7 @@ export function CurriculumEditor({ curriculumId }: CurriculumEditorProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50">
-        {/* View Toggle */}
-        <div className="border-b bg-white px-6 py-3 flex justify-end">
-          <div className="inline-flex rounded-lg border p-1 gap-1 bg-gray-50">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <List className="w-4 h-4" />
-              List View
-            </button>
-            <button
-              onClick={() => setViewMode('tree')}
-              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${
-                viewMode === 'tree'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Network className="w-4 h-4" />
-              Tree View
-            </button>
-          </div>
-        </div>
-
+      <div className="flex flex-col h-[calc(100vh-3rem)] bg-gray-50">
         {/* Content */}
         <div className="flex-1 overflow-hidden">
           {viewMode === 'list' ? (

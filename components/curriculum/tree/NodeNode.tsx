@@ -40,13 +40,13 @@ const typeConfig = {
   },
   intro: {
     icon: Info,
-    iconBg: 'bg-purple-500',
-    buttonBg: 'bg-purple-500 hover:bg-purple-600',
-    textColor: 'text-purple-700',
-    bgColor: 'bg-purple-50 hover:bg-purple-100',
-    bg: 'from-purple-50 to-purple-100',
-    border: 'border-purple-300',
-    borderActive: 'border-purple-400'
+    iconBg: 'bg-emerald-500',
+    buttonBg: 'bg-emerald-500 hover:bg-emerald-600',
+    textColor: 'text-emerald-700',
+    bgColor: 'bg-emerald-50 hover:bg-emerald-100',
+    bg: 'from-emerald-50 to-emerald-100',
+    border: 'border-emerald-300',
+    borderActive: 'border-emerald-400'
   },
 };
 
@@ -160,6 +160,7 @@ export const NodeNode = memo(({
                     key={activity.id}
                     activity={activity}
                     nodeId={node.id}
+                    curriculumId={curriculumId}
                     onClick={() => onEditActivity(activity)}
                   />
                 ))}

@@ -1,18 +1,24 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Play, FileText } from 'lucide-react';
+import { GripVertical, Play, FileText, Trash2 } from 'lucide-react';
 import type { Article } from '@/lib/schemas/curriculum';
+import { useDeleteActivity } from '@/lib/hooks/useActivities';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface ActivityNodeProps {
   activity: Article;
   nodeId: string;
+  curriculumId: string;
   onClick: () => void;
 }
 
-export const ActivityNode = memo(({ activity, nodeId, onClick }: ActivityNodeProps) => {
+export const ActivityNode = memo(({ activity, nodeId, curriculumId, onClick }: ActivityNodeProps) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { mutate: deleteActivity } = useDeleteActivity();
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: activity.id,
     data: {
@@ -37,6 +43,15 @@ export const ActivityNode = memo(({ activity, nodeId, onClick }: ActivityNodePro
   };
 
   const Icon = getActivityIcon(activity.type);
+
+  const handleDelete = () => {
+    deleteActivity({
+      curriculumId,
+      nodeId,
+      activityId: activity.id,
+    });
+    setShowDeleteConfirm(false);
+  };
 
   return (
     <div
@@ -69,6 +84,27 @@ export const ActivityNode = memo(({ activity, nodeId, onClick }: ActivityNodePro
         </div>
         <div className="text-xs text-gray-400">{activity.type}</div>
       </div>
+
+      <button
+        className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowDeleteConfirm(true);
+        }}
+        title="Delete activity"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Activity"
+        message={`Are you sure you want to delete "${activity.instruction.en}"? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmVariant="danger"
+      />
     </div>
   );
 });
