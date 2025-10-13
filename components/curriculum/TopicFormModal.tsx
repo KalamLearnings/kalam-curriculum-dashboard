@@ -23,6 +23,9 @@ export function TopicFormModal({
   const { mutate: updateTopic, isPending: isUpdating } = useUpdateTopic();
 
   const [formData, setFormData] = useState({
+    letter: topic?.letter?.letter || '',
+    letterNameEnglish: topic?.letter?.name_english || '',
+    letterNameArabic: topic?.letter?.name_arabic || '',
     titleEn: topic?.title.en || '',
     titleAr: topic?.title.ar || '',
     descriptionEn: topic?.description?.en || '',
@@ -33,6 +36,11 @@ export function TopicFormModal({
     e.preventDefault();
 
     const data: CreateTopic | UpdateTopic = {
+      letter: {
+        letter: formData.letter,
+        name_english: formData.letterNameEnglish,
+        name_arabic: formData.letterNameArabic || undefined,
+      },
       title: {
         en: formData.titleEn,
         ar: formData.titleAr,
@@ -73,6 +81,9 @@ export function TopicFormModal({
 
   const handleClose = () => {
     setFormData({
+      letter: '',
+      letterNameEnglish: '',
+      letterNameArabic: '',
       titleEn: '',
       titleAr: '',
       descriptionEn: '',
@@ -88,6 +99,56 @@ export function TopicFormModal({
       title={isEdit ? 'Edit Topic' : 'New Topic'}
     >
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Arabic Letter *
+          </label>
+          <input
+            type="text"
+            required
+            maxLength={1}
+            value={formData.letter}
+            onChange={(e) =>
+              setFormData({ ...formData, letter: e.target.value })
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-2xl text-center"
+            placeholder="ا"
+            dir="rtl"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Letter Name (English) *
+          </label>
+          <input
+            type="text"
+            required
+            value={formData.letterNameEnglish}
+            onChange={(e) =>
+              setFormData({ ...formData, letterNameEnglish: e.target.value })
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Alif"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Letter Name (Arabic)
+          </label>
+          <input
+            type="text"
+            value={formData.letterNameArabic}
+            onChange={(e) =>
+              setFormData({ ...formData, letterNameArabic: e.target.value })
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="ألف"
+            dir="rtl"
+          />
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Title (English) *
