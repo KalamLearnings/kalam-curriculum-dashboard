@@ -44,7 +44,7 @@ export default function CurriculumBuilderPage() {
     type: 'show_letter_or_word' as ArticleType,
     instructionEn: '',
     instructionAr: '',
-    config: {} as Record<string, any>
+    config: {} as any
   });
 
   // Debug: Log formData changes

@@ -65,7 +65,7 @@ export function ActivityFormModal({
     instructionEn: activity?.instruction.en || '',
     instructionAr: activity?.instruction.ar || '',
     audioUrl: activity?.instruction.audio_url || '',
-    config: activity?.config || {},
+    config: activity?.config || {} as any,
   });
 
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
@@ -80,9 +80,9 @@ export function ActivityFormModal({
       setFormData({
         type: activity.type,
         instructionEn: activity.instruction.en,
-        instructionAr: activity.instruction.ar,
+        instructionAr: activity.instruction.ar || '',
         audioUrl: activity.instruction.audio_url || '',
-        config: activity.config || {},
+        config: activity.config || {} as any,
       });
       setExistingAudioUrl(activity.instruction.audio_url || null);
       setGeneratedAudioBlob(null);

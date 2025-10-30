@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "npm run build:schemas && next build",
+    "build:schemas": "cd packages/curriculum-schemas && npm install && npm run build",
     "start": "next start -p 3001",
     "lint": "next lint"
   },
@@ -13,7 +14,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.3.2",
-    "@kalam/curriculum-schemas": "file:../packages/curriculum-schemas",
+    "@kalam/curriculum-schemas": "file:./packages/curriculum-schemas",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/ssr": "^0.0.10",
     "@supabase/supabase-js": "^2.39.0",
