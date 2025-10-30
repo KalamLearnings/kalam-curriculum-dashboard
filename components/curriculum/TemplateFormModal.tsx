@@ -13,18 +13,16 @@ interface TemplateFormModalProps {
 }
 
 const activityTypes: { value: ArticleType; label: string }[] = [
-  { value: 'intro', label: 'Intro' },
-  { value: 'presentation', label: 'Presentation' },
-  { value: 'tap', label: 'Tap' },
-  { value: 'write', label: 'Write' },
-  { value: 'word_builder', label: 'Word Builder' },
-  { value: 'name_builder', label: 'Name Builder' },
-  { value: 'balloon', label: 'Balloon' },
-  { value: 'multiple_choice', label: 'Multiple Choice' },
-  { value: 'drag_drop', label: 'Drag & Drop' },
-  { value: 'fishing', label: 'Fishing' },
-  { value: 'pizza', label: 'Pizza' },
-  { value: 'break', label: 'Break' },
+  { value: 'show_letter_or_word', label: 'Show Letter or Word' },
+  { value: 'tap_letter_in_word', label: 'Tap Letter in Word' },
+  { value: 'trace_letter', label: 'Trace Letter' },
+  { value: 'pop_balloons_with_letter', label: 'Pop Balloons with Letter' },
+  { value: 'break_time_minigame', label: 'Break Time Mini-Game' },
+  { value: 'build_word_from_letters', label: 'Build Word from Letters' },
+  { value: 'multiple_choice_question', label: 'Multiple Choice Question' },
+  { value: 'drag_items_to_target', label: 'Drag Items to Target' },
+  { value: 'catch_fish_with_letter', label: 'Catch Fish with Letter' },
+  { value: 'add_pizza_toppings_with_letter', label: 'Add Pizza Toppings with Letter' },
 ];
 
 // Helper to generate slug from name
@@ -44,7 +42,7 @@ export function TemplateFormModal({ isOpen, onClose, template }: TemplateFormMod
 
   const [formData, setFormData] = useState({
     nameEn: template?.name.en || '',
-    type: template?.type || 'tap' as ArticleType,
+    type: template?.type || 'tap_letter_in_word' as ArticleType,
     instructionTemplateEn: template?.instruction_template.en || '',
     instructionTemplateAr: template?.instruction_template.ar || '',
     configTemplate: template?.config_template || {},
@@ -62,7 +60,7 @@ export function TemplateFormModal({ isOpen, onClose, template }: TemplateFormMod
     } else {
       setFormData({
         nameEn: '',
-        type: 'tap',
+        type: 'tap_letter_in_word',
         instructionTemplateEn: '',
         instructionTemplateAr: '',
         configTemplate: {},
@@ -100,7 +98,7 @@ export function TemplateFormModal({ isOpen, onClose, template }: TemplateFormMod
   const handleClose = () => {
     setFormData({
       nameEn: '',
-      type: 'tap',
+      type: 'tap_letter_in_word',
       instructionTemplateEn: '',
       instructionTemplateAr: '',
       configTemplate: {},
@@ -164,15 +162,14 @@ export function TemplateFormModal({ isOpen, onClose, template }: TemplateFormMod
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Instruction (Arabic) *
+              Instruction (Arabic)
             </label>
             <textarea
-              required
               dir="rtl"
               value={formData.instructionTemplateAr}
               onChange={(e) => setFormData({ ...formData, instructionTemplateAr: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              placeholder="اضغط على الحرف"
+              placeholder="اضغط على الحرف (اختياري)"
               rows={2}
             />
           </div>

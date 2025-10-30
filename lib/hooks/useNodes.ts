@@ -31,6 +31,19 @@ export function useNodes(curriculumId: string, topicId: string | null) {
   });
 }
 
+/**
+ * Fetch ALL nodes across all topics in a curriculum
+ */
+export function useAllNodes(curriculumId: string) {
+  return useQuery({
+    queryKey: ['all-nodes', curriculumId],
+    queryFn: () => listNodes(curriculumId, null),
+    enabled: !!curriculumId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    select: (data) => sortBySequence(data), // Always return sorted
+  });
+}
+
 // ============================================================================
 // MUTATION HOOKS
 // ============================================================================

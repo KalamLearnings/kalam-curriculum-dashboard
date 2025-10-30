@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
-import type { Article, CreateArticle, UpdateArticle, ArticleType, ActivityTemplate } from '@/lib/schemas/curriculum';
+import type { Article, CreateArticle, UpdateArticle, ArticleType, ActivityTemplate, Topic, Node } from '@/lib/schemas/curriculum';
+import { ACTIVITY_TYPE_LABELS } from '@kalam/curriculum-schemas';
 import { useCreateActivity, useUpdateActivity } from '@/lib/hooks/useActivities';
 import { useActivityTemplates, useInstantiateTemplate } from '@/lib/hooks/useTemplates';
+import { useTopic } from '@/lib/hooks/useTopics';
 import { getActivityFormComponent } from './forms';
 
 interface ActivityFormModalProps {
@@ -12,22 +14,22 @@ interface ActivityFormModalProps {
   onClose: () => void;
   curriculumId: string;
   nodeId: string;
+  node?: Node | null; // Add the full node object
+  topic?: Topic | null;
   activity?: Article | null;
 }
 
 const activityTypes: { value: ArticleType; label: string }[] = [
-  { value: 'intro', label: 'Intro' },
-  { value: 'presentation', label: 'Presentation' },
-  { value: 'tap', label: 'Tap' },
-  { value: 'write', label: 'Write' },
-  { value: 'word_builder', label: 'Word Builder' },
-  { value: 'name_builder', label: 'Name Builder' },
-  { value: 'balloon', label: 'Balloon' },
-  { value: 'multiple_choice', label: 'Multiple Choice' },
-  { value: 'drag_drop', label: 'Drag & Drop' },
-  { value: 'fishing', label: 'Fishing' },
-  { value: 'pizza', label: 'Pizza' },
-  { value: 'break', label: 'Break' },
+  { value: 'show_letter_or_word', label: ACTIVITY_TYPE_LABELS.show_letter_or_word },
+  { value: 'tap_letter_in_word', label: ACTIVITY_TYPE_LABELS.tap_letter_in_word },
+  { value: 'trace_letter', label: ACTIVITY_TYPE_LABELS.trace_letter },
+  { value: 'pop_balloons_with_letter', label: ACTIVITY_TYPE_LABELS.pop_balloons_with_letter },
+  { value: 'break_time_minigame', label: ACTIVITY_TYPE_LABELS.break_time_minigame },
+  { value: 'build_word_from_letters', label: ACTIVITY_TYPE_LABELS.build_word_from_letters },
+  { value: 'multiple_choice_question', label: ACTIVITY_TYPE_LABELS.multiple_choice_question },
+  { value: 'drag_items_to_target', label: ACTIVITY_TYPE_LABELS.drag_items_to_target },
+  { value: 'catch_fish_with_letter', label: ACTIVITY_TYPE_LABELS.catch_fish_with_letter },
+  { value: 'add_pizza_toppings_with_letter', label: ACTIVITY_TYPE_LABELS.add_pizza_toppings_with_letter },
 ];
 
 export function ActivityFormModal({
@@ -35,6 +37,8 @@ export function ActivityFormModal({
   onClose,
   curriculumId,
   nodeId,
+  node: nodeProp,
+  topic: topicProp,
   activity,
 }: ActivityFormModalProps) {
   const isEdit = Boolean(activity);
@@ -43,16 +47,32 @@ export function ActivityFormModal({
   const { mutate: instantiateTemplate, isPending: isInstantiating } = useInstantiateTemplate();
   const { data: templates, isLoading: isLoadingTemplates } = useActivityTemplates();
 
+  // Get the topic_id from the node prop
+  const topicId = nodeProp?.topic_id || null;
+
+  // Fetch the full topic data using the node's topic_id
+  const { data: fetchedTopic, isLoading: isLoadingTopic } = useTopic(curriculumId, topicId);
+
+  // Use fetched topic if available, otherwise fall back to prop
+  const topic = fetchedTopic || topicProp;
+
   const [useTemplate, setUseTemplate] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ActivityTemplate | null>(null);
   const [templateVariables, setTemplateVariables] = useState<Record<string, any>>({});
 
   const [formData, setFormData] = useState({
-    type: activity?.type || 'intro' as ArticleType,
+    type: activity?.type || 'show_letter_or_word' as ArticleType,
     instructionEn: activity?.instruction.en || '',
     instructionAr: activity?.instruction.ar || '',
+    audioUrl: activity?.instruction.audio_url || '',
     config: activity?.config || {},
   });
+
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [generatedAudioBlob, setGeneratedAudioBlob] = useState<{ blob: Blob; blobUrl: string; filePath: string } | null>(null);
+  const [existingAudioUrl, setExistingAudioUrl] = useState<string | null>(
+    activity?.instruction.audio_url || null
+  );
 
   // Update form when activity prop changes
   useEffect(() => {
@@ -61,20 +81,35 @@ export function ActivityFormModal({
         type: activity.type,
         instructionEn: activity.instruction.en,
         instructionAr: activity.instruction.ar,
+        audioUrl: activity.instruction.audio_url || '',
         config: activity.config || {},
       });
+      setExistingAudioUrl(activity.instruction.audio_url || null);
+      setGeneratedAudioBlob(null);
       setUseTemplate(false);
       setSelectedTemplate(null);
       setTemplateVariables({});
     } else {
       setFormData({
-        type: 'intro',
+        type: 'show_letter_or_word',
         instructionEn: '',
         instructionAr: '',
+        audioUrl: '',
         config: {},
       });
+      setExistingAudioUrl(null);
+      setGeneratedAudioBlob(null);
     }
   }, [activity]);
+
+  // Clean up blob URLs when component unmounts or blob changes
+  useEffect(() => {
+    return () => {
+      if (generatedAudioBlob?.blobUrl) {
+        URL.revokeObjectURL(generatedAudioBlob.blobUrl);
+      }
+    };
+  }, [generatedAudioBlob]);
 
   // Reset template variables when template changes
   useEffect(() => {
@@ -87,7 +122,90 @@ export function ActivityFormModal({
     }
   }, [selectedTemplate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleGenerateAudio = async () => {
+    if (!formData.instructionEn.trim()) {
+      alert('Please enter an English instruction first');
+      return;
+    }
+
+    setIsGeneratingAudio(true);
+    try {
+      const response = await fetch('http://localhost:54321/functions/v1/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: formData.instructionEn,
+          language: 'en',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate audio');
+      }
+
+      const data = await response.json();
+
+      // Convert base64 to blob
+      const binaryString = atob(data.audio_data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: data.content_type });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Clean up old blob URL if exists
+      if (generatedAudioBlob?.blobUrl) {
+        URL.revokeObjectURL(generatedAudioBlob.blobUrl);
+      }
+
+      setGeneratedAudioBlob({
+        blob,
+        blobUrl,
+        filePath: data.suggested_file_path,
+      });
+      setExistingAudioUrl(null); // Clear existing URL when generating new audio
+
+    } catch (error) {
+      console.error('Error generating audio:', error);
+      alert(error instanceof Error ? error.message : 'Failed to generate audio');
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  };
+
+  const uploadAudioToStorage = async (blob: Blob, filePath: string): Promise<string> => {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data, error } = await supabase.storage
+      .from('curriculum-audio')
+      .upload(filePath, blob, {
+        contentType: 'audio/mpeg',
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      throw new Error(`Failed to upload audio: ${error.message}`);
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('curriculum-audio')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // If using template, instantiate it
@@ -107,58 +225,81 @@ export function ActivityFormModal({
       return;
     }
 
-    // Otherwise, create/update activity normally
-    const data: CreateArticle | UpdateArticle = {
-      type: formData.type,
-      instruction: {
-        en: formData.instructionEn,
-        ar: formData.instructionAr,
-      },
-      config: formData.config,
-    };
+    try {
+      // Upload audio blob to storage if a new one was generated
+      let audioUrl = existingAudioUrl;
+      if (generatedAudioBlob) {
+        audioUrl = await uploadAudioToStorage(
+          generatedAudioBlob.blob,
+          generatedAudioBlob.filePath
+        );
+      }
 
-    if (isEdit && activity) {
-      updateActivity(
-        {
-          curriculumId,
-          nodeId,
-          activityId: activity.id,
-          data: data as UpdateArticle,
+      // Otherwise, create/update activity normally
+      const data: CreateArticle | UpdateArticle = {
+        type: formData.type,
+        instruction: {
+          en: formData.instructionEn,
+          ar: formData.instructionAr,
+          ...(audioUrl ? { audio_url: audioUrl } : {}),
         },
-        {
-          onSuccess: () => {
-            onClose();
+        config: formData.config,
+        // Only include sequence_number for edits (backend auto-generates for creates)
+        ...(isEdit && activity?.sequence_number ? { sequence_number: activity.sequence_number } : {}),
+      };
+
+      if (isEdit && activity) {
+        updateActivity(
+          {
+            curriculumId,
+            nodeId,
+            activityId: activity.id,
+            data: data as UpdateArticle,
           },
-        }
-      );
-    } else {
-      createActivity(
-        {
-          curriculumId,
-          nodeId,
-          data: data as CreateArticle,
-        },
-        {
-          onSuccess: () => {
-            onClose();
+          {
+            onSuccess: () => {
+              onClose();
+            },
+          }
+        );
+      } else {
+        createActivity(
+          {
+            curriculumId,
+            nodeId,
+            data: data as CreateArticle,
           },
-        }
-      );
+          {
+            onSuccess: () => {
+              onClose();
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error submitting activity:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save activity');
     }
   };
 
   const handleClose = () => {
     setFormData({
-      type: 'intro',
+      type: 'show_letter_or_word',
       instructionEn: '',
       instructionAr: '',
+      audioUrl: '',
       config: {},
     });
+    setGeneratedAudioBlob(null);
+    setExistingAudioUrl(null);
     setUseTemplate(false);
     setSelectedTemplate(null);
     setTemplateVariables({});
     onClose();
   };
+
+  // Show loading state while fetching topic data
+  const isLoadingData = topicId && isLoadingTopic;
 
   return (
     <Modal
@@ -166,7 +307,12 @@ export function ActivityFormModal({
       onClose={handleClose}
       title={isEdit ? 'Edit Activity' : 'New Activity'}
     >
-      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      {isLoadingData ? (
+        <div className="p-6 flex items-center justify-center">
+          <div className="text-gray-500">Loading topic data...</div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
         {/* Template Toggle (only for new activities) */}
         {!isEdit && (
           <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md">
@@ -272,6 +418,9 @@ export function ActivityFormModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Instruction (English) *
               </label>
+              <p className="text-xs text-gray-500 mb-2">
+                This text will be converted to audio and played when the activity loads in the app
+              </p>
               <textarea
                 required
                 value={formData.instructionEn}
@@ -282,21 +431,64 @@ export function ActivityFormModal({
                 placeholder="Enter English instruction"
                 rows={2}
               />
+              {/* Generate/Regenerate Audio Button */}
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={handleGenerateAudio}
+                  disabled={!formData.instructionEn.trim() || isGeneratingAudio}
+                  className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  {isGeneratingAudio ? (
+                    <>
+                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                      </svg>
+                      {(generatedAudioBlob || existingAudioUrl) ? 'Regenerate' : 'Generate'} Audio
+                    </>
+                  )}
+                </button>
+                {(generatedAudioBlob || existingAudioUrl) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const audioUrl = generatedAudioBlob?.blobUrl || existingAudioUrl;
+                      if (audioUrl) {
+                        const audio = new Audio(audioUrl);
+                        audio.play();
+                      }
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-300 rounded hover:bg-green-100 flex items-center gap-1.5"
+                  >
+                    <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                    </svg>
+                    Play
+                  </button>
+                )}
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Instruction (Arabic) *
+                Instruction (Arabic)
               </label>
               <textarea
-                required
                 dir="rtl"
                 value={formData.instructionAr}
                 onChange={(e) =>
                   setFormData({ ...formData, instructionAr: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="أدخل التعليمات بالعربية"
+                placeholder="أدخل التعليمات بالعربية (اختياري)"
                 rows={2}
               />
             </div>
@@ -308,6 +500,7 @@ export function ActivityFormModal({
                 <ActivityForm
                   config={formData.config}
                   onChange={(config) => setFormData({ ...formData, config })}
+                  topic={topic}
                 />
               );
             })()}
@@ -337,6 +530,7 @@ export function ActivityFormModal({
           </button>
         </div>
       </form>
+      )}
     </Modal>
   );
 }

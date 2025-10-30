@@ -161,11 +161,14 @@ export async function deleteTopic(
 
 export async function listNodes(
   curriculumId: string,
-  topicId: string
+  topicId: string | null
 ): Promise<Node[]> {
-  return fetchWithAuth<Node[]>(
-    `/curriculum/${curriculumId}/topics/${topicId}/nodes`
-  );
+  // If topicId is null, fetch all nodes across all topics
+  const path = topicId
+    ? `/curriculum/${curriculumId}/topics/${topicId}/nodes`
+    : `/curriculum/${curriculumId}/nodes`;
+
+  return fetchWithAuth<Node[]>(path);
 }
 
 export async function getNode(

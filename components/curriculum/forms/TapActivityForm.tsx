@@ -1,11 +1,14 @@
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, TextInput } from './FormField';
+import { FormField, TextInput, NumberInput } from './FormField';
+import { WordSelector } from '../WordSelector';
+import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
 
 export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const showHighlight = config?.showHighlight ?? false;
-  const highlightColor = config?.highlightColor || '#FFD700';
-  const provideFeedback = config?.provideFeedback ?? true;
+  const targetWord = config?.targetWord || '';
+  const targetLetter = config?.targetLetter || '';
+  const targetCount = config?.targetCount || 1;
+  const wordMeaning = config?.wordMeaning || '';
 
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });
@@ -13,40 +16,38 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
 
   return (
     <div className="space-y-4">
-      <FormField label="Show Highlight" hint="Show visual highlight on correct tap">
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            checked={showHighlight}
-            onChange={(e) => updateConfig({ showHighlight: e.target.checked })}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <label className="ml-2 text-sm text-gray-700">
-            Enable highlight effect
-          </label>
-        </div>
-      </FormField>
 
-      <FormField label="Highlight Color" hint="Color for the highlight effect">
+      <WordSelector
+        value={targetWord}
+        onChange={(word) => updateConfig({ targetWord: word })}
+        label="Target Word"
+        required
+        showTranslation
+        translationValue={wordMeaning}
+        onTranslationChange={(translation) => updateConfig({ wordMeaning: translation })}
+      />
+
+      {targetWord && (
+        <ActivityWordStatus
+          words={[{ arabic: targetWord, transliteration: wordMeaning, english: wordMeaning }]}
+        />
+      )}
+
+      <FormField label="Target Letter" hint="The letter to find in the word" required>
         <TextInput
-          value={highlightColor}
-          onChange={(value) => updateConfig({ highlightColor: value })}
-          placeholder="#FFD700"
+          value={targetLetter}
+          onChange={(value) => updateConfig({ targetLetter: value })}
+          placeholder="ك"
+          dir="rtl"
         />
       </FormField>
 
-      <FormField label="Provide Feedback" hint="Give feedback on incorrect taps">
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            checked={provideFeedback}
-            onChange={(e) => updateConfig({ provideFeedback: e.target.checked })}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <label className="ml-2 text-sm text-gray-700">
-            Enable feedback on wrong taps
-          </label>
-        </div>
+      <FormField label="Target Count" hint="How many instances to find" required>
+        <NumberInput
+          value={targetCount}
+          onChange={(value) => updateConfig({ targetCount: value })}
+          min={1}
+        />
       </FormField>
     </div>
   );

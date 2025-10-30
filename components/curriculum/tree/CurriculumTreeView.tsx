@@ -14,8 +14,8 @@ interface CurriculumTreeViewProps {
   onEditNode: (node: CurriculumNode) => void;
   onCreateTopic: () => void;
   onCreateNode: (topicId: string) => void;
-  onCreateActivity: (nodeId: string) => void;
-  onEditActivity: (activity: Article) => void;
+  onCreateActivity: (nodeId: string, topic: Topic) => void;
+  onEditActivity: (activity: Article, topic: Topic) => void;
 }
 
 export function CurriculumTreeView({
@@ -114,8 +114,8 @@ export function CurriculumTreeView({
               onAddNode={() => onCreateNode(topic.id)}
               onEditNode={onEditNode}
               onDeleteNode={(nodeId) => deleteNode({ curriculumId, topicId: topic.id, nodeId })}
-              onAddActivity={onCreateActivity}
-              onEditActivity={onEditActivity}
+              onAddActivity={(nodeId) => onCreateActivity(nodeId, topic)}
+              onEditActivity={(activity) => onEditActivity(activity, topic)}
             />
           ))}
 

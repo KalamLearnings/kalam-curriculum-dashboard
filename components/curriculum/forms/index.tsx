@@ -3,7 +3,7 @@ import { IntroActivityForm } from './IntroActivityForm';
 import { PresentationActivityForm } from './PresentationActivityForm';
 import { TapActivityForm } from './TapActivityForm';
 import { WriteActivityForm } from './WriteActivityForm';
-import { NameBuilderActivityForm } from './NameBuilderActivityForm';
+import { BuildWordFromLettersForm } from './BuildWordFromLettersForm';
 import { BalloonActivityForm } from './BalloonActivityForm';
 import { MultipleChoiceActivityForm } from './MultipleChoiceActivityForm';
 import { DragDropActivityForm } from './DragDropActivityForm';
@@ -14,18 +14,16 @@ import type { ArticleType } from '@/lib/schemas/curriculum';
 
 // Map of activity types to their form components
 export const activityFormComponents: Record<ArticleType, React.ComponentType<BaseActivityFormProps>> = {
-  intro: IntroActivityForm,
-  presentation: PresentationActivityForm,
-  tap: TapActivityForm,
-  write: WriteActivityForm,
-  word_builder: NameBuilderActivityForm,
-  name_builder: NameBuilderActivityForm,
-  balloon: BalloonActivityForm,
-  multiple_choice: MultipleChoiceActivityForm,
-  drag_drop: DragDropActivityForm,
-  fishing: FishingActivityForm,
-  pizza: PizzaActivityForm,
-  break: BreakActivityForm,
+  show_letter_or_word: IntroActivityForm,
+  tap_letter_in_word: TapActivityForm,
+  trace_letter: WriteActivityForm,
+  pop_balloons_with_letter: BalloonActivityForm,
+  break_time_minigame: BreakActivityForm,
+  build_word_from_letters: BuildWordFromLettersForm,
+  multiple_choice_question: MultipleChoiceActivityForm,
+  drag_items_to_target: DragDropActivityForm,
+  catch_fish_with_letter: FishingActivityForm,
+  add_pizza_toppings_with_letter: PizzaActivityForm,
 };
 
 // Generic fallback form for activity types without custom forms yet

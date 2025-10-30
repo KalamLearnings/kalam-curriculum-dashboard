@@ -1,12 +1,29 @@
 import { z } from 'zod';
+import {
+  ActivityTypeSchema,
+  LocalizedTextSchema as SharedLocalizedTextSchema,
+  type ActivityType,
+  TapLetterInWordConfigSchema,
+  ShowLetterOrWordConfigSchema,
+  TraceLetterConfigSchema,
+  PopBalloonsWithLetterConfigSchema,
+  BreakTimeMiniGameConfigSchema,
+  BuildWordFromLettersConfigSchema,
+  MultipleChoiceQuestionConfigSchema,
+  DragItemsToTargetConfigSchema,
+  CatchFishWithLetterConfigSchema,
+  AddPizzaToppingsWithLetterConfigSchema,
+} from '@kalam/curriculum-schemas';
 
 // ============================================================================
 // BASE SCHEMAS
 // ============================================================================
 
-export const LocalizedTextSchema = z.object({
+// Re-export shared LocalizedTextSchema with dashboard-specific validation
+// Arabic text is optional - only English is required
+export const LocalizedTextSchema = SharedLocalizedTextSchema.extend({
   en: z.string().min(1, 'English text required'),
-  ar: z.string().min(1, 'Arabic text required'),
+  ar: z.string().optional(),
 });
 
 export const LetterSchema = z.object({
@@ -15,20 +32,8 @@ export const LetterSchema = z.object({
   name_arabic: z.string().optional(),
 });
 
-export const ArticleTypeSchema = z.enum([
-  'intro',
-  'presentation',
-  'tap',
-  'write',
-  'word_builder',
-  'name_builder',
-  'balloon',
-  'multiple_choice',
-  'drag_drop',
-  'fishing',
-  'pizza',
-  'break',
-]);
+// Use shared ActivityTypeSchema
+export const ArticleTypeSchema = ActivityTypeSchema;
 
 // ============================================================================
 // CURRICULUM
@@ -55,17 +60,16 @@ export const UpdateCurriculumSchema = CreateCurriculumSchema.partial();
 export const TopicSchema = z.object({
   id: z.string().uuid(),
   curriculum_id: z.string().uuid(),
-  letter_id: z.string(),
-  letter: LetterSchema.optional(),
   sequence_number: z.number().int().positive(),
   title: LocalizedTextSchema,
   description: LocalizedTextSchema.optional(),
+  metadata: z.record(z.any()).optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });
 
 export const CreateTopicSchema = z.object({
-  letter: LetterSchema,
+  letter: LetterSchema.optional(),
   sequence_number: z.number().int().positive().default(1),
   title: LocalizedTextSchema,
   description: LocalizedTextSchema.optional(),
@@ -152,32 +156,19 @@ export const InstantiateTemplateSchema = z.object({
 // ARTICLE (formerly "Activity")
 // ============================================================================
 
-// Config schemas per type
-const TapConfigSchema = z.object({
-  targetWord: z.string().min(1),
-  targetLetter: z.string().length(1),
-  targetCount: z.number().int().positive(),
-});
-
-const MultipleChoiceConfigSchema = z.object({
-  question: LocalizedTextSchema,
-  options: z.array(z.object({
-    id: z.string(),
-    text: LocalizedTextSchema,
-    isCorrect: z.boolean(),
-  })).min(2).max(6),
-});
-
-const WordBuilderConfigSchema = z.object({
-  targetWord: z.string().min(1),
-  scrambledLetters: z.array(z.string().length(1)),
-});
-
+// Use shared config schemas for validation
 export const ArticleConfigSchema = z.union([
-  TapConfigSchema,
-  MultipleChoiceConfigSchema,
-  WordBuilderConfigSchema,
-  z.object({}), // Empty config for intro/break
+  ShowLetterOrWordConfigSchema,
+  TapLetterInWordConfigSchema,
+  TraceLetterConfigSchema,
+  PopBalloonsWithLetterConfigSchema,
+  BreakTimeMiniGameConfigSchema,
+  BuildWordFromLettersConfigSchema,
+  MultipleChoiceQuestionConfigSchema,
+  DragItemsToTargetConfigSchema,
+  CatchFishWithLetterConfigSchema,
+  AddPizzaToppingsWithLetterConfigSchema,
+  z.object({}), // Empty config fallback for partial data
 ]);
 
 export const ArticleSchema = z.object({
@@ -197,6 +188,7 @@ export const CreateArticleSchema = z.object({
   instruction: LocalizedTextSchema,
   config: ArticleConfigSchema,
   template_id: z.string().optional(),
+  sequence_number: z.number().int().positive().optional(),
 });
 
 export const UpdateArticleSchema = CreateArticleSchema.partial();
@@ -238,7 +230,8 @@ export type InstantiateTemplate = z.infer<typeof InstantiateTemplateSchema>;
 export type Article = z.infer<typeof ArticleSchema>;
 export type CreateArticle = z.infer<typeof CreateArticleSchema>;
 export type UpdateArticle = z.infer<typeof UpdateArticleSchema>;
-export type ArticleType = z.infer<typeof ArticleTypeSchema>;
+// Re-export shared ActivityType as ArticleType for backward compatibility
+export type ArticleType = ActivityType;
 
 export type ReorderItem = z.infer<typeof ReorderItemSchema>;
 export type BatchReorder = z.infer<typeof BatchReorderSchema>;

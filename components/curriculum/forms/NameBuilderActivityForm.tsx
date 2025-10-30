@@ -1,12 +1,12 @@
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, NumberInput } from './FormField';
+import { FormField, TextInput } from './FormField';
 
 export function NameBuilderActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const letterBankSize = config?.letterBankSize || 8;
-  const showHints = config?.showHints ?? true;
+  const targetWord = config?.targetWord || '';
+  const showConnectedForm = config?.showConnectedForm ?? true;
+  const highlightCorrectPositions = config?.highlightCorrectPositions ?? true;
   const scrambleLetters = config?.scrambleLetters ?? true;
-  const maxAttempts = config?.maxAttempts || 5;
 
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });
@@ -14,25 +14,40 @@ export function NameBuilderActivityForm({ config, onChange }: BaseActivityFormPr
 
   return (
     <div className="space-y-4">
-      <FormField label="Letter Bank Size" hint="Number of letters in the pool (default: 8)">
-        <NumberInput
-          value={letterBankSize}
-          onChange={(value) => updateConfig({ letterBankSize: value })}
-          min={4}
-          max={15}
+
+      <FormField label="Target Word" hint="The word to build (Arabic)" required>
+        <TextInput
+          value={targetWord}
+          onChange={(value) => updateConfig({ targetWord: value })}
+          placeholder="كلمة"
+          dir="rtl"
         />
       </FormField>
 
-      <FormField label="Show Hints" hint="Display visual hints for correct placement">
+      <FormField label="Show Connected Form" hint="Display how letters connect">
         <div className="flex items-center">
           <input
             type="checkbox"
-            checked={showHints}
-            onChange={(e) => updateConfig({ showHints: e.target.checked })}
+            checked={showConnectedForm}
+            onChange={(e) => updateConfig({ showConnectedForm: e.target.checked })}
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <label className="ml-2 text-sm text-gray-700">
-            Enable hint display
+            Show connected form
+          </label>
+        </div>
+      </FormField>
+
+      <FormField label="Highlight Correct Positions" hint="Highlight correct drop zones">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={highlightCorrectPositions}
+            onChange={(e) => updateConfig({ highlightCorrectPositions: e.target.checked })}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label className="ml-2 text-sm text-gray-700">
+            Enable position highlighting
           </label>
         </div>
       </FormField>
@@ -49,14 +64,6 @@ export function NameBuilderActivityForm({ config, onChange }: BaseActivityFormPr
             Randomize letter positions
           </label>
         </div>
-      </FormField>
-
-      <FormField label="Max Attempts" hint="Maximum number of attempts allowed (default: 5)">
-        <NumberInput
-          value={maxAttempts}
-          onChange={(value) => updateConfig({ maxAttempts: value })}
-          min={1}
-        />
       </FormField>
     </div>
   );

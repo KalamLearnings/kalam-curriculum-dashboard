@@ -3,11 +3,28 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useUpdateCurriculum, useDeleteCurriculum } from '@/lib/hooks/useCurriculum';
+import { EditCurriculumModal } from '@/components/curriculum/EditCurriculumModal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { CurriculumFormData } from '@/components/curriculum/CurriculumForm';
+import { toast } from 'sonner';
 
 export default function CurriculaPage() {
   const [curricula, setCurricula] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [curriculumToEdit, setCurriculumToEdit] = useState<any>(null);
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [curriculumToDelete, setCurriculumToDelete] = useState<any>(null);
+
+  // Hooks
+  const { mutate: updateCurriculum, isPending: isUpdating } = useUpdateCurriculum();
+  const { mutate: deleteCurriculum, isPending: isDeleting } = useDeleteCurriculum();
 
   useEffect(() => {
     const supabase = createClient();
@@ -39,6 +56,69 @@ export default function CurriculaPage() {
 
     loadCurricula();
   }, []);
+
+  // Handle edit
+  const handleEditClick = (curriculum: any) => {
+    setCurriculumToEdit(curriculum);
+    setEditModalOpen(true);
+  };
+
+  const handleUpdate = async (data: CurriculumFormData) => {
+    if (!curriculumToEdit) return;
+
+    updateCurriculum(
+      {
+        id: curriculumToEdit.id,
+        data: {
+          title: {
+            en: data.titleEn,
+            ar: data.titleAr,
+          },
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success('Curriculum updated successfully!');
+          setEditModalOpen(false);
+          setCurriculumToEdit(null);
+          // Reload curricula
+          setCurricula(prev =>
+            prev.map(c =>
+              c.id === curriculumToEdit.id
+                ? { ...c, title: { en: data.titleEn, ar: data.titleAr } }
+                : c
+            )
+          );
+        },
+        onError: (error: any) => {
+          toast.error(error.message || 'Failed to update curriculum');
+        },
+      }
+    );
+  };
+
+  // Handle delete
+  const handleDeleteClick = (curriculum: any) => {
+    setCurriculumToDelete(curriculum);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!curriculumToDelete) return;
+
+    deleteCurriculum(curriculumToDelete.id, {
+      onSuccess: () => {
+        toast.success('Curriculum deleted successfully!');
+        setDeleteConfirmOpen(false);
+        setCurriculumToDelete(null);
+        // Remove from list
+        setCurricula(prev => prev.filter(c => c.id !== curriculumToDelete.id));
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to delete curriculum');
+      },
+    });
+  };
 
   if (loading) {
     return (
@@ -95,7 +175,7 @@ export default function CurriculaPage() {
                 {curricula.map((curriculum) => (
                   <tr
                     key={curriculum.id}
-                    onClick={() => router.push(`/curricula/${curriculum.id}?title=${encodeURIComponent(curriculum.title?.en || 'Curriculum')}`)}
+                    onClick={() => router.push(`/curricula/${curriculum.id}/builder?title=${encodeURIComponent(curriculum.title?.en || 'Curriculum')}`)}
                     className="cursor-pointer hover:bg-gray-50"
                   >
                     <td className="px-6 py-4 text-sm text-gray-900">{curriculum.id}</td>
@@ -117,18 +197,20 @@ export default function CurriculaPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/curricula/${curriculum.id}/edit`);
+                          handleEditClick(curriculum);
                         }}
                         className="text-blue-600 hover:text-blue-700 mr-4"
+                        disabled={isUpdating}
                       >
                         Edit
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // TODO: Implement delete
+                          handleDeleteClick(curriculum);
                         }}
                         className="text-red-600 hover:text-red-700"
+                        disabled={isDeleting}
                       >
                         Delete
                       </button>
@@ -139,6 +221,33 @@ export default function CurriculaPage() {
             </table>
           </div>
         )}
+
+        {/* Edit Modal */}
+        {curriculumToEdit && (
+          <EditCurriculumModal
+            isOpen={editModalOpen}
+            onClose={() => {
+              setEditModalOpen(false);
+              setCurriculumToEdit(null);
+            }}
+            curriculum={curriculumToEdit}
+            onUpdate={handleUpdate}
+          />
+        )}
+
+        {/* Delete Confirmation */}
+        <ConfirmationModal
+          isOpen={deleteConfirmOpen}
+          onClose={() => {
+            setDeleteConfirmOpen(false);
+            setCurriculumToDelete(null);
+          }}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Curriculum"
+          message={`Are you sure you want to delete "${curriculumToDelete?.title?.en || 'this curriculum'}"? This action cannot be undone.`}
+          confirmText="Delete"
+          confirmVariant="danger"
+        />
       </main>
   );
 }

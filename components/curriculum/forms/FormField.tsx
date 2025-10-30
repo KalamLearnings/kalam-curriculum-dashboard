@@ -26,9 +26,10 @@ interface TextInputProps {
   required?: boolean;
   dir?: 'ltr' | 'rtl';
   type?: 'text' | 'number';
+  maxLength?: number;
 }
 
-export function TextInput({ value, onChange, placeholder, required, dir, type = 'text' }: TextInputProps) {
+export function TextInput({ value, onChange, placeholder, required, dir, type = 'text', maxLength }: TextInputProps) {
   return (
     <input
       type={type}
@@ -37,6 +38,7 @@ export function TextInput({ value, onChange, placeholder, required, dir, type = 
       onChange={(e) => onChange(e.target.value)}
       dir={dir}
       placeholder={placeholder}
+      maxLength={maxLength}
       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     />
   );

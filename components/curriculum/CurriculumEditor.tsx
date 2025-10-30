@@ -259,14 +259,16 @@ export function CurriculumEditor({ curriculumId, viewMode = 'tree' }: Curriculum
                 setSelectedTopic({ id: topicId } as Topic);
                 setNodeModalOpen(true);
               }}
-              onCreateActivity={(nodeId) => {
+              onCreateActivity={(nodeId, topic) => {
                 setEditingActivity(null);
                 setSelectedNode({ id: nodeId } as Node);
+                setSelectedTopic(topic);
                 setActivityModalOpen(true);
               }}
-              onEditActivity={(activity) => {
+              onEditActivity={(activity, topic) => {
                 setEditingActivity(activity);
                 setSelectedNode({ id: activity.node_id } as Node);
+                setSelectedTopic(topic);
                 setActivityModalOpen(true);
               }}
             />
@@ -306,6 +308,8 @@ export function CurriculumEditor({ curriculumId, viewMode = 'tree' }: Curriculum
             }}
             curriculumId={curriculumId}
             nodeId={selectedNode.id}
+            node={selectedNode}
+            topic={selectedTopic}
             activity={editingActivity}
           />
         )}
