@@ -1,6 +1,7 @@
 [build]
-  command = "npm run build"
-  publish = ".next"
+  base = ".."
+  command = "cd packages/curriculum-schemas && npm install && npm run build && cd ../../kalam-curriculum-dashboard && npm install && npm run build"
+  publish = "kalam-curriculum-dashboard/.next"
 
 [build.environment]
   NODE_VERSION = "20"
