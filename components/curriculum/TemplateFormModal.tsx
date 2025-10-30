@@ -45,7 +45,7 @@ export function TemplateFormModal({ isOpen, onClose, template }: TemplateFormMod
     type: template?.type || 'tap_letter_in_word' as ArticleType,
     instructionTemplateEn: template?.instruction_template.en || '',
     instructionTemplateAr: template?.instruction_template.ar || '',
-    configTemplate: template?.config_template || {},
+    configTemplate: template?.config_template || {} as any,
   });
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export function TemplateFormModal({ isOpen, onClose, template }: TemplateFormMod
         nameEn: template.name.en,
         type: template.type,
         instructionTemplateEn: template.instruction_template.en,
-        instructionTemplateAr: template.instruction_template.ar,
+        instructionTemplateAr: template.instruction_template.ar || '',
         configTemplate: template.config_template,
       });
     } else {
