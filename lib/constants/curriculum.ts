@@ -8,7 +8,7 @@ import type { ArticleType } from '@/lib/schemas/curriculum';
  * Activity type definitions with labels
  */
 export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
-  { value: 'show_letter_or_word', label: 'Show Single Letter or Word' },
+  { value: 'show_letter_or_word', label: 'Show Letter/Word/Image' },
   { value: 'tap_letter_in_word', label: 'Tap Target Letters in Word' },
   { value: 'trace_letter', label: 'Letter Tracing' },
   { value: 'pop_balloons_with_letter', label: 'Pop Balloons with Target Letter' },

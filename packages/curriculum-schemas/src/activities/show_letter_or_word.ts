@@ -1,7 +1,7 @@
 /**
  * Show Letter or Word Activity
  *
- * Displays a single Arabic letter or word to the student with fade-in animations.
+ * Displays a single Arabic letter, word, or image to the student with fade-in animations.
  * Used for introducing new content before interactive activities.
  *
  * @example Letter Mode
@@ -28,6 +28,20 @@
  *   }
  * }
  * ```
+ *
+ * @example Image Mode
+ * ```
+ * {
+ *   type: 'show_letter_or_word',
+ *   config: {
+ *     contentType: 'image',
+ *     image: 'https://example.com/cow.png',
+ *     imageWidth: 400,
+ *     imageHeight: 400,
+ *     autoAdvance: false
+ *   }
+ * }
+ * ```
  */
 
 import { z } from 'zod';
@@ -37,8 +51,8 @@ import { BaseActivitySchema, ArabicLetterSchema, ArabicTextSchema, DurationMsSch
  * Configuration for Show Letter or Word activity
  */
 export const ShowLetterOrWordConfigSchema = z.object({
-  contentType: z.enum(['letter', 'word'])
-    .describe('Whether to show a single letter or a word'),
+  contentType: z.enum(['letter', 'word', 'image'])
+    .describe('Whether to show a single letter, word, or image'),
 
   letter: ArabicLetterSchema
     .optional()
@@ -47,6 +61,18 @@ export const ShowLetterOrWordConfigSchema = z.object({
   word: ArabicTextSchema
     .optional()
     .describe('Single Arabic word to display (required if contentType is "word")'),
+
+  image: z.string().url()
+    .optional()
+    .describe('Image URL to display (required if contentType is "image")'),
+
+  imageWidth: z.number().positive()
+    .optional()
+    .describe('Optional width for image in pixels'),
+
+  imageHeight: z.number().positive()
+    .optional()
+    .describe('Optional height for image in pixels'),
 
   autoAdvance: z.boolean()
     .default(false)
@@ -63,10 +89,13 @@ export const ShowLetterOrWordConfigSchema = z.object({
     if (data.contentType === 'word') {
       return data.word !== undefined && data.word.length > 0;
     }
+    if (data.contentType === 'image') {
+      return data.image !== undefined && data.image.length > 0;
+    }
     return false;
   },
   {
-    message: 'Must provide letter when contentType is "letter", or word when contentType is "word"',
+    message: 'Must provide letter when contentType is "letter", word when contentType is "word", or image URL when contentType is "image"',
     path: ['contentType'],
   }
 );

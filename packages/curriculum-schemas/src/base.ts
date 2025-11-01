@@ -65,7 +65,7 @@ export type ActivityType = z.infer<typeof ActivityTypeSchema>;
  * Used in UI dropdowns and displays
  */
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
-  show_letter_or_word: 'Show Single Letter or Word',
+  show_letter_or_word: 'Show Letter/Word/Image',
   tap_letter_in_word: 'Tap Target Letters in Word',
   trace_letter: 'Guided Letter Tracing',
   pop_balloons_with_letter: 'Pop Balloons with Target Letter',

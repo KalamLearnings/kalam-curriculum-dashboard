@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Save, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { useCurriculum } from '@/lib/hooks/useCurriculum';
-import { useTopics } from '@/lib/hooks/useTopics';
-import { useNodes } from '@/lib/hooks/useNodes';
-import { useActivities, useUpdateActivity, useCreateActivity } from '@/lib/hooks/useActivities';
+import { useTopics, useDeleteTopic } from '@/lib/hooks/useTopics';
+import { useNodes, useDeleteNode } from '@/lib/hooks/useNodes';
+import { useActivities, useUpdateActivity, useCreateActivity, useDeleteActivity } from '@/lib/hooks/useActivities';
 import { useAudioGeneration } from '@/lib/hooks/useAudioGeneration';
 import { EmptyState } from '@/components/curriculum/shared/EmptyState';
 import { InstructionFieldWithAudio } from '@/components/curriculum/shared/InstructionFieldWithAudio';
@@ -62,6 +62,9 @@ export default function CurriculumBuilderPage() {
   const { data: activities } = useActivities(curriculumId, selectedNodeId);
   const { mutate: updateActivity, isPending: isUpdating } = useUpdateActivity();
   const { mutate: createActivity, isPending: isCreating } = useCreateActivity();
+  const { mutate: deleteTopic } = useDeleteTopic();
+  const { mutate: deleteNode } = useDeleteNode();
+  const { mutate: deleteActivity } = useDeleteActivity();
 
   // Get current activity
   const currentActivity = activities?.find(a => a.id === selectedActivityId);
@@ -326,6 +329,7 @@ export default function CurriculumBuilderPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: Navigation Tree */}
         <CurriculumTree
+          curriculumId={curriculumId}
           topics={topics}
           nodes={nodes}
           activities={activities}
@@ -347,6 +351,28 @@ export default function CurriculumBuilderPage() {
           onAddActivity={(nodeId) => {
             setSelectedNodeId(nodeId);
             setActivityModalOpen(true);
+          }}
+          onDeleteTopic={(topicId) => {
+            deleteTopic({ curriculumId, topicId });
+            if (selectedTopicId === topicId) {
+              setSelectedTopicId(null);
+              setSelectedNodeId(null);
+              setSelectedActivityId(null);
+            }
+          }}
+          onDeleteNode={(topicId, nodeId) => {
+            deleteNode({ curriculumId, topicId, nodeId });
+            if (selectedNodeId === nodeId) {
+              setSelectedNodeId(null);
+              setSelectedActivityId(null);
+            }
+          }}
+          onDeleteActivity={(nodeId, activityId) => {
+            deleteActivity({ curriculumId, nodeId, activityId });
+            if (selectedActivityId === activityId) {
+              setSelectedActivityId(null);
+              setIsCreatingNew(false);
+            }
           }}
         />
 
