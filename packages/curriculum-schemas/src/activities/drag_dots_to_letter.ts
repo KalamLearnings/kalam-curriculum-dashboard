@@ -17,7 +17,7 @@
  */
 
 import { z } from 'zod';
-import { BaseActivitySchema, ArabicLetterSchema, LetterPositionSchema } from '../base';
+import { BaseActivitySchema, LetterPositionSchema } from '../base';
 
 /**
  * Letters that are supported for this activity (letters with dots)

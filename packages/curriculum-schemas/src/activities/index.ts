@@ -18,8 +18,25 @@ export * from './multiple_choice_question';
 export * from './drag_items_to_target';
 export * from './catch_fish_with_letter';
 export * from './add_pizza_toppings_with_letter';
-export * from './drag_dots_to_letter';
-export * from './tap_dot_position';
+
+// Export with specific exports to avoid SUPPORTED_DOTTED_LETTERS conflict
+export {
+  DragDotsToLetterConfigSchema,
+  DragDotsToLetterActivitySchema,
+  type DragDotsToLetterConfig,
+  type DragDotsToLetterActivity,
+} from './drag_dots_to_letter';
+
+export {
+  TapDotPositionConfigSchema,
+  TapDotPositionActivitySchema,
+  DOT_POSITIONS,
+  type DotPosition,
+  type TapDotPositionConfig,
+  type TapDotPositionActivity,
+  SUPPORTED_DOTTED_LETTERS,
+} from './tap_dot_position';
+
 export * from './activity_request';
 
 // Import schemas for discriminated union

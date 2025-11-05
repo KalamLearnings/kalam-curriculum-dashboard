@@ -107,6 +107,9 @@ export function isValidActivityType(type: string): type is ActivityType {
     'catch_fish_with_letter',
     'add_pizza_toppings_with_letter',
     'build_word_from_letters',
+    'drag_dots_to_letter',
+    'tap_dot_position',
+    'activity_request',
   ];
 
   return validTypes.includes(type as ActivityType);
@@ -129,6 +132,9 @@ export function getActivityCategory(type: ActivityType): string {
     catch_fish_with_letter: 'Game',
     add_pizza_toppings_with_letter: 'Game',
     build_word_from_letters: 'Interactive',
+    drag_dots_to_letter: 'Interactive',
+    tap_dot_position: 'Assessment',
+    activity_request: 'Other',
   };
 
   return categories[type];
@@ -151,6 +157,9 @@ export function getEstimatedDuration(type: ActivityType): number {
     catch_fish_with_letter: 60,
     add_pizza_toppings_with_letter: 45,
     build_word_from_letters: 90,
+    drag_dots_to_letter: 45,
+    tap_dot_position: 20,
+    activity_request: 0,
   };
 
   return durations[type];
@@ -278,6 +287,20 @@ export function createDefaultConfig(type: ActivityType): Record<string, any> {
       highlightCorrectPositions: true,
       scrambleLetters: true,
       showWordMeaning: false,
+    },
+    drag_dots_to_letter: {
+      targetLetter: 'ب',
+      position: 'isolated',
+      distractorDotsCount: 0,
+    },
+    tap_dot_position: {
+      targetLetter: 'ب',
+      position: 'isolated',
+      distractorPositions: [],
+    },
+    activity_request: {
+      description: '',
+      notes: '',
     },
   };
 
