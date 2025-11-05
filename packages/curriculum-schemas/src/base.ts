@@ -56,6 +56,9 @@ export const ActivityTypeSchema = z.enum([
   'catch_fish_with_letter',
   'add_pizza_toppings_with_letter',
   'build_word_from_letters',
+  'drag_dots_to_letter',
+  'tap_dot_position',
+  'activity_request',
 ]);
 
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;
@@ -75,6 +78,9 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   catch_fish_with_letter: 'Catch Fish with Target Letter',
   add_pizza_toppings_with_letter: 'Add Pizza Toppings with Letter',
   build_word_from_letters: 'Build Word from Letters',
+  drag_dots_to_letter: 'Drag Dots to Letter',
+  tap_dot_position: 'Tap Correct Dot Position',
+  activity_request: 'Activity Request (Not Implemented)',
 };
 
 // ============================================================================

@@ -115,6 +115,27 @@ export {
   type PizzaTopping,
   type AddPizzaToppingsWithLetterConfig,
   type AddPizzaToppingsWithLetterActivity,
+
+  // Drag Dots to Letter
+  DragDotsToLetterConfigSchema,
+  DragDotsToLetterActivitySchema,
+  type DragDotsToLetterConfig,
+  type DragDotsToLetterActivity,
+
+  // Tap Dot Position
+  TapDotPositionConfigSchema,
+  TapDotPositionActivitySchema,
+  type TapDotPositionConfig,
+  type TapDotPositionActivity,
+
+  // Activity Request
+  ActivityRequestConfigSchema,
+  ActivityRequestActivitySchema,
+  type ActivityRequestConfig,
+  type ActivityRequestActivity,
+
+  // Shared constants
+  SUPPORTED_DOTTED_LETTERS,
 } from './activities/index';
 
 // ============================================================================

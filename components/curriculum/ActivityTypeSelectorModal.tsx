@@ -29,6 +29,9 @@ const activityTypes: Array<{
     'build_word_from_letters',
     'multiple_choice_question',
     'catch_fish_with_letter',
+    'drag_dots_to_letter',
+    'tap_dot_position',
+    'activity_request',
   ].includes(value),
 }));
 

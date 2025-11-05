@@ -18,6 +18,9 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'drag_items_to_target', label: 'Drag Items to Correct Targets' },
   { value: 'catch_fish_with_letter', label: 'Catch Fish with Target Letter' },
   { value: 'add_pizza_toppings_with_letter', label: 'Add Pizza Toppings with Letter' },
+  { value: 'drag_dots_to_letter', label: 'Drag Dots to Letter' },
+  { value: 'tap_dot_position', label: 'Tap Correct Dot Position' },
+  { value: 'activity_request', label: 'Activity Request (Not Implemented)' },
 ];
 
 /**
@@ -34,6 +37,9 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   drag_items_to_target: '🎯',
   catch_fish_with_letter: '🎣',
   add_pizza_toppings_with_letter: '🍕',
+  drag_dots_to_letter: '⚫',
+  tap_dot_position: '🎯',
+  activity_request: '💡',
 };
 
 /**

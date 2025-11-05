@@ -18,6 +18,9 @@ export * from './multiple_choice_question';
 export * from './drag_items_to_target';
 export * from './catch_fish_with_letter';
 export * from './add_pizza_toppings_with_letter';
+export * from './drag_dots_to_letter';
+export * from './tap_dot_position';
+export * from './activity_request';
 
 // Import schemas for discriminated union
 import { ShowLetterOrWordActivitySchema } from './show_letter_or_word';
@@ -30,6 +33,9 @@ import { MultipleChoiceQuestionActivitySchema } from './multiple_choice_question
 import { DragItemsToTargetActivitySchema } from './drag_items_to_target';
 import { CatchFishWithLetterActivitySchema } from './catch_fish_with_letter';
 import { AddPizzaToppingsWithLetterActivitySchema } from './add_pizza_toppings_with_letter';
+import { DragDotsToLetterActivitySchema } from './drag_dots_to_letter';
+import { TapDotPositionActivitySchema } from './tap_dot_position';
+import { ActivityRequestActivitySchema } from './activity_request';
 
 // Import config schemas for helper function
 import { ShowLetterOrWordConfigSchema } from './show_letter_or_word';
@@ -42,6 +48,9 @@ import { MultipleChoiceQuestionConfigSchema } from './multiple_choice_question';
 import { DragItemsToTargetConfigSchema } from './drag_items_to_target';
 import { CatchFishWithLetterConfigSchema } from './catch_fish_with_letter';
 import { AddPizzaToppingsWithLetterConfigSchema } from './add_pizza_toppings_with_letter';
+import { DragDotsToLetterConfigSchema } from './drag_dots_to_letter';
+import { TapDotPositionConfigSchema } from './tap_dot_position';
+import { ActivityRequestConfigSchema } from './activity_request';
 
 import type { ActivityType } from '../base';
 
@@ -70,6 +79,9 @@ export const ActivitySchema = z.discriminatedUnion('type', [
   DragItemsToTargetActivitySchema,
   CatchFishWithLetterActivitySchema,
   AddPizzaToppingsWithLetterActivitySchema,
+  DragDotsToLetterActivitySchema,
+  TapDotPositionActivitySchema,
+  ActivityRequestActivitySchema,
 ]);
 
 export type Activity = z.infer<typeof ActivitySchema>;
@@ -88,6 +100,9 @@ const ACTIVITY_CONFIG_SCHEMAS = {
   drag_items_to_target: DragItemsToTargetConfigSchema,
   catch_fish_with_letter: CatchFishWithLetterConfigSchema,
   add_pizza_toppings_with_letter: AddPizzaToppingsWithLetterConfigSchema,
+  drag_dots_to_letter: DragDotsToLetterConfigSchema,
+  tap_dot_position: TapDotPositionConfigSchema,
+  activity_request: ActivityRequestConfigSchema,
 } as const;
 
 /**

@@ -10,6 +10,9 @@ import { DragDropActivityForm } from './DragDropActivityForm';
 import { FishingActivityForm } from './FishingActivityForm';
 import { PizzaActivityForm } from './PizzaActivityForm';
 import { BreakActivityForm } from './BreakActivityForm';
+import { DragDotsToLetterForm } from './DragDotsToLetterForm';
+import { TapDotPositionForm } from './TapDotPositionForm';
+import { ActivityRequestForm } from './ActivityRequestForm';
 import type { ArticleType } from '@/lib/schemas/curriculum';
 
 // Map of activity types to their form components
@@ -24,6 +27,9 @@ export const activityFormComponents: Record<ArticleType, React.ComponentType<Bas
   drag_items_to_target: DragDropActivityForm,
   catch_fish_with_letter: FishingActivityForm,
   add_pizza_toppings_with_letter: PizzaActivityForm,
+  drag_dots_to_letter: DragDotsToLetterForm,
+  tap_dot_position: TapDotPositionForm,
+  activity_request: ActivityRequestForm,
 };
 
 // Generic fallback form for activity types without custom forms yet

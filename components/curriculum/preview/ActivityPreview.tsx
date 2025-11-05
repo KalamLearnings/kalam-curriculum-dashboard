@@ -16,6 +16,9 @@ import { BreakTimePreview } from './activities/BreakTimePreview';
 import { BuildWordFromLettersPreview } from './activities/BuildWordFromLettersPreview';
 import { MultipleChoicePreview } from './activities/MultipleChoicePreview';
 import { CatchFishPreview } from './activities/CatchFishPreview';
+import { DragDotsToLetterPreview } from './activities/DragDotsToLetterPreview';
+import { TapDotPositionPreview } from './activities/TapDotPositionPreview';
+import { ActivityRequestPreview } from './activities/ActivityRequestPreview';
 import { PlaceholderPreview } from './activities/PlaceholderPreview';
 
 interface ActivityPreviewProps {
@@ -45,6 +48,12 @@ export function ActivityPreview({ type, instruction, config }: ActivityPreviewPr
       return <MultipleChoicePreview {...previewProps} />;
     case 'catch_fish_with_letter':
       return <CatchFishPreview {...previewProps} />;
+    case 'drag_dots_to_letter':
+      return <DragDotsToLetterPreview {...previewProps} />;
+    case 'tap_dot_position':
+      return <TapDotPositionPreview {...previewProps} />;
+    case 'activity_request':
+      return <ActivityRequestPreview {...previewProps} />;
     default:
       return <PlaceholderPreview type={type} />;
   }
