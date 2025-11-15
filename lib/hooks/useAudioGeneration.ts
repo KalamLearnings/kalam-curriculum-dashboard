@@ -74,7 +74,8 @@ export function useAudioGeneration({
 
     setIsGenerating(true);
     try {
-      const { supabase } = await import('@/lib/supabase');
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
