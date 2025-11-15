@@ -76,7 +76,12 @@ export function useAudioGeneration({
     try {
       const { supabase } = await import('@/lib/supabase');
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in.');
+      }
+
+      const token = session.access_token;
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/tts`, {
         method: 'POST',
