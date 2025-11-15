@@ -101,7 +101,8 @@ export function useAudioGeneration({
         throw new Error(error.error || 'Failed to generate audio');
       }
 
-      const data = await response.json();
+      const responseData = await response.json();
+      const data = responseData.data || responseData; // Handle both wrapped and unwrapped responses
 
       // Convert base64 to blob
       const binaryString = atob(data.audio_data);
