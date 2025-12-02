@@ -9,6 +9,11 @@ import { z } from 'zod';
 
 // Export all individual activity schemas and types
 export * from './show_letter_or_word';
+export * from './LetterRainConfig';
+export * from './audio_letter_match';
+export * from './memory_card_match';
+export * from './color_letter';
+export * from './letter_discrimination';
 export * from './tap_letter_in_word';
 export * from './trace_letter';
 export * from './pop_balloons_with_letter';
@@ -41,6 +46,11 @@ export * from './activity_request';
 
 // Import schemas for discriminated union
 import { ShowLetterOrWordActivitySchema } from './show_letter_or_word';
+import { LetterRainActivitySchema } from './LetterRainConfig';
+import { AudioLetterMatchActivitySchema } from './audio_letter_match';
+import { MemoryCardMatchActivitySchema } from './memory_card_match';
+import { ColorLetterActivitySchema } from './color_letter';
+import { LetterDiscriminationActivitySchema } from './letter_discrimination';
 import { TapLetterInWordActivitySchema } from './tap_letter_in_word';
 import { TraceLetterActivitySchema } from './trace_letter';
 import { PopBalloonsWithLetterActivitySchema } from './pop_balloons_with_letter';
@@ -56,6 +66,11 @@ import { ActivityRequestActivitySchema } from './activity_request';
 
 // Import config schemas for helper function
 import { ShowLetterOrWordConfigSchema } from './show_letter_or_word';
+import { LetterRainConfigSchema } from './LetterRainConfig';
+import { AudioLetterMatchConfigSchema } from './audio_letter_match';
+import { MemoryCardMatchConfigSchema } from './memory_card_match';
+import { ColorLetterConfigSchema } from './color_letter';
+import { LetterDiscriminationConfigSchema } from './letter_discrimination';
 import { TapLetterInWordConfigSchema } from './tap_letter_in_word';
 import { TraceLetterConfigSchema } from './trace_letter';
 import { PopBalloonsWithLetterConfigSchema } from './pop_balloons_with_letter';
@@ -99,6 +114,11 @@ export const ActivitySchema = z.discriminatedUnion('type', [
   DragDotsToLetterActivitySchema,
   TapDotPositionActivitySchema,
   ActivityRequestActivitySchema,
+  LetterRainActivitySchema,
+  AudioLetterMatchActivitySchema,
+  MemoryCardMatchActivitySchema,
+  ColorLetterActivitySchema,
+  LetterDiscriminationActivitySchema,
 ]);
 
 export type Activity = z.infer<typeof ActivitySchema>;
@@ -120,6 +140,11 @@ const ACTIVITY_CONFIG_SCHEMAS = {
   drag_dots_to_letter: DragDotsToLetterConfigSchema,
   tap_dot_position: TapDotPositionConfigSchema,
   activity_request: ActivityRequestConfigSchema,
+  letter_rain: LetterRainConfigSchema,
+  audio_letter_match: AudioLetterMatchConfigSchema,
+  memory_card_match: MemoryCardMatchConfigSchema,
+  color_letter: ColorLetterConfigSchema,
+  letter_discrimination: LetterDiscriminationConfigSchema,
 } as const;
 
 /**

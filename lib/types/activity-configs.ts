@@ -142,6 +142,64 @@ export interface AddPizzaToppingsWithLetterConfig {
 }
 
 /**
+ * Letter Rain Activity Config
+ */
+export interface LetterRainConfig {
+  targetLetter: string;
+  distractorLetters: string[];
+  targetCount: number;
+  speed?: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+}
+
+
+/**
+ * Audio Letter Match Activity Config
+ */
+export interface AudioLetterMatchConfig {
+  targetLetter: string;
+  distractorLetters: string[];
+  playAudioOnStart?: boolean;
+  allowReplay?: boolean;
+  showLetterNames?: boolean;
+}
+
+/**
+ * Memory Card Match Activity Config
+ */
+export interface MemoryCardMatchConfig {
+  letters: string[];
+  cardCount?: number;
+  matchType?: 'letter_to_letter' | 'letter_to_sound' | 'form_to_form';
+  timeLimit?: number;
+  showHints?: boolean;
+}
+
+/**
+ * Color Letter Activity Config
+ */
+export interface ColorLetterConfig {
+  letter: string;
+  letterForm?: 'isolated' | 'initial' | 'medial' | 'final';
+  colorPalette?: string[];
+  strokeWidth?: number;
+  allowEraser?: boolean;
+  saveDrawing?: boolean;
+}
+
+/**
+ * Letter Discrimination Activity Config
+ */
+export interface LetterDiscriminationConfig {
+  targetLetter: string;
+  confusableLetter: string;
+  prompt: string;
+  showInForm?: 'isolated' | 'initial' | 'medial' | 'final' | 'all';
+  playAudio?: boolean;
+  highlightDifference?: boolean;
+}
+
+/**
  * Union type for all activity configs
  */
 export type ActivityConfig =
@@ -154,7 +212,12 @@ export type ActivityConfig =
   | MultipleChoiceQuestionConfig
   | DragItemsToTargetConfig
   | CatchFishWithLetterConfig
-  | AddPizzaToppingsWithLetterConfig;
+  | AddPizzaToppingsWithLetterConfig
+  | LetterRainConfig
+  | AudioLetterMatchConfig
+  | MemoryCardMatchConfig
+  | ColorLetterConfig
+  | LetterDiscriminationConfig;
 
 /**
  * Mapped type for activity configs by type
@@ -170,6 +233,11 @@ export type ActivityConfigMap = {
   drag_items_to_target: DragItemsToTargetConfig;
   catch_fish_with_letter: CatchFishWithLetterConfig;
   add_pizza_toppings_with_letter: AddPizzaToppingsWithLetterConfig;
+  letter_rain: LetterRainConfig;
+  audio_letter_match: AudioLetterMatchConfig;
+  memory_card_match: MemoryCardMatchConfig;
+  color_letter: ColorLetterConfig;
+  letter_discrimination: LetterDiscriminationConfig;
 };
 
 /**

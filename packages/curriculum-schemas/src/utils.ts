@@ -134,6 +134,11 @@ export function getActivityCategory(type: ActivityType): string {
     build_word_from_letters: 'Interactive',
     drag_dots_to_letter: 'Interactive',
     tap_dot_position: 'Assessment',
+    letter_rain: 'Game',
+    memory_card_match: 'Game',
+    audio_letter_match: 'Recognition',
+    color_letter: 'Writing',
+    letter_discrimination: 'Recognition',
     activity_request: 'Other',
   };
 
@@ -159,6 +164,11 @@ export function getEstimatedDuration(type: ActivityType): number {
     build_word_from_letters: 90,
     drag_dots_to_letter: 45,
     tap_dot_position: 20,
+    letter_rain: 60,
+    memory_card_match: 60,
+    audio_letter_match: 45,
+    color_letter: 60,
+    letter_discrimination: 45,
     activity_request: 0,
   };
 
@@ -297,6 +307,33 @@ export function createDefaultConfig(type: ActivityType): Record<string, any> {
       targetLetter: 'ب',
       position: 'isolated',
       distractorPositions: [],
+    },
+    letter_rain: {
+      targetLetter: 'ب',
+      distractorLetters: ['ت', 'ث'],
+      targetCount: 5,
+      speed: 1.0,
+      difficulty: 'medium',
+    },
+    memory_card_match: {
+      pairs: [],
+      gridSize: '4x4',
+      theme: 'letters',
+    },
+    audio_letter_match: {
+      targetLetter: 'ب',
+      distractorLetters: ['ت', 'ث'],
+      audioUrl: '',
+    },
+    color_letter: {
+      letter: 'ب',
+      palette: ['#FF0000', '#00FF00', '#0000FF'],
+      brushSize: 10,
+    },
+    letter_discrimination: {
+      targetLetter: 'ب',
+      confusableLetters: ['ت', 'ث'],
+      highlightDifference: false,
     },
     activity_request: {
       description: '',

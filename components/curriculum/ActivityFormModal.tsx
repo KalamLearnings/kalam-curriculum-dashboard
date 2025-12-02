@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Modal } from '../ui/Modal';
 import type { Article, CreateArticle, UpdateArticle, ArticleType, ActivityTemplate, Topic, Node } from '@/lib/schemas/curriculum';
 import { ACTIVITY_TYPE_LABELS } from '@kalam/curriculum-schemas';
@@ -56,6 +56,10 @@ export function ActivityFormModal({
   // Use fetched topic if available, otherwise fall back to prop
   const topic = fetchedTopic || topicProp;
 
+  // Debug logging
+  console.log('ActivityFormModal topic:', topic);
+  console.log('Has letter?', topic?.letter || (topic as any)?.letters);
+
   const [useTemplate, setUseTemplate] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ActivityTemplate | null>(null);
   const [templateVariables, setTemplateVariables] = useState<Record<string, any>>({});
@@ -73,6 +77,33 @@ export function ActivityFormModal({
   const [existingAudioUrl, setExistingAudioUrl] = useState<string | null>(
     activity?.instruction.audio_url || null
   );
+
+  // Refs for instruction textareas (for placeholder insertion)
+  const enTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const arTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Insert placeholder at cursor position
+  const insertPlaceholder = (placeholder: string, lang: 'en' | 'ar') => {
+    const textareaRef = lang === 'en' ? enTextareaRef : arTextareaRef;
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = lang === 'en' ? formData.instructionEn : formData.instructionAr;
+    const newText = text.substring(0, start) + placeholder + text.substring(end);
+
+    setFormData({
+      ...formData,
+      [lang === 'en' ? 'instructionEn' : 'instructionAr']: newText
+    });
+
+    // Set cursor position after the inserted placeholder
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + placeholder.length, start + placeholder.length);
+    }, 0);
+  };
 
   // Update form when activity prop changes
   useEffect(() => {
@@ -422,6 +453,7 @@ export function ActivityFormModal({
                 This text will be converted to audio and played when the activity loads in the app
               </p>
               <textarea
+                ref={enTextareaRef}
                 required
                 value={formData.instructionEn}
                 onChange={(e) =>
@@ -431,6 +463,41 @@ export function ActivityFormModal({
                 placeholder="Enter English instruction"
                 rows={2}
               />
+              {/* Template Placeholder Buttons */}
+              {(topic?.letter || (topic as any)?.letters) && (() => {
+                const letterData = topic?.letter || (topic as any)?.letters;
+                return (
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    <span className="text-xs text-gray-500">Insert:</span>
+                    <button
+                      type="button"
+                      onClick={() => insertPlaceholder('{{letter}}', 'en')}
+                      className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200"
+                      title={`Letter character: ${letterData.letter}`}
+                    >
+                      {'{{letter}}'} ({letterData.letter})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertPlaceholder('{{letter_name}}', 'en')}
+                      className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200"
+                      title={`Letter name: ${letterData.name_arabic || letterData.name_english}`}
+                    >
+                      {'{{letter_name}}'} ({letterData.name_arabic || letterData.name_english})
+                    </button>
+                    {letterData.letter_sound && (
+                      <button
+                        type="button"
+                        onClick={() => insertPlaceholder('{{letter_sound}}', 'en')}
+                        className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200"
+                        title={`Letter sound: ${letterData.letter_sound}`}
+                      >
+                        {'{{letter_sound}}'} ({letterData.letter_sound})
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
               {/* Generate/Regenerate Audio Button */}
               <div className="flex items-center gap-2 mt-2">
                 <button
@@ -482,6 +549,7 @@ export function ActivityFormModal({
                 Instruction (Arabic)
               </label>
               <textarea
+                ref={arTextareaRef}
                 dir="rtl"
                 value={formData.instructionAr}
                 onChange={(e) =>
@@ -491,6 +559,41 @@ export function ActivityFormModal({
                 placeholder="أدخل التعليمات بالعربية (اختياري)"
                 rows={2}
               />
+              {/* Template Placeholder Buttons */}
+              {(topic?.letter || (topic as any)?.letters) && (() => {
+                const letterData = topic?.letter || (topic as any)?.letters;
+                return (
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    <span className="text-xs text-gray-500">Insert:</span>
+                    <button
+                      type="button"
+                      onClick={() => insertPlaceholder('{{letter}}', 'ar')}
+                      className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200"
+                      title={`Letter character: ${letterData.letter}`}
+                    >
+                      {'{{letter}}'} ({letterData.letter})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertPlaceholder('{{letter_name}}', 'ar')}
+                      className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200"
+                      title={`Letter name: ${letterData.name_arabic || letterData.name_english}`}
+                    >
+                      {'{{letter_name}}'} ({letterData.name_arabic || letterData.name_english})
+                    </button>
+                    {letterData.letter_sound && (
+                      <button
+                        type="button"
+                        onClick={() => insertPlaceholder('{{letter_sound}}', 'ar')}
+                        className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200"
+                        title={`Letter sound: ${letterData.letter_sound}`}
+                      >
+                        {'{{letter_sound}}'} ({letterData.letter_sound})
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Dynamic Activity Form based on type */}

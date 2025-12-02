@@ -55,6 +55,11 @@ export const ActivityTypeSchema = z.enum([
   'drag_items_to_target',
   'catch_fish_with_letter',
   'add_pizza_toppings_with_letter',
+  'letter_rain',
+  'audio_letter_match',
+  'memory_card_match',
+  'color_letter',
+  'letter_discrimination',
   'build_word_from_letters',
   'drag_dots_to_letter',
   'tap_dot_position',
@@ -77,6 +82,11 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   drag_items_to_target: 'Drag Items to Correct Targets',
   catch_fish_with_letter: 'Catch Fish with Target Letter',
   add_pizza_toppings_with_letter: 'Add Pizza Toppings with Letter',
+  letter_rain: 'Letter Rain',
+  audio_letter_match: 'Audio Letter Match',
+  memory_card_match: 'Memory Card Match',
+  color_letter: 'Color Letter',
+  letter_discrimination: 'Letter Discrimination',
   build_word_from_letters: 'Build Word from Letters',
   drag_dots_to_letter: 'Drag Dots to Letter',
   tap_dot_position: 'Tap Correct Dot Position',
@@ -123,6 +133,13 @@ export const BaseActivitySchema = z.object({
 });
 
 export type BaseActivity = z.infer<typeof BaseActivitySchema>;
+
+/**
+ * Base activity config schema
+ * Can be extended by specific activity configs
+ */
+export const BaseActivityConfigSchema = z.object({});
+export type BaseActivityConfig = z.infer<typeof BaseActivityConfigSchema>;
 
 // ============================================================================
 // COMMON HELPER SCHEMAS

@@ -32,6 +32,11 @@ const activityTypes: Array<{
     'drag_dots_to_letter',
     'tap_dot_position',
     'activity_request',
+    'letter_rain',
+    'audio_letter_match',
+    'memory_card_match',
+    'color_letter',
+    'letter_discrimination',
   ].includes(value),
 }));
 
@@ -60,10 +65,9 @@ export function ActivityTypeSelectorModal({
               disabled={!activity.implemented}
               className={`
                 p-4 rounded-lg border-2 transition-all
-                ${
-                  activity.implemented
-                    ? 'border-gray-200 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
-                    : 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-50'
+                ${activity.implemented
+                  ? 'border-gray-200 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
+                  : 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-50'
                 }
               `}
             >

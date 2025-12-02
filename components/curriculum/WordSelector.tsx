@@ -32,42 +32,87 @@ export function WordSelector({
   className = '',
 }: WordSelectorProps) {
   const { words, loading, error } = useWords();
-  const [mode, setMode] = useState<'select' | 'manual'>('select');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [inputValue, setInputValue] = useState(value || '');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
 
   // Find if the current value matches an existing word
   const selectedWord = words.find(w => w.arabic === value);
 
-  // Filter words based on search
-  const filteredWords = words.filter(word =>
-    word.arabic.includes(searchQuery) ||
-    word.english?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    word.transliteration?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter words based on input
+  const filteredWords = inputValue.trim()
+    ? words.filter(word =>
+        word.arabic.includes(inputValue) ||
+        word.english?.toLowerCase().includes(inputValue.toLowerCase()) ||
+        word.transliteration?.toLowerCase().includes(inputValue.toLowerCase())
+      )
+    : [];
 
-  // Auto-switch to manual mode if value doesn't match any word
+  // Check if input exactly matches an existing word
+  const exactMatch = words.find(w => w.arabic === inputValue);
+
+  // Sync input value with prop value
   useEffect(() => {
-    if (value && !selectedWord && words.length > 0) {
-      setMode('manual');
+    if (value !== inputValue) {
+      setInputValue(value || '');
     }
-  }, [value, selectedWord, words.length]);
+  }, [value]);
 
-  const handleSelectWord = (wordId: string) => {
-    if (!wordId) {
-      onChange('');
-      return;
-    }
-    const word = words.find(w => w.id === wordId);
-    if (word) {
-      onChange(word.arabic, word);
-      if (showTranslation && onTranslationChange && word.english) {
-        onTranslationChange(word.english);
-      }
-    }
+  const handleInputChange = (text: string) => {
+    setInputValue(text);
+    setShowDropdown(true);
+    setFocusedIndex(-1);
+    // Don't call onChange yet - wait for selection or explicit confirmation
   };
 
-  const handleManualInput = (text: string) => {
-    onChange(text);
+  const handleSelectWord = (word: Word) => {
+    setInputValue(word.arabic);
+    onChange(word.arabic, word);
+    if (showTranslation && onTranslationChange && word.english) {
+      onTranslationChange(word.english);
+    }
+    setShowDropdown(false);
+    setFocusedIndex(-1);
+  };
+
+  const handleInputBlur = () => {
+    // Delay to allow click on dropdown
+    setTimeout(() => {
+      setShowDropdown(false);
+      // If user typed something that doesn't match, still update the value
+      if (inputValue !== value) {
+        onChange(inputValue);
+      }
+    }, 200);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showDropdown || filteredWords.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setFocusedIndex(prev =>
+          prev < filteredWords.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setFocusedIndex(prev => (prev > 0 ? prev - 1 : -1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (focusedIndex >= 0) {
+          handleSelectWord(filteredWords[focusedIndex]);
+        } else if (filteredWords.length === 1) {
+          handleSelectWord(filteredWords[0]);
+        }
+        break;
+      case 'Escape':
+        setShowDropdown(false);
+        setFocusedIndex(-1);
+        break;
+    }
   };
 
   if (loading && words.length === 0) {
@@ -93,90 +138,79 @@ export function WordSelector({
         </label>
       )}
 
-      {/* Mode Toggle */}
-      <div className="flex gap-2 mb-2">
-        <button
-          type="button"
-          onClick={() => setMode('select')}
-          className={`px-3 py-1 text-sm rounded-md ${
-            mode === 'select'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Select from Library ({words.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('manual')}
-          className={`px-3 py-1 text-sm rounded-md ${
-            mode === 'manual'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Enter New Word
-        </button>
-      </div>
-
       {error && (
         <div className="mb-2 px-3 py-2 border border-yellow-300 rounded-md bg-yellow-50 text-yellow-800 text-sm">
           {error} - You can still enter words manually.
         </div>
       )}
 
-      {mode === 'select' ? (
-        <>
-          {/* Search Input */}
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search words..."
-            className="w-full px-3 py-2 mb-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+      {/* Autocomplete Input */}
+      <div className="relative">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={handleInputBlur}
+          onKeyDown={handleKeyDown}
+          required={required}
+          placeholder="Type to search or enter new word..."
+          dir="rtl"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xl"
+        />
 
-          {/* Word Dropdown */}
-          <select
-            value={selectedWord?.id || ''}
-            onChange={(e) => handleSelectWord(e.target.value)}
-            required={required && mode === 'select'}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            size={Math.min(filteredWords.length + 1, 8)}
-          >
-            <option value="">-- Select a word --</option>
-            {filteredWords.map((word) => (
-              <option key={word.id} value={word.id}>
-                {word.arabic}
-                {word.transliteration && ` (${word.transliteration})`}
-                {word.english && ` - ${word.english}`}
-              </option>
+        {/* Autocomplete Dropdown */}
+        {showDropdown && filteredWords.length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+            {filteredWords.map((word, index) => (
+              <button
+                key={word.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelectWord(word);
+                }}
+                onMouseEnter={() => setFocusedIndex(index)}
+                className={`w-full px-3 py-2 text-left hover:bg-blue-50 flex items-center justify-between ${
+                  index === focusedIndex ? 'bg-blue-50' : ''
+                }`}
+              >
+                <div className="flex-1">
+                  <div className="text-lg font-arabic">{word.arabic}</div>
+                  {(word.transliteration || word.english) && (
+                    <div className="text-xs text-gray-600">
+                      {word.transliteration && `${word.transliteration}`}
+                      {word.transliteration && word.english && ' • '}
+                      {word.english}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-1 ml-2">
+                  {word.has_image && (
+                    <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-xs rounded">
+                      ✓ Image
+                    </span>
+                  )}
+                  {word.has_audio && (
+                    <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-xs rounded">
+                      ✓ Audio
+                    </span>
+                  )}
+                </div>
+              </button>
             ))}
-          </select>
+          </div>
+        )}
 
-          {filteredWords.length === 0 && searchQuery && (
-            <p className="mt-2 text-sm text-gray-500">
-              No words found. Try entering a new word manually.
-            </p>
-          )}
-        </>
-      ) : (
-        <>
-          {/* Manual Input */}
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => handleManualInput(e.target.value)}
-            required={required && mode === 'manual'}
-            placeholder="أسد"
-            dir="rtl"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xl"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Enter Arabic word text. It will be auto-analyzed and added to the word library when you save this activity.
-          </p>
-        </>
-      )}
+        {/* Hint Text */}
+        <p className="mt-1 text-xs text-gray-500">
+          {filteredWords.length > 0
+            ? `${filteredWords.length} word${filteredWords.length === 1 ? '' : 's'} found - select one or keep typing to add new`
+            : inputValue.trim()
+            ? 'New word - will be added to library when saved'
+            : `${words.length} words in library`}
+        </p>
+      </div>
 
       {/* Show Translation Input */}
       {showTranslation && onTranslationChange && (
@@ -261,7 +295,7 @@ export function WordSelector({
       )}
 
       {/* New Word Info */}
-      {!selectedWord && value && mode === 'manual' && (
+      {!selectedWord && value && !exactMatch && (
         <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
           <div className="flex items-start gap-2">
             <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

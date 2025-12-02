@@ -27,9 +27,11 @@ export const LocalizedTextSchema = SharedLocalizedTextSchema.extend({
 });
 
 export const LetterSchema = z.object({
+  id: z.string().optional(),
   letter: z.string().length(1, 'Must be a single Arabic letter'),
   name_english: z.string().min(1, 'Letter name (English) required'),
   name_arabic: z.string().optional(),
+  letter_sound: z.string().optional(),
 });
 
 // Use shared ActivityTypeSchema
@@ -60,6 +62,7 @@ export const UpdateCurriculumSchema = CreateCurriculumSchema.partial();
 export const TopicSchema = z.object({
   id: z.string().uuid(),
   curriculum_id: z.string().uuid(),
+  letter: LetterSchema.optional().nullable(),
   sequence_number: z.number().int().positive(),
   title: LocalizedTextSchema,
   description: LocalizedTextSchema.optional(),
@@ -69,7 +72,7 @@ export const TopicSchema = z.object({
 });
 
 export const CreateTopicSchema = z.object({
-  letter: LetterSchema.optional(),
+  letter_id: z.string().optional(), // Letter ID reference (e.g., "jeem", "alif")
   sequence_number: z.number().int().positive().default(1),
   title: LocalizedTextSchema,
   description: LocalizedTextSchema.optional(),

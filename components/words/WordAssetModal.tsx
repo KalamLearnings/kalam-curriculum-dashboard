@@ -1,15 +1,19 @@
 /**
  * WordAssetModal Component
  *
- * Modal for uploading/managing word assets (image and audio)
+ * Modal for managing word assets (image and audio)
+ * Supports selecting from asset library or uploading new assets
  */
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import type { Word } from '@/lib/hooks/useWords';
-import { uploadImage, compressImage } from '@/lib/utils/imageUpload';
+import type { Asset, AssetUploadData } from '@/lib/types/assets';
 import { createClient } from '@/lib/supabase/client';
+import { AssetPicker } from '@/components/assets/AssetPicker';
+import { AssetUploadForm } from '@/components/assets/AssetUploadForm';
+import { uploadAsset } from '@/lib/services/assetService';
 
 interface WordAssetModalProps {
   isOpen: boolean;
@@ -18,57 +22,45 @@ interface WordAssetModalProps {
   onUploadAssets: (assets: { image_path?: string; audio_path?: string }) => Promise<void>;
 }
 
+type TabMode = 'select' | 'upload';
+
 export function WordAssetModal({
   isOpen,
   onClose,
   word,
   onUploadAssets,
 }: WordAssetModalProps) {
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [tabMode, setTabMode] = useState<TabMode>('select');
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
 
-  // Load existing assets
+  // Reset state when modal opens
   useEffect(() => {
-    if (word.image_path) {
-      const url = supabase.storage
-        .from('curriculum-images')
-        .getPublicUrl(word.image_path).data.publicUrl;
-      setImagePreview(url);
-    }
-  }, [word, supabase]);
-
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      setError('Please select a valid image file (JPG, PNG, or WebP)');
-      return;
-    }
-
-    // Compress image
-    try {
-      const compressed = await compressImage(file);
-      setImageFile(compressed);
-
-      // Show preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(compressed);
+    if (isOpen) {
+      setTabMode('select');
+      setSelectedAsset(null);
+      setAudioFile(null);
       setError(null);
-    } catch (err) {
-      setError('Failed to process image');
     }
-  };
+  }, [isOpen]);
+
+  // If word already has an image, try to create an Asset object for preview
+  const existingImageAsset: Asset | null = word.image_path
+    ? {
+        id: word.image_path,
+        name: word.image_path.split('/').pop() || '',
+        displayName: word.arabic,
+        url: supabase.storage.from('curriculum-images').getPublicUrl(word.image_path).data.publicUrl,
+        category: 'words',
+        tags: [],
+        createdAt: '',
+        updatedAt: '',
+      }
+    : null;
 
   const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,17 +77,38 @@ export function WordAssetModal({
     setError(null);
   };
 
-  const handleUpload = async () => {
+  const handleSelectAsset = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setError(null);
+  };
+
+  const handleUploadNewAsset = async (data: AssetUploadData) => {
+    setError(null);
+    try {
+      // Upload asset to library
+      const newAsset = await uploadAsset(data);
+      // Auto-select the newly uploaded asset
+      setSelectedAsset(newAsset);
+      // Switch to select tab to show confirmation
+      setTabMode('select');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to upload asset';
+      setError(message);
+      throw err;
+    }
+  };
+
+  const handleSave = async () => {
     setUploading(true);
     setError(null);
 
     try {
       const assets: { image_path?: string; audio_path?: string } = {};
 
-      // Upload image if selected
-      if (imageFile) {
-        const { path } = await uploadImage(imageFile, 'assets/words');
-        assets.image_path = path;
+      // Use selected asset's path (either newly selected or uploaded)
+      if (selectedAsset) {
+        // Extract the storage path from the asset ID (which is the full path)
+        assets.image_path = selectedAsset.id;
       }
 
       // Upload audio if selected
@@ -117,36 +130,33 @@ export function WordAssetModal({
         assets.audio_path = filePath;
       }
 
+      // Only save if there's something to update
+      if (Object.keys(assets).length === 0) {
+        setError('Please select an image or audio file');
+        return;
+      }
+
       // Update word assets
       await onUploadAssets(assets);
 
       // Reset form
-      setImageFile(null);
+      setSelectedAsset(null);
       setAudioFile(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to upload assets';
+      const message = err instanceof Error ? err.message : 'Failed to save assets';
       setError(message);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleRemoveImage = () => {
-    setImageFile(null);
-    setImagePreview(word.image_path ? supabase.storage.from('curriculum-images').getPublicUrl(word.image_path).data.publicUrl : null);
-  };
-
-  const handleRemoveAudio = () => {
-    setAudioFile(null);
-  };
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Manage Word Assets</h2>
@@ -174,57 +184,88 @@ export function WordAssetModal({
             </div>
           )}
 
-          {/* Image Upload */}
+          {/* Image Section */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
               Word Image {!word.has_image && <span className="text-orange-600">(Missing)</span>}
             </label>
 
-            {imagePreview ? (
-              <div className="relative">
-                <img
-                  src={imagePreview}
-                  alt={word.arabic}
-                  className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                />
-                {imageFile && (
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+            {/* Tab Buttons */}
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setTabMode('select')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                  tabMode === 'select'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                📚 Select from Library
+              </button>
+              <button
+                type="button"
+                onClick={() => setTabMode('upload')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                  tabMode === 'upload'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                📤 Upload New
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {tabMode === 'select' ? (
+              <div>
+                {/* Current/Selected Image Preview */}
+                {(selectedAsset || existingImageAsset) && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-4">
+                      <img
+                        src={(selectedAsset || existingImageAsset)!.url}
+                        alt={(selectedAsset || existingImageAsset)!.displayName}
+                        className="w-32 h-32 object-cover rounded-lg border-2 border-blue-500"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-blue-900">
+                            {selectedAsset ? '✓ Selected Image' : 'Current Image'}
+                          </h4>
+                          {selectedAsset && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAsset(null)}
+                              className="text-xs text-red-600 hover:text-red-700 font-medium"
+                            >
+                              Clear Selection
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-sm text-blue-800">
+                          {(selectedAsset || existingImageAsset)!.displayName}
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Category: {(selectedAsset || existingImageAsset)!.category}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
+
+                {/* Asset Picker */}
+                <AssetPicker
+                  onSelect={handleSelectAsset}
+                  selectedAssetId={selectedAsset?.id || existingImageAsset?.id}
+                  emptyMessage="No assets in library. Switch to 'Upload New' to add your first asset!"
+                />
               </div>
             ) : (
-              <label className="block w-full h-48 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-                <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                  <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm">Click to upload image</p>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, or WebP</p>
-                </div>
-              </label>
-            )}
-
-            {!imagePreview && (
-              <label className="mt-3 block">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                />
-              </label>
+              <AssetUploadForm
+                onUpload={handleUploadNewAsset}
+                defaultCategory="words"
+              />
             )}
           </div>
 
@@ -254,7 +295,8 @@ export function WordAssetModal({
                   <p className="text-xs text-gray-500">{(audioFile.size / 1024).toFixed(1)} KB</p>
                 </div>
                 <button
-                  onClick={handleRemoveAudio}
+                  type="button"
+                  onClick={() => setAudioFile(null)}
                   className="text-red-600 hover:text-red-700 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,7 +342,7 @@ export function WordAssetModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 sticky bottom-0 bg-white">
           <button
             onClick={onClose}
             disabled={uploading}
@@ -309,11 +351,11 @@ export function WordAssetModal({
             Cancel
           </button>
           <button
-            onClick={handleUpload}
-            disabled={uploading || (!imageFile && !audioFile)}
+            onClick={handleSave}
+            disabled={uploading || (!selectedAsset && !audioFile)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {uploading ? 'Uploading...' : 'Upload Assets'}
+            {uploading ? 'Saving...' : 'Save Assets'}
           </button>
         </div>
       </div>

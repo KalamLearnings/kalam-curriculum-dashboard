@@ -31,6 +31,27 @@ export function useActivities(curriculumId: string, nodeId: string | null) {
   });
 }
 
+/**
+ * Fetch all activities for all nodes in a curriculum
+ * Used in builder tree view where multiple nodes are expanded
+ */
+export function useAllActivities(curriculumId: string, nodeIds: string[]) {
+  return useQuery({
+    queryKey: ['all-activities', curriculumId, nodeIds.sort()],
+    queryFn: async () => {
+      // Fetch activities for all nodes in parallel
+      const activitiesArrays = await Promise.all(
+        nodeIds.map((nodeId) => listArticles(curriculumId, nodeId))
+      );
+      // Flatten and return all activities
+      return activitiesArrays.flat();
+    },
+    enabled: nodeIds.length > 0,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    select: (data) => sortBySequence(data), // Always return sorted
+  });
+}
+
 // ============================================================================
 // MUTATION HOOKS
 // ============================================================================
@@ -54,6 +75,7 @@ export function useCreateActivity() {
     onSuccess: (newActivity, { curriculumId, nodeId }) => {
       // Invalidate to refetch
       queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-activities', curriculumId] });
       toast.success('Activity created successfully');
     },
     onError: (error: Error) => {
@@ -82,6 +104,7 @@ export function useUpdateActivity() {
     }) => updateArticle(curriculumId, activityId, data),
     onSuccess: (_, { curriculumId, nodeId }) => {
       queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-activities', curriculumId] });
       toast.success('Activity updated successfully');
     },
     onError: (error: Error) => {
@@ -108,6 +131,7 @@ export function useDeleteActivity() {
     }) => deleteArticle(curriculumId, activityId),
     onSuccess: (_, { curriculumId, nodeId }) => {
       queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-activities', curriculumId] });
       toast.success('Activity deleted successfully');
     },
     onError: (error: Error) => {
@@ -137,6 +161,7 @@ export function useMoveActivity() {
     onSuccess: (_, { curriculumId, sourceNodeId, targetNodeId }) => {
       queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, sourceNodeId] });
       queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, targetNodeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-activities', curriculumId] });
       toast.success('Activity moved successfully');
     },
     onError: (error: Error) => {
@@ -186,6 +211,7 @@ export function useReorderActivities() {
     },
     onSuccess: (_, { curriculumId, nodeId }) => {
       queryClient.invalidateQueries({ queryKey: ['activities', curriculumId, nodeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-activities', curriculumId] });
       toast.success('Activities reordered successfully');
     },
     onError: (error: Error) => {

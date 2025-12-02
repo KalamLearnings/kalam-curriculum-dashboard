@@ -20,6 +20,11 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'add_pizza_toppings_with_letter', label: 'Add Pizza Toppings with Letter' },
   { value: 'drag_dots_to_letter', label: 'Drag Dots to Letter' },
   { value: 'tap_dot_position', label: 'Tap Correct Dot Position' },
+  { value: 'letter_rain', label: 'Letter Rain (Physics)' },
+  { value: 'audio_letter_match', label: 'Audio Letter Match' },
+  { value: 'memory_card_match', label: 'Memory Card Match' },
+  { value: 'color_letter', label: 'Letter Coloring' },
+  { value: 'letter_discrimination', label: 'Similar Letter Discrimination' },
   { value: 'activity_request', label: 'Activity Request (Not Implemented)' },
 ];
 
@@ -39,6 +44,11 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   add_pizza_toppings_with_letter: '🍕',
   drag_dots_to_letter: '⚫',
   tap_dot_position: '🎯',
+  letter_rain: '🌧️',
+  audio_letter_match: '🔊',
+  memory_card_match: '🃏',
+  color_letter: '🎨',
+  letter_discrimination: '👀',
   activity_request: '💡',
 };
 

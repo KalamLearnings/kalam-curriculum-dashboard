@@ -1,85 +1,235 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save, ChevronRight, ChevronDown, Plus } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { useCurriculum } from '@/lib/hooks/useCurriculum';
 import { useTopics, useDeleteTopic } from '@/lib/hooks/useTopics';
-import { useNodes, useDeleteNode } from '@/lib/hooks/useNodes';
-import { useActivities, useUpdateActivity, useCreateActivity, useDeleteActivity } from '@/lib/hooks/useActivities';
+import { useAllNodes, useDeleteNode } from '@/lib/hooks/useNodes';
+import { useActivities, useAllActivities, useUpdateActivity, useCreateActivity, useDeleteActivity, useMoveActivity, useReorderActivities } from '@/lib/hooks/useActivities';
 import { useAudioGeneration } from '@/lib/hooks/useAudioGeneration';
+import { useBuilderStore } from '@/lib/stores/builderStore';
+import { duplicateTopic as duplicateTopicApi } from '@/lib/api/curricula';
 import { EmptyState } from '@/components/curriculum/shared/EmptyState';
 import { InstructionFieldWithAudio } from '@/components/curriculum/shared/InstructionFieldWithAudio';
 import { getActivityFormComponent } from '@/components/curriculum/forms';
-import { FormField, TextInput, Select } from '@/components/curriculum/forms/FormField';
+import { FormField } from '@/components/curriculum/forms/FormField';
 import { PhoneFrame, ActivityPreview } from '@/components/curriculum/preview';
 import { TopicFormModal } from '@/components/curriculum/TopicFormModal';
 import { NodeFormModal } from '@/components/curriculum/NodeFormModal';
 import { ActivityTypeSelectorModal } from '@/components/curriculum/ActivityTypeSelectorModal';
-import type { Article, ArticleType, Topic, Node } from '@/lib/schemas/curriculum';
+import { LetterSelectorModal } from '@/components/curriculum/LetterSelectorModal';
+import type { Article, ArticleType } from '@/lib/schemas/curriculum';
+import type { Letter } from '@/lib/hooks/useLetters';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { ACTIVITY_TYPES, getActivityLabel } from '@/lib/constants/curriculum';
+import { getActivityLabel } from '@/lib/constants/curriculum';
 import { CurriculumTree } from '@/components/curriculum/builder/CurriculumTree';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+} from '@dnd-kit/core';
 
 export default function CurriculumBuilderPage() {
   const params = useParams();
   const router = useRouter();
   const curriculumId = params.id as string;
 
-  // State
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
-  const [isCreatingNew, setIsCreatingNew] = useState(false);
-  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-
-  // Modal states
-  const [topicModalOpen, setTopicModalOpen] = useState(false);
-  const [nodeModalOpen, setNodeModalOpen] = useState(false);
-  const [activityModalOpen, setActivityModalOpen] = useState(false);
-
-  const [formData, setFormData] = useState({
-    type: 'show_letter_or_word' as ArticleType,
-    instructionEn: '',
-    instructionAr: '',
-    config: {} as any
-  });
-
-  // Debug: Log formData changes
-  useEffect(() => {
-    console.log('formData changed:', {
-      instructionEn: formData.instructionEn,
-      instructionAr: formData.instructionAr
-    });
-  }, [formData]);
+  // Zustand store - replaces all useState hooks
+  const {
+    selectedTopicId,
+    selectedNodeId,
+    selectedActivityId,
+    isCreatingNew,
+    expandedTopics,
+    expandedNodes,
+    topicModalOpen,
+    nodeModalOpen,
+    activityModalOpen,
+    formData,
+    setSelectedTopicId,
+    setSelectedNodeId,
+    setSelectedActivityId,
+    setIsCreatingNew,
+    toggleTopic,
+    toggleNode,
+    setTopicModalOpen,
+    setNodeModalOpen,
+    setActivityModalOpen,
+    setFormData,
+    updateConfig,
+    updateInstructionEn,
+    updateInstructionAr,
+    selectActivity,
+    startCreatingActivity,
+    addActivityToNode,
+  } = useBuilderStore();
 
   // Data fetching - REUSE existing hooks
   const { data: curriculum, isLoading: loadingCurriculum } = useCurriculum(curriculumId);
   const { data: topics } = useTopics(curriculumId);
-  const { data: nodes } = useNodes(curriculumId, selectedTopicId);
-  const { data: activities } = useActivities(curriculumId, selectedNodeId);
+  const { data: nodes } = useAllNodes(curriculumId); // Use useAllNodes to fetch all nodes for the tree
+
+  // Fetch all activities for the tree (all nodes)
+  const allNodeIds = nodes?.map(n => n.id) || [];
+  const { data: allActivities } = useAllActivities(curriculumId, allNodeIds);
+
+  // Fetch activities for selected node only (for the form)
+  const { data: selectedNodeActivities } = useActivities(curriculumId, selectedNodeId);
   const { mutate: updateActivity, isPending: isUpdating } = useUpdateActivity();
   const { mutate: createActivity, isPending: isCreating } = useCreateActivity();
   const { mutate: deleteTopic } = useDeleteTopic();
   const { mutate: deleteNode } = useDeleteNode();
   const { mutate: deleteActivity } = useDeleteActivity();
 
+  // Drag and drop hooks
+  const { mutate: moveActivity } = useMoveActivity();
+  const { mutate: reorderActivities } = useReorderActivities();
+
+  // Topic duplication
+  const queryClient = useQueryClient();
+  const [topicToDuplicate, setTopicToDuplicate] = useState<string | null>(null);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+
+  const handleDuplicateTopic = (topicId: string) => {
+    setTopicToDuplicate(topicId);
+  };
+
+  const handleConfirmDuplicate = async (selectedLetter: Letter) => {
+    if (!topicToDuplicate) return;
+
+    setIsDuplicating(true);
+    try {
+      await duplicateTopicApi(curriculumId, topicToDuplicate, selectedLetter.id);
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['topics', curriculumId] });
+      queryClient.invalidateQueries({ queryKey: ['nodes', curriculumId] });
+      queryClient.invalidateQueries({ queryKey: ['activities', curriculumId] });
+      queryClient.invalidateQueries({ queryKey: ['all-activities', curriculumId] });
+
+      toast.success(
+        `Topic duplicated with letter ${selectedLetter.letter}! Audio is being generated in the background. This may take a few minutes to complete.`,
+        { duration: 6000 }
+      );
+      setTopicToDuplicate(null);
+    } catch (error) {
+      console.error('Failed to duplicate topic:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to duplicate topic');
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
+  // Drag and drop state and configuration
+  const [draggingActivity, setDraggingActivity] = useState<Article | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px threshold before drag starts
+      },
+    })
+  );
+
+  function handleDragStart(event: DragStartEvent) {
+    const { active } = event;
+
+    // Check if dragging an activity
+    if (active.data.current?.type === 'activity' && active.data.current) {
+      setDraggingActivity(active.data.current.activity);
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    setDraggingActivity(null);
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeData = active.data.current;
+    const overData = over.data.current;
+
+    const isActivityDrag = activeData?.type === 'activity';
+    const isActivityDrop = overData?.type === 'activity';
+    const isNodeDrop = overData?.type === 'node';
+
+    // Scenario 1: Dropping activity onto a node (cross-node move)
+    if (isActivityDrag && isNodeDrop && activeData) {
+      const activity = activeData.activity as Article;
+      const targetNodeId = over.id as string;
+      const sourceNodeId = activity.node_id;
+
+      // Don't update if dropping on the same node
+      if (targetNodeId === sourceNodeId) return;
+
+      // Move the activity to the target node
+      moveActivity({
+        curriculumId,
+        activityId: activity.id,
+        sourceNodeId,
+        targetNodeId,
+      });
+    }
+
+    // Scenario 2: Reordering activities within the same node
+    if (isActivityDrag && isActivityDrop && active.id !== over.id && activeData && overData) {
+      const activeActivity = activeData.activity as Article;
+      const overActivity = overData.activity as Article;
+
+      // Only handle if both activities are in the same node
+      if (activeActivity.node_id === overActivity.node_id) {
+        const nodeId = activeActivity.node_id;
+
+        reorderActivities({
+          curriculumId,
+          nodeId,
+          activeId: active.id as string,
+          overId: over.id as string,
+        });
+      }
+    }
+  }
+
   // Get current activity
-  const currentActivity = activities?.find(a => a.id === selectedActivityId);
+  const currentActivity = selectedNodeActivities?.find(a => a.id === selectedActivityId);
+
+  // Get current topic and letter (needed for audio hooks)
+  let currentTopic = topics?.find(t => t.id === selectedTopicId) || null;
+
+  // If no topic selected but we have a selected node, find the topic that contains this node
+  if (!currentTopic && selectedNodeId && topics) {
+    currentTopic = topics.find(t => {
+      return t.nodes?.some(n => n.id === selectedNodeId);
+    }) || null;
+  }
+
+  // Extract letter data from topic.letter (attached by backend)
+  const currentLetter = currentTopic?.letter || null;
 
   // Audio generation hooks for both English and Arabic
   const audioEn = useAudioGeneration({
     language: 'en',
     text: formData.instructionEn,
     existingAudioUrl: currentActivity?.instruction.audio_url,
+    letter: currentLetter,
   });
 
   const audioAr = useAudioGeneration({
     language: 'ar',
     text: formData.instructionAr,
     existingAudioUrl: currentActivity?.instruction.audio_url, // Note: Schema currently doesn't have separate AR audio URL
+    letter: currentLetter,
   });
 
   // Debug current activity
@@ -91,9 +241,9 @@ export default function CurriculumBuilderPage() {
         id: currentActivity.id,
         instruction: currentActivity.instruction
       } : null,
-      activitiesCount: activities?.length || 0
+      activitiesCount: selectedNodeActivities?.length || 0
     });
-  }, [selectedActivityId, isCreatingNew, currentActivity, activities]);
+  }, [selectedActivityId, isCreatingNew, currentActivity, selectedNodeActivities]);
 
   // Load activity data into form when selected
   useEffect(() => {
@@ -122,28 +272,14 @@ export default function CurriculumBuilderPage() {
     }
   }, [currentActivity, isCreatingNew]);
 
-  // Handle activity selection
+  // Handle activity selection - now uses store action
   const handleActivitySelect = (activity: Article, nodeId: string, topicId: string) => {
-    setIsCreatingNew(false);
-    setSelectedActivityId(activity.id);
-    setSelectedNodeId(nodeId);
-    setSelectedTopicId(topicId);
-
-    // Auto-expand parents
-    setExpandedTopics(prev => new Set(prev).add(topicId));
-    setExpandedNodes(prev => new Set(prev).add(nodeId));
+    selectActivity(activity.id, nodeId, topicId);
   };
 
-  // Handle new activity type selection
+  // Handle new activity type selection - now uses store action
   const handleNewActivityType = (type: ArticleType) => {
-    setIsCreatingNew(true);
-    setSelectedActivityId(null);
-    setFormData({
-      type,
-      instructionEn: '',
-      instructionAr: '',
-      config: {}
-    });
+    startCreatingActivity(type);
     // Clear both audio states
     audioEn.clearAudio();
     audioAr.clearAudio();
@@ -259,22 +395,7 @@ export default function CurriculumBuilderPage() {
     }
   };
 
-  // Toggle expand/collapse
-  const toggleTopic = (topicId: string) => {
-    setExpandedTopics(prev => {
-      const next = new Set(prev);
-      next.has(topicId) ? next.delete(topicId) : next.add(topicId);
-      return next;
-    });
-  };
-
-  const toggleNode = (nodeId: string) => {
-    setExpandedNodes(prev => {
-      const next = new Set(prev);
-      next.has(nodeId) ? next.delete(nodeId) : next.add(nodeId);
-      return next;
-    });
-  };
+  // Toggle functions now come from Zustand store
 
   if (loadingCurriculum) {
     return (
@@ -289,9 +410,6 @@ export default function CurriculumBuilderPage() {
 
   // Get dynamic form component - REUSE existing
   const ActivityFormComponent = getActivityFormComponent(formData.type);
-
-  // Get current topic for auto-populating letter in forms
-  const currentTopic = topics?.find(t => t.id === selectedTopicId) || null;
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-white overflow-hidden">
@@ -325,14 +443,21 @@ export default function CurriculumBuilderPage() {
         </button>
       </header>
 
-      {/* 3-Panel Layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: Navigation Tree */}
-        <CurriculumTree
+      {/* Drag and Drop Context */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        {/* 3-Panel Layout */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* LEFT: Navigation Tree */}
+          <CurriculumTree
           curriculumId={curriculumId}
           topics={topics}
           nodes={nodes}
-          activities={activities}
+          activities={allActivities}
           selectedTopicId={selectedTopicId}
           selectedNodeId={selectedNodeId}
           selectedActivityId={selectedActivityId}
@@ -349,8 +474,11 @@ export default function CurriculumBuilderPage() {
             setNodeModalOpen(true);
           }}
           onAddActivity={(nodeId) => {
-            setSelectedNodeId(nodeId);
-            setActivityModalOpen(true);
+            // Find the topic that contains this node
+            const node = nodes?.find(n => n.id === nodeId);
+            if (node) {
+              addActivityToNode(nodeId, node.topic_id);
+            }
           }}
           onDeleteTopic={(topicId) => {
             deleteTopic({ curriculumId, topicId });
@@ -371,9 +499,9 @@ export default function CurriculumBuilderPage() {
             deleteActivity({ curriculumId, nodeId, activityId });
             if (selectedActivityId === activityId) {
               setSelectedActivityId(null);
-              setIsCreatingNew(false);
             }
           }}
+          onDuplicateTopic={handleDuplicateTopic}
         />
 
         {/* CENTER: Form */}
@@ -399,7 +527,7 @@ export default function CurriculumBuilderPage() {
               >
                 <InstructionFieldWithAudio
                   value={formData.instructionEn}
-                  onChange={(value) => setFormData(prev => ({ ...prev, instructionEn: value }))}
+                  onChange={updateInstructionEn}
                   placeholder="Enter instruction in English"
                   language="en"
                   isGenerating={audioEn.isGenerating}
@@ -407,6 +535,7 @@ export default function CurriculumBuilderPage() {
                   hasAudio={audioEn.hasAudio}
                   onGenerate={audioEn.generateAudio}
                   onPlay={audioEn.playAudio}
+                  letter={currentLetter}
                 />
               </FormField>
 
@@ -417,7 +546,7 @@ export default function CurriculumBuilderPage() {
               >
                 <InstructionFieldWithAudio
                   value={formData.instructionAr}
-                  onChange={(value) => setFormData(prev => ({ ...prev, instructionAr: value }))}
+                  onChange={updateInstructionAr}
                   placeholder="أدخل التعليمات بالعربية (اختياري)"
                   language="ar"
                   dir="rtl"
@@ -426,6 +555,7 @@ export default function CurriculumBuilderPage() {
                   hasAudio={audioAr.hasAudio}
                   onGenerate={audioAr.generateAudio}
                   onPlay={audioAr.playAudio}
+                  letter={currentLetter}
                 />
               </FormField>
 
@@ -436,7 +566,7 @@ export default function CurriculumBuilderPage() {
                 </h3>
                 <ActivityFormComponent
                   config={formData.config}
-                  onChange={(config) => setFormData(prev => ({ ...prev, config }))}
+                  onChange={updateConfig}
                   topic={currentTopic}
                 />
               </div>
@@ -465,7 +595,13 @@ export default function CurriculumBuilderPage() {
             </PhoneFrame>
           )}
         </aside>
-      </div>
+        </div>
+
+        {/* Drag Overlay */}
+        <DragOverlay>
+          {draggingActivity ? <div /> : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Modals */}
       <TopicFormModal
@@ -490,6 +626,13 @@ export default function CurriculumBuilderPage() {
           onTypeSelected={handleNewActivityType}
         />
       )}
+
+      {/* Letter Selector for Topic Duplication */}
+      <LetterSelectorModal
+        isOpen={!!topicToDuplicate}
+        onClose={() => setTopicToDuplicate(null)}
+        onSelect={handleConfirmDuplicate}
+      />
     </div>
   );
 }

@@ -6,7 +6,6 @@
 
 import type { PreviewProps } from '../PreviewProps';
 import { PreviewContainer } from '../shared/PreviewContainer';
-import { InstructionDisplay } from '../shared/InstructionDisplay';
 import { ArabicWordDisplay } from '../shared/ArabicWordDisplay';
 import { getConfigValue, ARABIC_DEFAULTS } from '../shared/previewUtils';
 
@@ -16,7 +15,6 @@ export function TapLetterInWordPreview({ instruction, config }: PreviewProps) {
 
   return (
     <PreviewContainer variant="centered">
-      <InstructionDisplay instruction={instruction} className="mb-8" />
       <ArabicWordDisplay
         word={targetWord}
         splitLetters={true}

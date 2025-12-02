@@ -5,6 +5,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { resolveTemplateText } from '@/lib/utils/templateResolver';
+import type { Letter } from '@/lib/schemas/curriculum';
 
 export interface AudioBlob {
   blob: Blob;
@@ -16,6 +18,7 @@ interface UseAudioGenerationProps {
   language: 'en' | 'ar';
   text: string;
   existingAudioUrl?: string | null;
+  letter?: Letter | null;
 }
 
 interface UseAudioGenerationReturn {
@@ -43,6 +46,7 @@ export function useAudioGeneration({
   language,
   text,
   existingAudioUrl: initialAudioUrl,
+  letter,
 }: UseAudioGenerationProps): UseAudioGenerationReturn {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -84,6 +88,9 @@ export function useAudioGeneration({
 
       const token = session.access_token;
 
+      // Resolve template placeholders before sending to TTS
+      const resolvedText = resolveTemplateText(text, letter);
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/tts`, {
         method: 'POST',
         headers: {
@@ -91,7 +98,7 @@ export function useAudioGeneration({
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          text,
+          text: resolvedText,
           language,
         }),
       });
@@ -132,7 +139,7 @@ export function useAudioGeneration({
     } finally {
       setIsGenerating(false);
     }
-  }, [text, language, generatedAudioBlob?.blobUrl]);
+  }, [text, language, letter, generatedAudioBlob?.blobUrl]);
 
   /**
    * Play the generated or existing audio

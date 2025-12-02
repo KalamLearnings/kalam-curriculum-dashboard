@@ -1,6 +1,5 @@
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { IntroActivityForm } from './IntroActivityForm';
-import { PresentationActivityForm } from './PresentationActivityForm';
 import { TapActivityForm } from './TapActivityForm';
 import { WriteActivityForm } from './WriteActivityForm';
 import { BuildWordFromLettersForm } from './BuildWordFromLettersForm';
@@ -12,11 +11,16 @@ import { PizzaActivityForm } from './PizzaActivityForm';
 import { BreakActivityForm } from './BreakActivityForm';
 import { DragDotsToLetterForm } from './DragDotsToLetterForm';
 import { TapDotPositionForm } from './TapDotPositionForm';
+import { LetterRainActivityForm } from './LetterRainActivityForm';
+import { AudioLetterMatchActivityForm } from './AudioLetterMatchActivityForm';
+import { MemoryCardMatchActivityForm } from './MemoryCardMatchActivityForm';
+import { ColorLetterActivityForm } from './ColorLetterActivityForm';
+import { LetterDiscriminationActivityForm } from './LetterDiscriminationActivityForm';
 import { ActivityRequestForm } from './ActivityRequestForm';
 import type { ArticleType } from '@/lib/schemas/curriculum';
 
 // Map of activity types to their form components
-export const activityFormComponents: Record<ArticleType, React.ComponentType<BaseActivityFormProps>> = {
+export const activityFormComponents: Record<ArticleType, React.ComponentType<any>> = {
   show_letter_or_word: IntroActivityForm,
   tap_letter_in_word: TapActivityForm,
   trace_letter: WriteActivityForm,
@@ -29,6 +33,11 @@ export const activityFormComponents: Record<ArticleType, React.ComponentType<Bas
   add_pizza_toppings_with_letter: PizzaActivityForm,
   drag_dots_to_letter: DragDotsToLetterForm,
   tap_dot_position: TapDotPositionForm,
+  letter_rain: LetterRainActivityForm,
+  audio_letter_match: AudioLetterMatchActivityForm,
+  memory_card_match: MemoryCardMatchActivityForm,
+  color_letter: ColorLetterActivityForm,
+  letter_discrimination: LetterDiscriminationActivityForm,
   activity_request: ActivityRequestForm,
 };
 

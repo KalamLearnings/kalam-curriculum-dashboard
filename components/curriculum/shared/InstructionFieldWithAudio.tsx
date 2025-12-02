@@ -5,6 +5,15 @@
 
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { resolveTemplateText, hasTemplates } from '@/lib/utils/templateResolver';
+
+interface Letter {
+  id?: string;
+  letter: string;
+  name_english: string;
+  name_arabic?: string;
+  letter_sound?: string;
+}
 
 interface InstructionFieldWithAudioProps {
   /** Current text value */
@@ -27,6 +36,8 @@ interface InstructionFieldWithAudioProps {
   onGenerate: () => void;
   /** Callback to play audio */
   onPlay: () => void;
+  /** Letter data for template placeholders */
+  letter?: Letter | null;
 }
 
 const VOICE_TAGS = [
@@ -66,10 +77,14 @@ export function InstructionFieldWithAudio({
   hasAudio,
   onGenerate,
   onPlay,
+  letter,
 }: InstructionFieldWithAudioProps) {
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const languageLabel = language === 'en' ? 'English' : 'Arabic';
+
+  // Debug logging
+  console.log(`InstructionFieldWithAudio (${language}) letter:`, letter);
 
   const handleInsertTag = (tag: string) => {
     if (!textareaRef.current) return;
@@ -140,6 +155,72 @@ export function InstructionFieldWithAudio({
             </button>
           ))}
         </div>
+
+        {/* Template Placeholder Buttons Row */}
+        {letter && (
+          <div className="flex flex-wrap gap-1 items-center mb-1.5">
+            <span className="text-[10px] text-gray-500 font-medium mr-0.5">Letter:</span>
+            <button
+              type="button"
+              onClick={() => handleInsertTag('{{letter}}')}
+              className={cn(
+                "px-1.5 py-0.5 text-[10px] font-mono rounded transition-all",
+                "bg-white text-blue-600 border border-blue-200",
+                "hover:bg-blue-50 hover:border-blue-300",
+                "active:scale-95"
+              )}
+              title={`Insert letter character: ${letter.letter}`}
+            >
+              {'{{letter}}'} ({letter.letter})
+            </button>
+            <button
+              type="button"
+              onClick={() => handleInsertTag('{{letter_name}}')}
+              className={cn(
+                "px-1.5 py-0.5 text-[10px] font-mono rounded transition-all",
+                "bg-white text-blue-600 border border-blue-200",
+                "hover:bg-blue-50 hover:border-blue-300",
+                "active:scale-95"
+              )}
+              title={`Insert letter name: ${letter.name_arabic || letter.name_english}`}
+            >
+              {'{{letter_name}}'} ({letter.name_arabic || letter.name_english})
+            </button>
+            {letter.letter_sound && (
+              <button
+                type="button"
+                onClick={() => handleInsertTag('{{letter_sound}}')}
+                className={cn(
+                  "px-1.5 py-0.5 text-[10px] font-mono rounded transition-all",
+                  "bg-white text-blue-600 border border-blue-200",
+                  "hover:bg-blue-50 hover:border-blue-300",
+                  "active:scale-95"
+                )}
+                title={`Insert letter sound: ${letter.letter_sound}`}
+              >
+                {'{{letter_sound}}'} ({letter.letter_sound})
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Template Preview Row */}
+        {hasTemplates(value) && (
+          <div className="mb-1.5 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded text-xs">
+            <div className="flex items-start gap-1.5">
+              <svg className="w-3.5 h-3.5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <div className="flex-1">
+                <div className="text-blue-700 font-medium mb-0.5">TTS Preview:</div>
+                <div className={cn("text-blue-900", dir === 'rtl' && 'text-right')} dir={dir}>
+                  "{resolveTemplateText(value, letter)}"
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Audio Action Buttons Row */}
         <div className="flex items-center justify-end gap-1.5">

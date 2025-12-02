@@ -28,9 +28,13 @@ export function LetterSelector({
 
   // Auto-populate letter from topic when component mounts or topic changes
   useEffect(() => {
-    if (topic) {
-      // Extract letter from topic metadata
-      const topicLetter = topic.metadata?.reference?.character;
+    console.log('LetterSelector - topic:', topic);
+    console.log('LetterSelector - topic.letter:', topic?.letter);
+    console.log('LetterSelector - current value:', value);
+
+    if (topic?.letter) {
+      const topicLetter = topic.letter.letter;
+      console.log('LetterSelector - topicLetter to set:', topicLetter);
       if (topicLetter && !value) {
         onChange(topicLetter);
       }
@@ -48,13 +52,13 @@ export function LetterSelector({
             </span>
           </div>
           <div className="flex-1">
-            {topic && topic.metadata?.reference?.name_english ? (
+            {topic?.letter?.name_english ? (
               <>
                 <div className="text-sm font-medium text-gray-900">
-                  {topic.metadata.reference.name_english}
+                  {topic.letter.name_english}
                 </div>
                 <div className="text-xs text-gray-600">
-                  Topic Letter • {topic.metadata.reference.form ? `${topic.metadata.reference.form.charAt(0).toUpperCase() + topic.metadata.reference.form.slice(1)} Form` : 'All Forms'}
+                  Topic Letter
                 </div>
               </>
             ) : (

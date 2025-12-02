@@ -162,7 +162,7 @@ export function useWords(options?: UseWordsOptions): UseWordsReturn {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(`${WORDS_API_URL}/words/${wordId}/assets`, {
+      const response = await fetch(`${WORDS_API_URL}/${wordId}/assets`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,

@@ -19,6 +19,8 @@ const nextConfig = {
       },
     ],
   },
+  // Transpile workspace packages
+  transpilePackages: ['@kalam/curriculum-schemas'],
 };
 
 export default nextConfig;

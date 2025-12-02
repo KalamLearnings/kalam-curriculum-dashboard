@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField } from './FormField';
 import { cn } from '@/lib/utils';
@@ -28,6 +28,25 @@ export function DragDotsToLetterForm({ config, onChange, topic }: BaseActivityFo
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });
   };
+
+  // Auto-populate targetLetter from topic when component mounts or topic changes
+  useEffect(() => {
+    if (!targetLetter && topic?.letter) {
+      // Extract letter from topic.letter object (attached by backend)
+      const topicLetter = topic.letter.letter;
+
+      // Check if topic letter is in the supported dotted letters list
+      if (SUPPORTED_DOTTED_LETTERS.includes(topicLetter as any)) {
+        updateConfig({ targetLetter: topicLetter });
+      } else {
+        // Topic letter not supported, default to 'ب' (ba)
+        updateConfig({ targetLetter: 'ب' });
+      }
+    } else if (!targetLetter) {
+      // No topic, default to 'ب' (ba)
+      updateConfig({ targetLetter: 'ب' });
+    }
+  }, [topic, targetLetter]);
 
   return (
     <div className="space-y-4">

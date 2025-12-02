@@ -27,9 +27,9 @@ export function IntroActivityForm({ config, onChange, topic }: BaseActivityFormP
 
   // Auto-populate letter from topic when component mounts or topic changes
   useEffect(() => {
-    if (topic && contentType === 'letter') {
-      // Extract letter from topic metadata
-      const topicLetter = topic.metadata?.reference?.character;
+    if (topic?.letter && contentType === 'letter') {
+      // Extract letter from topic.letter object (attached by backend)
+      const topicLetter = topic.letter.letter;
       if (topicLetter && !letter) {
         updateConfig({ letter: topicLetter });
       }
@@ -98,13 +98,13 @@ export function IntroActivityForm({ config, onChange, topic }: BaseActivityFormP
                 </span>
               </div>
               <div className="flex-1">
-                {topic && topic.metadata?.reference?.name_english ? (
+                {topic?.letter ? (
                   <>
                     <div className="text-sm font-medium text-gray-900">
-                      {topic.metadata.reference.name_english}
+                      {topic.letter.name_english}
                     </div>
                     <div className="text-xs text-gray-600">
-                      Topic Letter • {topic.metadata.reference.form ? `${topic.metadata.reference.form.charAt(0).toUpperCase() + topic.metadata.reference.form.slice(1)} Form` : 'All Forms'}
+                      Topic Letter • {topic.letter.name_arabic || 'All Forms'}
                     </div>
                   </>
                 ) : (

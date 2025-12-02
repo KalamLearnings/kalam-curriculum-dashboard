@@ -155,6 +155,20 @@ export async function deleteTopic(
   });
 }
 
+export async function duplicateTopic(
+  curriculumId: string,
+  topicId: string,
+  targetLetterId: string
+): Promise<Topic> {
+  return fetchWithAuth<Topic>(
+    `/curriculum/${curriculumId}/topics/${topicId}/duplicate`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ target_letter_id: targetLetterId }),
+    }
+  );
+}
+
 // ============================================================================
 // NODES
 // ============================================================================
