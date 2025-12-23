@@ -18,8 +18,20 @@ export const VOICES: Voice[] = [
     name: 'Ghaida',
   },
   {
-    id: 'tavIIPLplRB883FzWU0V',
-    name: 'Becky',
+    id: 'rfkTsdZrVWEVhDycUYn9',
+    name: 'Shelby',
+  },
+  {
+    id: '4wf10lgibMnboGJGCLrP',
+    name: 'Farah',
+  },
+  {
+    id: 'DANw8bnAVbjDEHwZIoYa',
+    name: 'Ghawi',
+  },
+  {
+    id: 'Nggzl2QAXh3OijoXD116',
+    name: 'Candy',
   },
 ];
 
