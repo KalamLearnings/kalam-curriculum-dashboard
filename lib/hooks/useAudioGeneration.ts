@@ -19,6 +19,7 @@ interface UseAudioGenerationProps {
   text: string;
   existingAudioUrl?: string | null;
   letter?: Letter | null;
+  voiceId?: string;
 }
 
 interface UseAudioGenerationReturn {
@@ -47,6 +48,7 @@ export function useAudioGeneration({
   text,
   existingAudioUrl: initialAudioUrl,
   letter,
+  voiceId,
 }: UseAudioGenerationProps): UseAudioGenerationReturn {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -100,6 +102,7 @@ export function useAudioGeneration({
         body: JSON.stringify({
           text: resolvedText,
           language,
+          voice_id: voiceId,
         }),
       });
 
@@ -139,7 +142,7 @@ export function useAudioGeneration({
     } finally {
       setIsGenerating(false);
     }
-  }, [text, language, letter, generatedAudioBlob?.blobUrl]);
+  }, [text, language, letter, voiceId, generatedAudioBlob?.blobUrl]);
 
   /**
    * Play the generated or existing audio

@@ -17,6 +17,22 @@ import { MemoryCardMatchActivityForm } from './MemoryCardMatchActivityForm';
 import { ColorLetterActivityForm } from './ColorLetterActivityForm';
 import { LetterDiscriminationActivityForm } from './LetterDiscriminationActivityForm';
 import { ActivityRequestForm } from './ActivityRequestForm';
+// New themed activity forms
+import { GridTapActivityForm } from './GridTapActivityForm';
+import { PickFromTreeActivityForm } from './PickFromTreeActivityForm';
+import { PickFlowersActivityForm } from './PickFlowersActivityForm';
+import { TapCrescentMoonsActivityForm } from './TapCrescentMoonsActivityForm';
+import { DragToAnimalMouthActivityForm } from './DragToAnimalMouthActivityForm';
+import { FeedRabbitActivityForm } from './FeedRabbitActivityForm';
+import { FeedBabyActivityForm } from './FeedBabyActivityForm';
+import { PiggyBankActivityForm } from './PiggyBankActivityForm';
+import { SnowflakesActivityForm } from './SnowflakesActivityForm';
+import { BearHoneyActivityForm } from './BearHoneyActivityForm';
+import { FlyOnFlowersActivityForm } from './FlyOnFlowersActivityForm';
+import { DeliverEnvelopeActivityForm } from './DeliverEnvelopeActivityForm';
+import { PlantSeedsActivityForm } from './PlantSeedsActivityForm';
+import { BalanceScaleActivityForm } from './BalanceScaleActivityForm';
+import { IceCreamStackingActivityForm } from './IceCreamStackingActivityForm';
 import type { ArticleType } from '@/lib/schemas/curriculum';
 
 // Map of activity types to their form components
@@ -39,6 +55,22 @@ export const activityFormComponents: Record<ArticleType, React.ComponentType<any
   color_letter: ColorLetterActivityForm,
   letter_discrimination: LetterDiscriminationActivityForm,
   activity_request: ActivityRequestForm,
+  // New themed activities
+  grid_tap: GridTapActivityForm,
+  pick_from_tree: PickFromTreeActivityForm,
+  pick_flowers: PickFlowersActivityForm,
+  tap_crescent_moons: TapCrescentMoonsActivityForm,
+  drag_to_animal_mouth: DragToAnimalMouthActivityForm,
+  feed_rabbit: FeedRabbitActivityForm,
+  feed_baby: FeedBabyActivityForm,
+  piggy_bank: PiggyBankActivityForm,
+  snowflakes: SnowflakesActivityForm,
+  bear_honey: BearHoneyActivityForm,
+  fly_on_flowers: FlyOnFlowersActivityForm,
+  deliver_envelope: DeliverEnvelopeActivityForm,
+  plant_seeds: PlantSeedsActivityForm,
+  balance_scale: BalanceScaleActivityForm,
+  ice_cream_stacking: IceCreamStackingActivityForm,
 };
 
 // Generic fallback form for activity types without custom forms yet

@@ -6,6 +6,7 @@
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { resolveTemplateText, hasTemplates } from '@/lib/utils/templateResolver';
+import { VOICES, type Voice } from '@/lib/constants/voices';
 
 interface Letter {
   id?: string;
@@ -38,6 +39,10 @@ interface InstructionFieldWithAudioProps {
   onPlay: () => void;
   /** Letter data for template placeholders */
   letter?: Letter | null;
+  /** Selected voice ID */
+  selectedVoiceId?: string;
+  /** Callback when voice changes */
+  onVoiceChange?: (voiceId: string) => void;
 }
 
 const VOICE_TAGS = [
@@ -78,6 +83,8 @@ export function InstructionFieldWithAudio({
   onGenerate,
   onPlay,
   letter,
+  selectedVoiceId,
+  onVoiceChange,
 }: InstructionFieldWithAudioProps) {
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -224,6 +231,27 @@ export function InstructionFieldWithAudio({
 
         {/* Audio Action Buttons Row */}
         <div className="flex items-center justify-end gap-1.5">
+          {/* Voice Selector */}
+          {onVoiceChange && (
+            <select
+              value={selectedVoiceId || VOICES[0].id}
+              onChange={(e) => onVoiceChange(e.target.value)}
+              className={cn(
+                "px-2 py-1 text-xs rounded border border-gray-300",
+                "bg-white text-gray-700",
+                "hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500",
+                "cursor-pointer"
+              )}
+              title="Select voice"
+            >
+              {VOICES.map((voice) => (
+                <option key={voice.id} value={voice.id}>
+                  {voice.name}
+                </option>
+              ))}
+            </select>
+          )}
+
           <button
             type="button"
             onClick={onGenerate}

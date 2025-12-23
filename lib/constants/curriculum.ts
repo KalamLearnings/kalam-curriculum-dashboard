@@ -26,6 +26,22 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'color_letter', label: 'Letter Coloring' },
   { value: 'letter_discrimination', label: 'Similar Letter Discrimination' },
   { value: 'activity_request', label: 'Activity Request (Not Implemented)' },
+  // New themed activities
+  { value: 'grid_tap', label: 'Grid Tap (Select Letters)' },
+  { value: 'pick_from_tree', label: 'Pick Fruit from Tree' },
+  { value: 'pick_flowers', label: 'Pick Flowers in Field' },
+  { value: 'tap_crescent_moons', label: 'Tap Crescent Moons' },
+  { value: 'drag_to_animal_mouth', label: 'Drag to Animal Mouth' },
+  { value: 'feed_rabbit', label: 'Feed the Rabbit' },
+  { value: 'feed_baby', label: 'Feed the Baby' },
+  { value: 'piggy_bank', label: 'Piggy Bank Coins' },
+  { value: 'snowflakes', label: 'Catch Snowflakes' },
+  { value: 'bear_honey', label: 'Bear Honey Collection' },
+  { value: 'fly_on_flowers', label: 'Fly on Flowers' },
+  { value: 'deliver_envelope', label: 'Deliver Envelope' },
+  { value: 'plant_seeds', label: 'Plant Seeds' },
+  { value: 'balance_scale', label: 'Balance Scale' },
+  { value: 'ice_cream_stacking', label: 'Ice Cream Stacking' },
 ];
 
 /**
@@ -50,6 +66,22 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   color_letter: '🎨',
   letter_discrimination: '👀',
   activity_request: '💡',
+  // New themed activities
+  grid_tap: '🔲',
+  pick_from_tree: '🍎',
+  pick_flowers: '🌸',
+  tap_crescent_moons: '🌙',
+  drag_to_animal_mouth: '🐕',
+  feed_rabbit: '🐰',
+  feed_baby: '👶',
+  piggy_bank: '🐷',
+  snowflakes: '❄️',
+  bear_honey: '🐻',
+  fly_on_flowers: '🪰',
+  deliver_envelope: '✉️',
+  plant_seeds: '🌱',
+  balance_scale: '⚖️',
+  ice_cream_stacking: '🍦',
 };
 
 /**

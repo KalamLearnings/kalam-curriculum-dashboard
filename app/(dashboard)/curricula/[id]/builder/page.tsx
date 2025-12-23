@@ -8,6 +8,7 @@ import { useTopics, useDeleteTopic } from '@/lib/hooks/useTopics';
 import { useAllNodes, useDeleteNode } from '@/lib/hooks/useNodes';
 import { useActivities, useAllActivities, useUpdateActivity, useCreateActivity, useDeleteActivity, useMoveActivity, useReorderActivities } from '@/lib/hooks/useActivities';
 import { useAudioGeneration } from '@/lib/hooks/useAudioGeneration';
+import { DEFAULT_VOICE } from '@/lib/constants/voices';
 import { useBuilderStore } from '@/lib/stores/builderStore';
 import { duplicateTopic as duplicateTopicApi } from '@/lib/api/curricula';
 import { EmptyState } from '@/components/curriculum/shared/EmptyState';
@@ -97,6 +98,9 @@ export default function CurriculumBuilderPage() {
   const queryClient = useQueryClient();
   const [topicToDuplicate, setTopicToDuplicate] = useState<string | null>(null);
   const [isDuplicating, setIsDuplicating] = useState(false);
+
+  // Voice selection for TTS (shared across both English and Arabic)
+  const [selectedVoiceId, setSelectedVoiceId] = useState(DEFAULT_VOICE.id);
 
   const handleDuplicateTopic = (topicId: string) => {
     setTopicToDuplicate(topicId);
@@ -223,6 +227,7 @@ export default function CurriculumBuilderPage() {
     text: formData.instructionEn,
     existingAudioUrl: currentActivity?.instruction.audio_url,
     letter: currentLetter,
+    voiceId: selectedVoiceId,
   });
 
   const audioAr = useAudioGeneration({
@@ -230,6 +235,7 @@ export default function CurriculumBuilderPage() {
     text: formData.instructionAr,
     existingAudioUrl: currentActivity?.instruction.audio_url, // Note: Schema currently doesn't have separate AR audio URL
     letter: currentLetter,
+    voiceId: selectedVoiceId,
   });
 
   // Debug current activity
@@ -536,6 +542,8 @@ export default function CurriculumBuilderPage() {
                   onGenerate={audioEn.generateAudio}
                   onPlay={audioEn.playAudio}
                   letter={currentLetter}
+                  selectedVoiceId={selectedVoiceId}
+                  onVoiceChange={setSelectedVoiceId}
                 />
               </FormField>
 

@@ -37,6 +37,22 @@ const activityTypes: Array<{
     'memory_card_match',
     'color_letter',
     'letter_discrimination',
+    // New themed activities
+    'grid_tap',
+    'pick_from_tree',
+    'pick_flowers',
+    'tap_crescent_moons',
+    'drag_to_animal_mouth',
+    'feed_rabbit',
+    'feed_baby',
+    'piggy_bank',
+    'snowflakes',
+    'bear_honey',
+    'fly_on_flowers',
+    'deliver_envelope',
+    'plant_seeds',
+    'balance_scale',
+    'ice_cream_stacking',
   ].includes(value),
 }));
 
