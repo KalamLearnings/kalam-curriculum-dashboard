@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField } from './FormField';
-import { LetterSelector } from '../LetterSelector';
+import { FormField, TextInput } from './FormField';
+import { LetterSelector } from './shared/LetterSelector';
 import { OptionSelector } from './OptionSelector';
 import type { LetterDiscriminationConfig } from '@kalam/curriculum-schemas';
 
-export function LetterDiscriminationActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function LetterDiscriminationActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
     const typedConfig = (config || {}) as Partial<LetterDiscriminationConfig>;
 
     const handleChange = (key: keyof LetterDiscriminationConfig, value: any) => {
@@ -15,21 +15,22 @@ export function LetterDiscriminationActivityForm({ config, onChange }: BaseActiv
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-                <FormField label="Target Letter" hint="Correct answer">
-                    <LetterSelector
-                        value={typedConfig.targetLetter || ''}
-                        onChange={(letter) => handleChange('targetLetter', letter?.id)}
-                    />
-                </FormField>
+            <FormField label="Target Letter" hint="Correct answer">
+                <LetterSelector
+                    value={typedConfig.targetLetter || ''}
+                    onChange={(value) => handleChange('targetLetter', value)}
+                    topic={topic}
+                />
+            </FormField>
 
-                <FormField label="Confusable Letter" hint="Similar looking distractor">
-                    <LetterSelector
-                        value={typedConfig.confusableLetter || ''}
-                        onChange={(letter) => handleChange('confusableLetter', letter?.id)}
-                    />
-                </FormField>
-            </div>
+            <FormField label="Confusable Letter" hint="Similar looking distractor (comma-separated)">
+                <TextInput
+                    value={typedConfig.confusableLetter || ''}
+                    onChange={(value) => handleChange('confusableLetter', value)}
+                    placeholder="ب, ت, ث"
+                    dir="rtl"
+                />
+            </FormField>
 
             <FormField label="Prompt Text" hint="e.g., 'Select the letter Qaf'">
                 <input

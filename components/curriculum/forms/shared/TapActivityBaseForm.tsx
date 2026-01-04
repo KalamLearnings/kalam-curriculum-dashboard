@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
-import { FormField, NumberInput } from '../FormField';
-import { LetterSelector } from '../../LetterSelector';
+import { FormField, NumberInput, TextInput } from '../FormField';
+import { LetterSelector } from './LetterSelector';
+import type { Topic } from '@/lib/schemas/curriculum';
 
 export interface TapActivityConfig {
   targetLetter: string;
@@ -19,6 +20,7 @@ export interface TapActivityConfig {
 interface TapActivityBaseFormProps<T extends TapActivityConfig> {
   config: Partial<T>;
   onChange: (config: Partial<T>) => void;
+  topic?: Topic | null;
   itemLabel?: string; // e.g., "fruits", "flowers", "moons"
   defaultTargetCount?: number;
   defaultTotalItems?: number;
@@ -28,28 +30,17 @@ interface TapActivityBaseFormProps<T extends TapActivityConfig> {
 export function TapActivityBaseForm<T extends TapActivityConfig>({
   config,
   onChange,
+  topic,
   itemLabel = 'items',
   defaultTargetCount = 4,
   defaultTotalItems = 8,
   children,
 }: TapActivityBaseFormProps<T>) {
   const distractors = config.distractorLetters || [];
+  const distractorLettersStr = Array.isArray(distractors) ? distractors.join(', ') : '';
 
   const handleChange = <K extends keyof T>(key: K, value: T[K]) => {
     onChange({ ...config, [key]: value });
-  };
-
-  const addDistractor = (letter: any) => {
-    if (letter && !distractors.includes(letter.id)) {
-      handleChange('distractorLetters' as keyof T, [...distractors, letter.id] as T[keyof T]);
-    }
-  };
-
-  const removeDistractor = (letterId: string) => {
-    handleChange(
-      'distractorLetters' as keyof T,
-      distractors.filter((d) => d !== letterId) as T[keyof T]
-    );
   };
 
   return (
@@ -57,40 +48,21 @@ export function TapActivityBaseForm<T extends TapActivityConfig>({
       <FormField label="Target Letter" hint="The letter students need to find" required>
         <LetterSelector
           value={config.targetLetter || ''}
-          onChange={(letter) => handleChange('targetLetter' as keyof T, letter?.id as T[keyof T])}
+          onChange={(value) => handleChange('targetLetter' as keyof T, value as T[keyof T])}
+          topic={topic}
         />
       </FormField>
 
-      <FormField label="Distractor Letters" hint="Additional letters to appear as distractors">
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {distractors.map((d) => (
-              <span
-                key={d}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-              >
-                {d}
-                <button
-                  type="button"
-                  onClick={() => removeDistractor(d)}
-                  className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none"
-                >
-                  x
-                </button>
-              </span>
-            ))}
-            {distractors.length === 0 && (
-              <span className="text-sm text-gray-500 italic">
-                No distractors selected (will auto-generate)
-              </span>
-            )}
-          </div>
-          <LetterSelector
-            value=""
-            onChange={(letter) => addDistractor(letter)}
-            label="Add Distractor"
-          />
-        </div>
+      <FormField label="Distractor Letters" hint="Wrong letters (comma-separated)">
+        <TextInput
+          value={distractorLettersStr}
+          onChange={(value) => {
+            const letters = value.split(',').map(l => l.trim()).filter(l => l);
+            handleChange('distractorLetters' as keyof T, letters as T[keyof T]);
+          }}
+          placeholder="ب, ت, ث"
+          dir="rtl"
+        />
       </FormField>
 
       <div className="grid grid-cols-2 gap-4">

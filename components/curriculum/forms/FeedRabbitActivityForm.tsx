@@ -7,62 +7,20 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { DragToTargetBaseForm, DragToTargetConfig } from './shared/DragToTargetBaseForm';
-import { FormField, Checkbox } from './FormField';
-import { OptionSelector } from './OptionSelector';
+import { TargetLetterWithDistractorsForm } from './shared/TargetLetterWithDistractorsForm';
 
-interface FeedRabbitConfig extends DragToTargetConfig {
-  rabbitColor?: 'white' | 'brown' | 'gray';
-  showArabicLabel?: boolean;
-  gardenTheme?: 'spring' | 'summer';
-}
-
-export function FeedRabbitActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const typedConfig = (config || {}) as Partial<FeedRabbitConfig>;
-
-  const handleSpecificChange = (key: keyof FeedRabbitConfig, value: any) => {
-    onChange({ ...typedConfig, [key]: value });
-  };
-
+export function FeedRabbitActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   return (
-    <DragToTargetBaseForm<FeedRabbitConfig>
-      config={typedConfig}
+    <TargetLetterWithDistractorsForm
+      config={config}
       onChange={onChange}
-      itemLabel="carrots"
-      targetLabel="the rabbit"
-      defaultTargetCount={4}
-      defaultTotalItems={8}
-    >
-      <FormField label="Rabbit Color">
-        <OptionSelector
-          options={[
-            { value: 'white', label: 'White', icon: '🐰' },
-            { value: 'brown', label: 'Brown', icon: '🐇' },
-            { value: 'gray', label: 'Gray', icon: '🐰' },
-          ]}
-          value={typedConfig.rabbitColor || 'white'}
-          onChange={(value) => handleSpecificChange('rabbitColor', value)}
-          columns={3}
-        />
-      </FormField>
-
-      <FormField label="Garden Theme">
-        <OptionSelector
-          options={[
-            { value: 'spring', label: 'Spring Garden', icon: '🌸' },
-            { value: 'summer', label: 'Summer Garden', icon: '☀️' },
-          ]}
-          value={typedConfig.gardenTheme || 'spring'}
-          onChange={(value) => handleSpecificChange('gardenTheme', value)}
-          columns={2}
-        />
-      </FormField>
-
-      <Checkbox
-        checked={typedConfig.showArabicLabel ?? true}
-        onChange={(checked) => handleSpecificChange('showArabicLabel', checked)}
-        label="Show Arabic word 'جَزَر' (carrot)"
-      />
-    </DragToTargetBaseForm>
+      topic={topic}
+      targetLetterField="targetLetter"
+      labels={{
+        targetLetterLabel: "Target Letter",
+        targetLetterHint: "The letter on carrots to drag",
+        countBasedDescription: "Game ends after feeding X carrots"
+      }}
+    />
   );
 }

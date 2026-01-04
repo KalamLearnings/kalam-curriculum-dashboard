@@ -7,8 +7,8 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, NumberInput, Checkbox } from './FormField';
-import { LetterSelector } from '../LetterSelector';
+import { FormField, NumberInput, Checkbox, TextInput } from './FormField';
+import { LetterSelector } from './shared/LetterSelector';
 import { OptionSelector } from './OptionSelector';
 
 interface SnowflakesConfig {
@@ -20,22 +20,13 @@ interface SnowflakesConfig {
   showArabicLabel?: boolean;
 }
 
-export function SnowflakesActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function SnowflakesActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   const typedConfig = (config || {}) as Partial<SnowflakesConfig>;
   const distractors = typedConfig.distractorLetters || [];
+  const distractorLettersStr = Array.isArray(distractors) ? distractors.join(', ') : '';
 
   const handleChange = (key: keyof SnowflakesConfig, value: any) => {
     onChange({ ...typedConfig, [key]: value });
-  };
-
-  const addDistractor = (letter: any) => {
-    if (letter && !distractors.includes(letter.id)) {
-      handleChange('distractorLetters', [...distractors, letter.id]);
-    }
-  };
-
-  const removeDistractor = (letterId: string) => {
-    handleChange('distractorLetters', distractors.filter((d) => d !== letterId));
   };
 
   return (
@@ -43,40 +34,21 @@ export function SnowflakesActivityForm({ config, onChange }: BaseActivityFormPro
       <FormField label="Target Letter" hint="The letter on snowflakes to catch" required>
         <LetterSelector
           value={typedConfig.targetLetter || ''}
-          onChange={(letter) => handleChange('targetLetter', letter?.id)}
+          onChange={(value) => handleChange('targetLetter', value)}
+          topic={topic}
         />
       </FormField>
 
-      <FormField label="Distractor Letters" hint="Letters on snowflakes to avoid">
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {distractors.map((d) => (
-              <span
-                key={d}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800"
-              >
-                {d}
-                <button
-                  type="button"
-                  onClick={() => removeDistractor(d)}
-                  className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-cyan-400 hover:bg-cyan-200 hover:text-cyan-500 focus:outline-none"
-                >
-                  x
-                </button>
-              </span>
-            ))}
-            {distractors.length === 0 && (
-              <span className="text-sm text-gray-500 italic">
-                No distractors selected (will auto-generate)
-              </span>
-            )}
-          </div>
-          <LetterSelector
-            value=""
-            onChange={(letter) => addDistractor(letter)}
-            label="Add Distractor"
-          />
-        </div>
+      <FormField label="Distractor Letters" hint="Wrong letters (comma-separated)">
+        <TextInput
+          value={distractorLettersStr}
+          onChange={(value) => {
+            const letters = value.split(',').map(l => l.trim()).filter(l => l);
+            handleChange('distractorLetters', letters);
+          }}
+          placeholder="ب, ت, ث"
+          dir="rtl"
+        />
       </FormField>
 
       <div className="grid grid-cols-2 gap-4">

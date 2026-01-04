@@ -7,63 +7,20 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { DragToTargetBaseForm, DragToTargetConfig } from './shared/DragToTargetBaseForm';
-import { FormField, Checkbox } from './FormField';
-import { OptionSelector } from './OptionSelector';
+import { TargetLetterWithDistractorsForm } from './shared/TargetLetterWithDistractorsForm';
 
-interface PiggyBankConfig extends DragToTargetConfig {
-  piggyColor?: 'pink' | 'gold' | 'blue';
-  coinStyle?: 'gold' | 'silver' | 'mixed';
-  showArabicLabels?: boolean;
-}
-
-export function PiggyBankActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const typedConfig = (config || {}) as Partial<PiggyBankConfig>;
-
-  const handleSpecificChange = (key: keyof PiggyBankConfig, value: any) => {
-    onChange({ ...typedConfig, [key]: value });
-  };
-
+export function PiggyBankActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   return (
-    <DragToTargetBaseForm<PiggyBankConfig>
-      config={typedConfig}
+    <TargetLetterWithDistractorsForm
+      config={config}
       onChange={onChange}
-      itemLabel="coins"
-      targetLabel="the piggy bank"
-      defaultTargetCount={4}
-      defaultTotalItems={8}
-    >
-      <FormField label="Piggy Bank Color">
-        <OptionSelector
-          options={[
-            { value: 'pink', label: 'Pink', icon: '🐷' },
-            { value: 'gold', label: 'Gold', icon: '🏦' },
-            { value: 'blue', label: 'Blue', icon: '🐽' },
-          ]}
-          value={typedConfig.piggyColor || 'pink'}
-          onChange={(value) => handleSpecificChange('piggyColor', value)}
-          columns={3}
-        />
-      </FormField>
-
-      <FormField label="Coin Style">
-        <OptionSelector
-          options={[
-            { value: 'gold', label: 'Gold Coins', icon: '🪙' },
-            { value: 'silver', label: 'Silver Coins', icon: '⚪' },
-            { value: 'mixed', label: 'Mixed', icon: '💰' },
-          ]}
-          value={typedConfig.coinStyle || 'gold'}
-          onChange={(value) => handleSpecificChange('coinStyle', value)}
-          columns={3}
-        />
-      </FormField>
-
-      <Checkbox
-        checked={typedConfig.showArabicLabels ?? true}
-        onChange={(checked) => handleSpecificChange('showArabicLabels', checked)}
-        label="Show Arabic words 'عُمْلَة' (coin) and 'حَصَّالَة' (piggy bank)"
-      />
-    </DragToTargetBaseForm>
+      topic={topic}
+      targetLetterField="targetLetter"
+      labels={{
+        targetLetterLabel: "Target Letter",
+        targetLetterHint: "The letter on coins to drag",
+        countBasedDescription: "Game ends after collecting X coins"
+      }}
+    />
   );
 }

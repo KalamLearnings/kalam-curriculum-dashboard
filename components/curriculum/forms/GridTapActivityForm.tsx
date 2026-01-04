@@ -16,7 +16,7 @@ interface GridTapConfig extends TapActivityConfig {
   theme?: 'default' | 'garden' | 'ocean' | 'space';
 }
 
-export function GridTapActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function GridTapActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   const typedConfig = (config || {}) as Partial<GridTapConfig>;
 
   const handleSpecificChange = (key: keyof GridTapConfig, value: any) => {
@@ -27,6 +27,7 @@ export function GridTapActivityForm({ config, onChange }: BaseActivityFormProps)
     <TapActivityBaseForm<GridTapConfig>
       config={typedConfig}
       onChange={onChange}
+      topic={topic}
       itemLabel="cells"
       defaultTargetCount={4}
       defaultTotalItems={12}

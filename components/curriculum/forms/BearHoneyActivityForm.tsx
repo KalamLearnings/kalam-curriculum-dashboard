@@ -7,63 +7,20 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { DragToTargetBaseForm, DragToTargetConfig } from './shared/DragToTargetBaseForm';
-import { FormField, Checkbox } from './FormField';
-import { OptionSelector } from './OptionSelector';
+import { TargetLetterWithDistractorsForm } from './shared/TargetLetterWithDistractorsForm';
 
-interface BearHoneyConfig extends DragToTargetConfig {
-  bearStyle?: 'brown' | 'polar' | 'panda';
-  forestTheme?: 'forest' | 'meadow' | 'cave';
-  showArabicLabels?: boolean;
-}
-
-export function BearHoneyActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const typedConfig = (config || {}) as Partial<BearHoneyConfig>;
-
-  const handleSpecificChange = (key: keyof BearHoneyConfig, value: any) => {
-    onChange({ ...typedConfig, [key]: value });
-  };
-
+export function BearHoneyActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   return (
-    <DragToTargetBaseForm<BearHoneyConfig>
-      config={typedConfig}
+    <TargetLetterWithDistractorsForm
+      config={config}
       onChange={onChange}
-      itemLabel="honey jars"
-      targetLabel="the bear"
-      defaultTargetCount={4}
-      defaultTotalItems={8}
-    >
-      <FormField label="Bear Style">
-        <OptionSelector
-          options={[
-            { value: 'brown', label: 'Brown Bear', icon: '🐻' },
-            { value: 'polar', label: 'Polar Bear', icon: '🐻‍❄️' },
-            { value: 'panda', label: 'Panda', icon: '🐼' },
-          ]}
-          value={typedConfig.bearStyle || 'brown'}
-          onChange={(value) => handleSpecificChange('bearStyle', value)}
-          columns={3}
-        />
-      </FormField>
-
-      <FormField label="Background Theme">
-        <OptionSelector
-          options={[
-            { value: 'forest', label: 'Forest', icon: '🌲', description: 'Green trees' },
-            { value: 'meadow', label: 'Meadow', icon: '🌻', description: 'Sunny field' },
-            { value: 'cave', label: 'Cave', icon: '🏔️', description: 'Rocky cave' },
-          ]}
-          value={typedConfig.forestTheme || 'forest'}
-          onChange={(value) => handleSpecificChange('forestTheme', value)}
-          columns={3}
-        />
-      </FormField>
-
-      <Checkbox
-        checked={typedConfig.showArabicLabels ?? true}
-        onChange={(checked) => handleSpecificChange('showArabicLabels', checked)}
-        label="Show Arabic words 'عَسَل' (honey) and 'دُبّ' (bear)"
-      />
-    </DragToTargetBaseForm>
+      topic={topic}
+      targetLetterField="targetLetter"
+      labels={{
+        targetLetterLabel: "Target Letter",
+        targetLetterHint: "The letter on honey jars to drag",
+        countBasedDescription: "Game ends after feeding X honey jars"
+      }}
+    />
   );
 }

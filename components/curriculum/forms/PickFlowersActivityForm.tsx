@@ -15,7 +15,7 @@ interface PickFlowersConfig extends TapActivityConfig {
   gardenTheme?: 'spring' | 'summer' | 'rainbow';
 }
 
-export function PickFlowersActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function PickFlowersActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   const typedConfig = (config || {}) as Partial<PickFlowersConfig>;
 
   const handleSpecificChange = (key: keyof PickFlowersConfig, value: any) => {
@@ -26,6 +26,7 @@ export function PickFlowersActivityForm({ config, onChange }: BaseActivityFormPr
     <TapActivityBaseForm<PickFlowersConfig>
       config={typedConfig}
       onChange={onChange}
+      topic={topic}
       itemLabel="flowers"
       defaultTargetCount={4}
       defaultTotalItems={8}

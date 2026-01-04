@@ -1,59 +1,31 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField } from './FormField';
-import { LetterSelector } from '../LetterSelector';
+import { FormField, TextInput } from './FormField';
 import { OptionSelector } from './OptionSelector';
 import type { MemoryCardMatchConfig } from '@kalam/curriculum-schemas';
 
-export function MemoryCardMatchActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
     const typedConfig = (config || {}) as Partial<MemoryCardMatchConfig>;
     const letters = typedConfig.letters || [];
+    const lettersStr = Array.isArray(letters) ? letters.join(', ') : '';
 
     const handleChange = (key: keyof MemoryCardMatchConfig, value: any) => {
         onChange({ ...typedConfig, [key]: value });
     };
 
-    const addLetter = (letter: any) => {
-        if (letter && !letters.includes(letter.id)) {
-            handleChange('letters', [...letters, letter.id]);
-        }
-    };
-
-    const removeLetter = (letterId: string) => {
-        handleChange('letters', letters.filter(l => l !== letterId));
-    };
-
     return (
         <div className="space-y-6">
-            <FormField
-                label="Letters to Match"
-                hint="Select letters to include in the game"
-            >
-                <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                        {letters.map(l => (
-                            <span key={l} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                {l}
-                                <button
-                                    type="button"
-                                    onClick={() => removeLetter(l)}
-                                    className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-green-400 hover:bg-green-200 hover:text-green-500 focus:outline-none"
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        ))}
-                        {letters.length === 0 && (
-                            <span className="text-sm text-gray-500 italic">No letters selected</span>
-                        )}
-                    </div>
-                    <LetterSelector
-                        value=""
-                        onChange={(letter) => addLetter(letter)}
-                        label="Add Letter"
-                    />
-                </div>
+            <FormField label="Letters to Match" hint="Letters to include in the game (comma-separated)">
+                <TextInput
+                    value={lettersStr}
+                    onChange={(value) => {
+                        const letterList = value.split(',').map(l => l.trim()).filter(l => l);
+                        handleChange('letters', letterList);
+                    }}
+                    placeholder="أ, ب, ت, ث"
+                    dir="rtl"
+                />
             </FormField>
 
             <div className="grid grid-cols-2 gap-4">

@@ -1,7 +1,8 @@
 import React from 'react';
 import { BaseActivityFormProps } from '../ActivityFormProps';
-import { FormField, TextInput, NumberInput } from '../FormField';
+import { FormField, NumberInput } from '../FormField';
 import { LetterSelector } from './LetterSelector';
+import { useLetters } from '@/lib/hooks/useLetters';
 
 interface TargetLetterWithDistractorsFormProps extends BaseActivityFormProps {
   labels: {
@@ -19,9 +20,9 @@ export function TargetLetterWithDistractorsForm({
   labels,
   targetLetterField = 'targetLetter'
 }: TargetLetterWithDistractorsFormProps) {
+  const { letters, loading: lettersLoading } = useLetters();
   const targetLetter = config?.[targetLetterField] || '';
-  const distractorLetters = config?.distractorLetters || [];
-  const distractorLettersStr = Array.isArray(distractorLetters) ? distractorLetters.join(', ') : '';
+  const distractorLetters: string[] = config?.distractorLetters || [];
   const duration = config?.duration || 60;
   const targetCount = config?.targetCount || 10;
 
@@ -30,6 +31,15 @@ export function TargetLetterWithDistractorsForm({
 
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });
+  };
+
+  const toggleDistractorLetter = (letter: string) => {
+    const current = distractorLetters;
+    if (current.includes(letter)) {
+      updateConfig({ distractorLetters: current.filter(l => l !== letter) });
+    } else {
+      updateConfig({ distractorLetters: [...current, letter] });
+    }
   };
 
   const handleEndConditionChange = (condition: 'duration' | 'count') => {
@@ -58,16 +68,45 @@ export function TargetLetterWithDistractorsForm({
         />
       </FormField>
 
-      <FormField label="Distractor Letters" hint="Wrong letters (comma-separated)" required>
-        <TextInput
-          value={distractorLettersStr}
-          onChange={(value) => {
-            const letters = value.split(',').map(l => l.trim()).filter(l => l);
-            updateConfig({ distractorLetters: letters });
-          }}
-          placeholder="ب, ت, ث"
-          dir="rtl"
-        />
+      <FormField label="Distractor Letters" hint="Select the wrong letters (click to toggle)" required>
+        {lettersLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-gray-500">Loading letters...</div>
+          </div>
+        ) : (
+          <div>
+            {/* Letter keyboard grid */}
+            <div className="grid grid-cols-7 gap-2">
+              {letters.map((letter) => {
+                const isSelected = distractorLetters.includes(letter.letter);
+                const isTargetLetter = letter.letter === targetLetter;
+
+                return (
+                  <button
+                    key={letter.id}
+                    type="button"
+                    onClick={() => !isTargetLetter && toggleDistractorLetter(letter.letter)}
+                    disabled={isTargetLetter}
+                    className={`
+                      aspect-square rounded-lg border-2 transition-all
+                      flex flex-col items-center justify-center
+                      ${isTargetLetter
+                        ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : isSelected
+                          ? 'border-blue-600 bg-blue-100 ring-2 ring-blue-600 ring-offset-1'
+                          : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50'
+                      }
+                    `}
+                    title={isTargetLetter ? 'This is the target letter' : letter.name_english}
+                  >
+                    <div className="text-2xl font-arabic mb-0.5">{letter.letter}</div>
+                    <div className="text-xs text-gray-600 truncate px-1">{letter.name_english}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </FormField>
 
       <FormField label="Game End Condition" required hint="Choose how the game should end">

@@ -2,11 +2,11 @@
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField } from './FormField';
-import { LetterSelector } from '../LetterSelector';
+import { LetterSelector } from './shared/LetterSelector';
 import { OptionSelector } from './OptionSelector';
 import type { ColorLetterConfig } from '@kalam/curriculum-schemas';
 
-export function ColorLetterActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function ColorLetterActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
     const typedConfig = (config || {}) as Partial<ColorLetterConfig>;
 
     const handleChange = (key: keyof ColorLetterConfig, value: any) => {
@@ -18,7 +18,8 @@ export function ColorLetterActivityForm({ config, onChange }: BaseActivityFormPr
             <FormField label="Letter to Color">
                 <LetterSelector
                     value={typedConfig.letter || ''}
-                    onChange={(letter) => handleChange('letter', letter?.id)}
+                    onChange={(value) => handleChange('letter', value)}
+                    topic={topic}
                 />
             </FormField>
 

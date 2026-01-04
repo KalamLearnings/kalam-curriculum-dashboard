@@ -15,7 +15,7 @@ interface PickFromTreeConfig extends TapActivityConfig {
   treeStyle?: 'spring' | 'summer' | 'autumn';
 }
 
-export function PickFromTreeActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function PickFromTreeActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   const typedConfig = (config || {}) as Partial<PickFromTreeConfig>;
 
   const handleSpecificChange = (key: keyof PickFromTreeConfig, value: any) => {
@@ -26,6 +26,7 @@ export function PickFromTreeActivityForm({ config, onChange }: BaseActivityFormP
     <TapActivityBaseForm<PickFromTreeConfig>
       config={typedConfig}
       onChange={onChange}
+      topic={topic}
       itemLabel="fruits"
       defaultTargetCount={4}
       defaultTotalItems={8}

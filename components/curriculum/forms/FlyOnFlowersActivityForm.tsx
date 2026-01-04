@@ -18,7 +18,7 @@ interface FlyOnFlowersConfig extends TapActivityConfig {
   showArabicLabel?: boolean;
 }
 
-export function FlyOnFlowersActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function FlyOnFlowersActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   const typedConfig = (config || {}) as Partial<FlyOnFlowersConfig>;
 
   const handleSpecificChange = (key: keyof FlyOnFlowersConfig, value: any) => {
@@ -29,6 +29,7 @@ export function FlyOnFlowersActivityForm({ config, onChange }: BaseActivityFormP
     <TapActivityBaseForm<FlyOnFlowersConfig>
       config={typedConfig}
       onChange={onChange}
+      topic={topic}
       itemLabel="flowers"
       defaultTargetCount={4}
       defaultTotalItems={8}

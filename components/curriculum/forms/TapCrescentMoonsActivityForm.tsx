@@ -17,7 +17,7 @@ interface TapCrescentMoonsConfig extends TapActivityConfig {
   showArabicLabel?: boolean;
 }
 
-export function TapCrescentMoonsActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function TapCrescentMoonsActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   const typedConfig = (config || {}) as Partial<TapCrescentMoonsConfig>;
 
   const handleSpecificChange = (key: keyof TapCrescentMoonsConfig, value: any) => {
@@ -28,6 +28,7 @@ export function TapCrescentMoonsActivityForm({ config, onChange }: BaseActivityF
     <TapActivityBaseForm<TapCrescentMoonsConfig>
       config={typedConfig}
       onChange={onChange}
+      topic={topic}
       itemLabel="moons"
       defaultTargetCount={3}
       defaultTotalItems={6}

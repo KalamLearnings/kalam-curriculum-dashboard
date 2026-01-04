@@ -17,7 +17,7 @@ interface DeliverEnvelopeConfig extends TapActivityConfig {
   showArabicLabel?: boolean;
 }
 
-export function DeliverEnvelopeActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function DeliverEnvelopeActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   const typedConfig = (config || {}) as Partial<DeliverEnvelopeConfig>;
 
   const handleSpecificChange = (key: keyof DeliverEnvelopeConfig, value: any) => {
@@ -28,6 +28,7 @@ export function DeliverEnvelopeActivityForm({ config, onChange }: BaseActivityFo
     <TapActivityBaseForm<DeliverEnvelopeConfig>
       config={typedConfig}
       onChange={onChange}
+      topic={topic}
       itemLabel="houses"
       defaultTargetCount={3}
       defaultTotalItems={6}

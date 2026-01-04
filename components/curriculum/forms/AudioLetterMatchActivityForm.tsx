@@ -1,27 +1,18 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField } from './FormField';
-import { LetterSelector } from '../LetterSelector';
+import { FormField, TextInput } from './FormField';
+import { LetterSelector } from './shared/LetterSelector';
 import { OptionSelector } from './OptionSelector';
 import type { AudioLetterMatchConfig } from '@kalam/curriculum-schemas';
 
-export function AudioLetterMatchActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function AudioLetterMatchActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
     const typedConfig = (config || {}) as Partial<AudioLetterMatchConfig>;
     const distractors = typedConfig.distractorLetters || [];
+    const distractorLettersStr = Array.isArray(distractors) ? distractors.join(', ') : '';
 
     const handleChange = (key: keyof AudioLetterMatchConfig, value: any) => {
         onChange({ ...typedConfig, [key]: value });
-    };
-
-    const addDistractor = (letter: any) => {
-        if (letter && !distractors.includes(letter.id)) {
-            handleChange('distractorLetters', [...distractors, letter.id]);
-        }
-    };
-
-    const removeDistractor = (letterId: string) => {
-        handleChange('distractorLetters', distractors.filter(d => d !== letterId));
     };
 
     return (
@@ -29,38 +20,21 @@ export function AudioLetterMatchActivityForm({ config, onChange }: BaseActivityF
             <FormField label="Target Letter" hint="The letter matching the audio">
                 <LetterSelector
                     value={typedConfig.targetLetter || ''}
-                    onChange={(letter) => handleChange('targetLetter', letter?.id)}
+                    onChange={(value) => handleChange('targetLetter', value)}
+                    topic={topic}
                 />
             </FormField>
 
-            <FormField
-                label="Distractor Letters"
-                hint="Incorrect letters to display"
-            >
-                <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                        {distractors.map(d => (
-                            <span key={d} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {d}
-                                <button
-                                    type="button"
-                                    onClick={() => removeDistractor(d)}
-                                    className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none"
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        ))}
-                        {distractors.length === 0 && (
-                            <span className="text-sm text-gray-500 italic">No distractors selected</span>
-                        )}
-                    </div>
-                    <LetterSelector
-                        value=""
-                        onChange={(letter) => addDistractor(letter)}
-                        label="Add Distractor"
-                    />
-                </div>
+            <FormField label="Distractor Letters" hint="Wrong letters (comma-separated)">
+                <TextInput
+                    value={distractorLettersStr}
+                    onChange={(value) => {
+                        const letters = value.split(',').map(l => l.trim()).filter(l => l);
+                        handleChange('distractorLetters', letters);
+                    }}
+                    placeholder="ب, ت, ث"
+                    dir="rtl"
+                />
             </FormField>
 
             <div className="grid grid-cols-2 gap-4">

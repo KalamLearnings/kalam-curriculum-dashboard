@@ -18,7 +18,7 @@ interface PlantSeedsConfig extends TapActivityConfig {
   showArabicLabel?: boolean;
 }
 
-export function PlantSeedsActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function PlantSeedsActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
   const typedConfig = (config || {}) as Partial<PlantSeedsConfig>;
 
   const handleSpecificChange = (key: keyof PlantSeedsConfig, value: any) => {
@@ -29,6 +29,7 @@ export function PlantSeedsActivityForm({ config, onChange }: BaseActivityFormPro
     <TapActivityBaseForm<PlantSeedsConfig>
       config={typedConfig}
       onChange={onChange}
+      topic={topic}
       itemLabel="seeds"
       defaultTargetCount={4}
       defaultTotalItems={8}
