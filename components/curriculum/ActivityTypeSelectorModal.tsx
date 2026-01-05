@@ -37,6 +37,7 @@ const activityTypes: Array<{
     'memory_card_match',
     'color_letter',
     'letter_discrimination',
+    'speech_practice',
     // New themed activities
     'grid_tap',
     'pick_from_tree',

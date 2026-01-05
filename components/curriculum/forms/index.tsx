@@ -14,6 +14,7 @@ import { TapDotPositionForm } from './TapDotPositionForm';
 import { MemoryCardMatchActivityForm } from './MemoryCardMatchActivityForm';
 import { ColorLetterActivityForm } from './ColorLetterActivityForm';
 import { ActivityRequestForm } from './ActivityRequestForm';
+import { SpeechPracticeActivityForm } from './SpeechPracticeActivityForm';
 import { TargetLetterWithDistractorsForm } from './shared/TargetLetterWithDistractorsForm';
 import type { ArticleType } from '@/lib/schemas/curriculum';
 
@@ -145,6 +146,7 @@ export const activityFormComponents: Record<ArticleType, React.ComponentType<any
   memory_card_match: MemoryCardMatchActivityForm,
   color_letter: ColorLetterActivityForm,
   activity_request: ActivityRequestForm,
+  speech_practice: SpeechPracticeActivityForm,
 
   // Target letter + distractor activities (using shared form)
   pop_balloons_with_letter: createTargetLetterForm('pop_balloons_with_letter'),

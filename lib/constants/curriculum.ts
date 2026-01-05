@@ -25,6 +25,7 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'memory_card_match', label: 'Memory Card Match' },
   { value: 'color_letter', label: 'Letter Coloring' },
   { value: 'letter_discrimination', label: 'Similar Letter Discrimination' },
+  { value: 'speech_practice', label: 'Speech Pronunciation Practice' },
   { value: 'activity_request', label: 'Activity Request (Not Implemented)' },
   // New themed activities
   { value: 'grid_tap', label: 'Grid Tap (Select Letters)' },
@@ -65,6 +66,7 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   memory_card_match: '🃏',
   color_letter: '🎨',
   letter_discrimination: '👀',
+  speech_practice: '🎙️',
   activity_request: '💡',
   // New themed activities
   grid_tap: '🔲',

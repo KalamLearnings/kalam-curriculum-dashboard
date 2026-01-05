@@ -71,11 +71,14 @@ export const TopicSchema = z.object({
   updated_at: z.string().datetime(),
 });
 
+export const TopicTypeSchema = z.enum(['lesson', 'review', 'quiz', 'assessment']);
+
 export const CreateTopicSchema = z.object({
   letter_id: z.string().optional(), // Letter ID reference (e.g., "jeem", "alif")
   sequence_number: z.number().int().positive().default(1),
   title: LocalizedTextSchema,
   description: LocalizedTextSchema.optional(),
+  type: TopicTypeSchema.optional().default('lesson'),
 });
 
 export const UpdateTopicSchema = CreateTopicSchema.partial();
@@ -220,6 +223,7 @@ export type UpdateCurriculum = z.infer<typeof UpdateCurriculumSchema>;
 export type Topic = z.infer<typeof TopicSchema>;
 export type CreateTopic = z.infer<typeof CreateTopicSchema>;
 export type UpdateTopic = z.infer<typeof UpdateTopicSchema>;
+export type TopicType = z.infer<typeof TopicTypeSchema>;
 
 export type Node = z.infer<typeof NodeSchema>;
 export type CreateNode = z.infer<typeof CreateNodeSchema>;
