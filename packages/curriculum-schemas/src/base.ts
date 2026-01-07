@@ -64,6 +64,7 @@ export const ActivityTypeSchema = z.enum([
   'drag_dots_to_letter',
   'tap_dot_position',
   'activity_request',
+  'content_with_cards',
 ]);
 
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;
@@ -91,6 +92,7 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   drag_dots_to_letter: 'Drag Dots to Letter',
   tap_dot_position: 'Tap Correct Dot Position',
   activity_request: 'Activity Request (Not Implemented)',
+  content_with_cards: 'Content with Cards',
 };
 
 // ============================================================================

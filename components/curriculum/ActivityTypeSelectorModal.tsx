@@ -54,6 +54,7 @@ const activityTypes: Array<{
     'plant_seeds',
     'balance_scale',
     'ice_cream_stacking',
+    'content_with_cards',
   ].includes(value),
 }));
 

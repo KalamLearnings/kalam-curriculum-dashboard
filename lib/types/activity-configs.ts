@@ -200,6 +200,38 @@ export interface LetterDiscriminationConfig {
 }
 
 /**
+ * Content With Cards Activity Config
+ *
+ * Displays content (letter, word, or image) at the top with 1-4 cards at the bottom.
+ * Supports both interactive (choice) and informational (display-only) modes.
+ */
+export interface ContentWithCardsOption {
+  id: string;
+  text?: string;
+  image?: string;
+  isCorrect?: boolean;
+}
+
+export interface ContentWithCardsConfig {
+  /** Content to display at top */
+  content?: {
+    letter?: string;
+    word?: string;
+    image?: string;
+  };
+  /** Content type for display */
+  contentType?: 'letter' | 'word' | 'image';
+  /** Array of 1-4 card options */
+  cards: ContentWithCardsOption[];
+  /** Display mode for cards: text or image */
+  cardMode?: 'text' | 'image';
+  /** Whether cards are tappable (interactive) or display-only (informational) */
+  interactive?: boolean;
+  /** Randomize card order */
+  randomizeCards?: boolean;
+}
+
+/**
  * Union type for all activity configs
  */
 export type ActivityConfig =
@@ -217,7 +249,8 @@ export type ActivityConfig =
   | AudioLetterMatchConfig
   | MemoryCardMatchConfig
   | ColorLetterConfig
-  | LetterDiscriminationConfig;
+  | LetterDiscriminationConfig
+  | ContentWithCardsConfig;
 
 /**
  * Mapped type for activity configs by type
@@ -238,6 +271,7 @@ export type ActivityConfigMap = {
   memory_card_match: MemoryCardMatchConfig;
   color_letter: ColorLetterConfig;
   letter_discrimination: LetterDiscriminationConfig;
+  content_with_cards: ContentWithCardsConfig;
 };
 
 /**

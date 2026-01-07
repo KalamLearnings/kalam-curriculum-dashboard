@@ -43,6 +43,7 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'plant_seeds', label: 'Plant Seeds' },
   { value: 'balance_scale', label: 'Balance Scale' },
   { value: 'ice_cream_stacking', label: 'Ice Cream Stacking' },
+  { value: 'content_with_cards', label: 'Content with Cards' },
 ];
 
 /**
@@ -84,6 +85,7 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   plant_seeds: '🌱',
   balance_scale: '⚖️',
   ice_cream_stacking: '🍦',
+  content_with_cards: '🃏',
 };
 
 /**
