@@ -43,6 +43,7 @@ export {
 } from './tap_dot_position';
 
 export * from './activity_request';
+export * from './content_with_cards';
 
 // Import schemas for discriminated union
 import { ShowLetterOrWordActivitySchema } from './show_letter_or_word';
@@ -63,6 +64,7 @@ import { AddPizzaToppingsWithLetterActivitySchema } from './add_pizza_toppings_w
 import { DragDotsToLetterActivitySchema } from './drag_dots_to_letter';
 import { TapDotPositionActivitySchema } from './tap_dot_position';
 import { ActivityRequestActivitySchema } from './activity_request';
+import { ContentWithCardsActivitySchema } from './content_with_cards';
 
 // Import config schemas for helper function
 import { ShowLetterOrWordConfigSchema } from './show_letter_or_word';
@@ -83,6 +85,7 @@ import { AddPizzaToppingsWithLetterConfigSchema } from './add_pizza_toppings_wit
 import { DragDotsToLetterConfigSchema } from './drag_dots_to_letter';
 import { TapDotPositionConfigSchema } from './tap_dot_position';
 import { ActivityRequestConfigSchema } from './activity_request';
+import { ContentWithCardsConfigSchema } from './content_with_cards';
 
 import type { ActivityType } from '../base';
 
@@ -119,6 +122,7 @@ export const ActivitySchema = z.discriminatedUnion('type', [
   MemoryCardMatchActivitySchema,
   ColorLetterActivitySchema,
   LetterDiscriminationActivitySchema,
+  ContentWithCardsActivitySchema,
 ]);
 
 export type Activity = z.infer<typeof ActivitySchema>;
@@ -145,6 +149,7 @@ const ACTIVITY_CONFIG_SCHEMAS = {
   memory_card_match: MemoryCardMatchConfigSchema,
   color_letter: ColorLetterConfigSchema,
   letter_discrimination: LetterDiscriminationConfigSchema,
+  content_with_cards: ContentWithCardsConfigSchema,
 } as const;
 
 /**

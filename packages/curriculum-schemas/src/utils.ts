@@ -110,6 +110,7 @@ export function isValidActivityType(type: string): type is ActivityType {
     'drag_dots_to_letter',
     'tap_dot_position',
     'activity_request',
+    'content_with_cards',
   ];
 
   return validTypes.includes(type as ActivityType);
@@ -140,6 +141,7 @@ export function getActivityCategory(type: ActivityType): string {
     color_letter: 'Writing',
     letter_discrimination: 'Recognition',
     activity_request: 'Other',
+    content_with_cards: 'Interactive',
   };
 
   return categories[type];
@@ -170,6 +172,7 @@ export function getEstimatedDuration(type: ActivityType): number {
     color_letter: 60,
     letter_discrimination: 45,
     activity_request: 0,
+    content_with_cards: 30,
   };
 
   return durations[type];
@@ -338,6 +341,16 @@ export function createDefaultConfig(type: ActivityType): Record<string, any> {
     activity_request: {
       description: '',
       notes: '',
+    },
+    content_with_cards: {
+      contentType: 'letter',
+      content: { letter: 'ب' },
+      cards: [
+        { id: 'card_1', text: 'ب', isCorrect: true },
+        { id: 'card_2', text: 'ت', isCorrect: false },
+      ],
+      cardMode: 'text',
+      interactive: true,
     },
   };
 
