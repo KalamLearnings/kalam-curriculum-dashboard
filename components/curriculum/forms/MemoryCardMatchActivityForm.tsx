@@ -1,57 +1,63 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, TextInput } from './FormField';
+import { FormField } from './FormField';
 import { OptionSelector } from './OptionSelector';
+import { useLetters } from '@/lib/hooks/useLetters';
 import type { MemoryCardMatchConfig } from '@kalam/curriculum-schemas';
 
 export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
     const typedConfig = (config || {}) as Partial<MemoryCardMatchConfig>;
-    const letters = typedConfig.letters || [];
-    const lettersStr = Array.isArray(letters) ? letters.join(', ') : '';
+    const letters: string[] = typedConfig.letters || [];
+    const { letters: allLetters, loading: lettersLoading } = useLetters();
 
     const handleChange = (key: keyof MemoryCardMatchConfig, value: any) => {
         onChange({ ...typedConfig, [key]: value });
     };
 
+    const toggleLetter = (letter: string) => {
+        if (letters.includes(letter)) {
+            handleChange('letters', letters.filter(l => l !== letter));
+        } else {
+            handleChange('letters', [...letters, letter]);
+        }
+    };
+
     return (
         <div className="space-y-6">
-            <FormField label="Letters to Match" hint="Letters to include in the game (comma-separated)">
-                <TextInput
-                    value={lettersStr}
-                    onChange={(value) => {
-                        const letterList = value.split(',').map(l => l.trim()).filter(l => l);
-                        handleChange('letters', letterList);
-                    }}
-                    placeholder="أ, ب, ت, ث"
-                    dir="rtl"
-                />
+            <FormField label="Letters to Match" hint="Select the letters to include in the game (click to toggle)" required>
+                {lettersLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="text-gray-500">Loading letters...</div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-7 gap-2">
+                        {allLetters.map((letter) => {
+                            const isSelected = letters.includes(letter.letter);
+
+                            return (
+                                <button
+                                    key={letter.id}
+                                    type="button"
+                                    onClick={() => toggleLetter(letter.letter)}
+                                    className={`
+                                        aspect-square rounded-lg border-2 transition-all
+                                        flex flex-col items-center justify-center
+                                        ${isSelected
+                                            ? 'border-blue-600 bg-blue-100 ring-2 ring-blue-600 ring-offset-1'
+                                            : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50'
+                                        }
+                                    `}
+                                    title={letter.name_english}
+                                >
+                                    <div className="text-2xl font-arabic mb-0.5">{letter.letter}</div>
+                                    <div className="text-xs text-gray-600 truncate px-1">{letter.name_english}</div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </FormField>
-
-            <div className="grid grid-cols-2 gap-4">
-                <FormField label="Card Count" hint="Total number of cards (must be even)">
-                    <input
-                        type="number"
-                        min="4"
-                        max="24"
-                        step="2"
-                        value={typedConfig.cardCount || 8}
-                        onChange={(e) => handleChange('cardCount', parseInt(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                </FormField>
-
-                <FormField label="Time Limit (seconds)" hint="Optional">
-                    <input
-                        type="number"
-                        min="0"
-                        value={typedConfig.timeLimit || ''}
-                        onChange={(e) => handleChange('timeLimit', e.target.value ? parseInt(e.target.value) : undefined)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        placeholder="No limit"
-                    />
-                </FormField>
-            </div>
 
             <FormField label="Match Type">
                 <OptionSelector
