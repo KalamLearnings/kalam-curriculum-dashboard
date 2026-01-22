@@ -4,7 +4,8 @@
  * Follow-Up Actions Panel Component
  *
  * Configures what happens after an audio response plays.
- * Options include highlighting elements, continuing to next step, or retrying.
+ * Supports multiselect - can combine highlight with continue/retry.
+ * If no options selected, there's no followUp.
  */
 
 import { useState } from 'react';
@@ -22,32 +23,22 @@ interface FollowUpActionsPanelProps {
   activityConfig?: Record<string, any>;
 }
 
-const FOLLOW_UP_ACTIONS = [
+type ActionType = 'highlight' | 'continue';
+
+const FOLLOW_UP_ACTIONS: { value: ActionType; label: string; description: string; icon: string }[] = [
   {
-    value: 'none' as const,
-    label: 'None',
-    description: 'No action after audio',
-    icon: '⏸️',
-  },
-  {
-    value: 'highlight' as const,
+    value: 'highlight',
     label: 'Highlight',
     description: 'Highlight specific elements',
     icon: '✨',
   },
   {
-    value: 'continue' as const,
+    value: 'continue',
     label: 'Continue',
-    description: 'Proceed to next step',
+    description: 'Enable continue button',
     icon: '➡️',
   },
-  {
-    value: 'retry' as const,
-    label: 'Retry',
-    description: 'Let student try again',
-    icon: '🔄',
-  },
-] as const;
+];
 
 export function FollowUpActionsPanel({
   value,
@@ -55,19 +46,64 @@ export function FollowUpActionsPanel({
   activityType,
   activityConfig,
 }: FollowUpActionsPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(!!value?.action && value.action !== 'none');
+  // Determine which actions are currently selected
+  // Highlight is selected if there are highlights OR if highlight array exists (even if empty, meaning user clicked it)
+  const hasHighlight = value?.highlight !== undefined;
+  const hasHighlightTargets = value?.highlight && value.highlight.length > 0;
+  const currentAction = value?.action;
 
-  const currentAction = value?.action || 'none';
+  // For display: show selected actions
+  const selectedActions: ActionType[] = [];
+  if (hasHighlightTargets) selectedActions.push('highlight');
+  if (currentAction === 'continue') selectedActions.push('continue');
 
-  const handleActionChange = (action: typeof currentAction) => {
-    if (action === 'none') {
-      onChange(undefined);
+  const [isExpanded, setIsExpanded] = useState(selectedActions.length > 0 || hasHighlight);
+
+  // Check if an action is selected (for button styling)
+  const isActionSelected = (action: ActionType): boolean => {
+    if (action === 'highlight') {
+      return hasHighlight; // Show as selected even with empty array
+    }
+    return currentAction === action;
+  };
+
+  // Toggle an action on/off
+  const toggleAction = (action: ActionType) => {
+    const isCurrentlySelected = isActionSelected(action);
+
+    if (action === 'highlight') {
+      if (isCurrentlySelected) {
+        // Deselect highlight - clear highlights
+        if (!currentAction && !value?.delay) {
+          onChange(undefined);
+        } else {
+          onChange({ ...value, highlight: undefined });
+        }
+      } else {
+        // Select highlight - initialize with empty array, user will pick letters
+        onChange({
+          ...value,
+          highlight: value?.highlight || [], // Keep existing or start empty
+        });
+      }
     } else {
-      onChange({
-        action,
-        highlight: action === 'highlight' ? value?.highlight : undefined,
-        delay: value?.delay,
-      });
+      // Continue or Retry
+      if (isCurrentlySelected) {
+        // Deselect - remove action
+        if (hasHighlightTargets) {
+          onChange({ ...value, action: undefined });
+        } else if (value?.delay) {
+          onChange({ ...value, action: undefined });
+        } else {
+          onChange(undefined);
+        }
+      } else {
+        // Select - set this action
+        onChange({
+          ...value,
+          action,
+        });
+      }
     }
   };
 
@@ -77,18 +113,28 @@ export function FollowUpActionsPanel({
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
 
-    onChange({
-      ...value,
-      action: 'highlight',
-      highlight: targetArray.length > 0 ? targetArray : undefined,
-    });
+    if (targetArray.length === 0) {
+      // No highlights - if no action either, clear everything
+      if (!currentAction) {
+        onChange(undefined);
+      } else {
+        onChange({ ...value, highlight: undefined });
+      }
+    } else {
+      onChange({
+        ...value,
+        highlight: targetArray,
+      });
+    }
   };
 
   const handleDelayChange = (delayStr: string) => {
     const delay = parseInt(delayStr, 10);
+    if (!value && (isNaN(delay) || delay <= 0)) {
+      return; // Don't create value just for empty delay
+    }
     onChange({
       ...value,
-      action: currentAction === 'none' ? 'continue' : currentAction,
       delay: isNaN(delay) || delay <= 0 ? undefined : delay,
     });
   };
@@ -102,11 +148,19 @@ export function FollowUpActionsPanel({
       ? currentTargets.filter((t) => t !== elementId)
       : [...currentTargets, elementId];
 
-    onChange({
-      ...value,
-      action: 'highlight',
-      highlight: newTargets.length > 0 ? newTargets : undefined,
-    });
+    if (newTargets.length === 0) {
+      // No highlights left
+      if (!currentAction) {
+        onChange(undefined);
+      } else {
+        onChange({ ...value, highlight: undefined });
+      }
+    } else {
+      onChange({
+        ...value,
+        highlight: newTargets,
+      });
+    }
   };
 
   return (
@@ -119,11 +173,15 @@ export function FollowUpActionsPanel({
       >
         <div className="flex items-center gap-2">
           <span className="text-sm">🎬</span>
-          <span className="text-xs font-medium text-gray-700">Follow-up Action</span>
-          {value?.action && value.action !== 'none' && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded">
-              {FOLLOW_UP_ACTIONS.find((a) => a.value === value.action)?.label}
-            </span>
+          <span className="text-xs font-medium text-gray-700">Follow-up Actions</span>
+          {selectedActions.length > 0 && (
+            <div className="flex gap-1">
+              {selectedActions.map((action) => (
+                <span key={action} className="px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded">
+                  {FOLLOW_UP_ACTIONS.find((a) => a.value === action)?.label}
+                </span>
+              ))}
+            </div>
           )}
         </div>
         <svg
@@ -147,66 +205,74 @@ export function FollowUpActionsPanel({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="px-2 pb-2 pt-1 space-y-2 border-t border-gray-100">
-          {/* Action Selection */}
-          <div className="grid grid-cols-4 gap-1">
-            {FOLLOW_UP_ACTIONS.map((action) => (
-              <button
-                key={action.value}
-                type="button"
-                onClick={() => handleActionChange(action.value)}
-                className={cn(
-                  'flex flex-col items-center p-1.5 rounded border transition-all',
-                  currentAction === action.value
-                    ? 'border-purple-400 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                )}
-              >
-                <span className="text-sm">{action.icon}</span>
-                <span className="text-[10px] font-medium mt-0.5">{action.label}</span>
-              </button>
-            ))}
+          {/* Action Selection - Multiselect */}
+          <div>
+            <div className="text-[10px] text-gray-500 mb-1">Select actions (can combine):</div>
+            <div className="grid grid-cols-2 gap-1">
+              {FOLLOW_UP_ACTIONS.map((action) => {
+                const isSelected = action.value === 'highlight'
+                  ? hasHighlight
+                  : currentAction === action.value;
+                return (
+                  <button
+                    key={action.value}
+                    type="button"
+                    onClick={() => toggleAction(action.value)}
+                    className={cn(
+                      'flex flex-col items-center p-1.5 rounded border transition-all',
+                      isSelected
+                        ? 'border-purple-400 bg-purple-50 text-purple-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    )}
+                  >
+                    <span className="text-sm">{action.icon}</span>
+                    <span className="text-[10px] font-medium mt-0.5">{action.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Highlight Targets (only shown when highlight action is selected) */}
-          {currentAction === 'highlight' && (
-            <div className="space-y-2">
-              {/* Visual Letter Picker for tap_letter_in_word activity */}
-              {activityType === 'tap_letter_in_word' && activityConfig?.targetWord && (
-                <div className="p-2 bg-yellow-50 border border-yellow-200 rounded">
-                  <div className="text-[10px] font-medium text-yellow-700 mb-1">
-                    Click letters to highlight (can select multiple):
-                  </div>
-                  <div className="flex flex-row-reverse justify-center gap-1 font-arabic text-lg">
-                    {[...activityConfig.targetWord].map((char: string, index: number) => {
-                      const elementId = `letter_${index}`;
-                      const isSelected = value?.highlight?.includes(elementId);
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => toggleHighlightTarget(elementId)}
-                          className={cn(
-                            'flex flex-col items-center px-2 py-1 rounded border transition-colors',
-                            isSelected
-                              ? 'bg-yellow-500 text-white border-yellow-600'
-                              : 'bg-white text-gray-800 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
-                          )}
-                        >
-                          <span className="text-base">{char}</span>
-                          <span className="text-[9px] opacity-70">{index + 1}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {value?.highlight && value.highlight.length > 0 && (
-                    <div className="text-[9px] text-yellow-600 mt-1 text-center">
-                      Will highlight: {value.highlight.join(', ')}
-                    </div>
-                  )}
+          {/* Highlight Targets - shown when any action is selected or expanded */}
+          <div className="space-y-2">
+            {/* Visual Letter Picker for tap_letter_in_word activity */}
+            {activityType === 'tap_letter_in_word' && activityConfig?.targetWord && (
+              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded">
+                <div className="text-[10px] font-medium text-yellow-700 mb-1">
+                  Click letters to highlight (optional):
                 </div>
-              )}
+                <div className="flex flex-row-reverse justify-center gap-1 font-arabic text-lg">
+                  {[...activityConfig.targetWord].map((char: string, index: number) => {
+                    const elementId = `letter_${index}`;
+                    const isSelected = value?.highlight?.includes(elementId);
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => toggleHighlightTarget(elementId)}
+                        className={cn(
+                          'flex flex-col items-center px-2 py-1 rounded border transition-colors',
+                          isSelected
+                            ? 'bg-yellow-500 text-white border-yellow-600'
+                            : 'bg-white text-gray-800 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
+                        )}
+                      >
+                        <span className="text-base">{char}</span>
+                        <span className="text-[9px] opacity-70">{index + 1}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {value?.highlight && value.highlight.length > 0 && (
+                  <div className="text-[9px] text-yellow-600 mt-1 text-center">
+                    Will highlight: {value.highlight.join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
 
-              {/* Text input fallback for other activity types or manual entry */}
+            {/* Text input fallback for other activity types or manual entry */}
+            {activityType !== 'tap_letter_in_word' && (
               <div>
                 <label className="block text-[10px] font-medium text-gray-600 mb-0.5">
                   Highlight Targets (comma-separated IDs)
@@ -222,30 +288,28 @@ export function FollowUpActionsPanel({
                   Element IDs to highlight after audio plays
                 </p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Delay (shown for all non-none actions) */}
-          {currentAction !== 'none' && (
-            <div>
-              <label className="block text-[10px] font-medium text-gray-600 mb-0.5">
-                Delay (ms)
-              </label>
-              <input
-                type="number"
-                value={value?.delay || ''}
-                onChange={(e) => handleDelayChange(e.target.value)}
-                placeholder="0"
-                min="0"
-                max="5000"
-                step="100"
-                className="w-24 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-transparent"
-              />
-              <p className="text-[10px] text-gray-500 mt-0.5">
-                Wait before executing action (optional)
-              </p>
-            </div>
-          )}
+          {/* Delay */}
+          <div>
+            <label className="block text-[10px] font-medium text-gray-600 mb-0.5">
+              Delay (ms)
+            </label>
+            <input
+              type="number"
+              value={value?.delay || ''}
+              onChange={(e) => handleDelayChange(e.target.value)}
+              placeholder="1500"
+              min="0"
+              max="5000"
+              step="100"
+              className="w-24 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+            />
+            <p className="text-[10px] text-gray-500 mt-0.5">
+              Wait before showing highlight (default: 1500ms)
+            </p>
+          </div>
         </div>
       )}
     </div>
