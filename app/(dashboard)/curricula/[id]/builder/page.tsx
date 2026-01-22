@@ -16,6 +16,9 @@ import { InstructionFieldWithAudio } from '@/components/curriculum/shared/Instru
 import { getActivityFormComponent } from '@/components/curriculum/forms';
 import { FormField } from '@/components/curriculum/forms/FormField';
 import { PhoneFrame, ActivityPreview } from '@/components/curriculum/preview';
+import { ConditionalAudioSection } from '@/components/curriculum/shared/ConditionalAudioSection';
+import { VoiceSelector } from '@/components/curriculum/shared/VoiceSelector';
+import type { ConditionalAudioConfig } from '@kalam/curriculum-schemas';
 import { TopicFormModal } from '@/components/curriculum/TopicFormModal';
 import { NodeFormModal } from '@/components/curriculum/NodeFormModal';
 import { ActivityTypeSelectorModal } from '@/components/curriculum/ActivityTypeSelectorModal';
@@ -518,11 +521,17 @@ export default function CurriculumBuilderPage() {
             />
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
-              {/* Activity Name Header */}
-              <div className="mb-2">
+              {/* Activity Name Header + Global Voice Selector */}
+              <div className="flex items-center justify-between mb-2">
                 <h2 className="text-base font-semibold text-gray-900">
                   {getActivityLabel(formData.type)}
                 </h2>
+                <VoiceSelector
+                  value={selectedVoiceId}
+                  onChange={setSelectedVoiceId}
+                  label="Voice"
+                  className="min-w-[180px]"
+                />
               </div>
 
               {/* English Instruction with Audio */}
@@ -542,8 +551,6 @@ export default function CurriculumBuilderPage() {
                   onGenerate={audioEn.generateAudio}
                   onPlay={audioEn.playAudio}
                   letter={currentLetter}
-                  selectedVoiceId={selectedVoiceId}
-                  onVoiceChange={setSelectedVoiceId}
                 />
               </FormField>
 
@@ -576,6 +583,23 @@ export default function CurriculumBuilderPage() {
                   config={formData.config}
                   onChange={updateConfig}
                   topic={currentTopic}
+                />
+              </div>
+
+              {/* Conditional Audio Section */}
+              <div className="pt-4 border-t">
+                <ConditionalAudioSection
+                  value={(formData.config?.conditionalAudio as ConditionalAudioConfig) || {}}
+                  onChange={(conditionalAudio) => {
+                    updateConfig({
+                      ...formData.config,
+                      conditionalAudio,
+                    });
+                  }}
+                  activityType={formData.type}
+                  activityConfig={formData.config}
+                  letter={currentLetter}
+                  voiceId={selectedVoiceId}
                 />
               </div>
             </div>

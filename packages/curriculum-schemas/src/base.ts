@@ -36,6 +36,231 @@ export const LocalizedTextSchema = z.object({
 export type LocalizedText = z.infer<typeof LocalizedTextSchema>;
 
 // ============================================================================
+// CONDITIONAL AUDIO SYSTEM
+// ============================================================================
+
+/**
+ * Follow-up action types after audio plays
+ */
+export const FollowUpActionSchema = z.enum(['continue', 'retry', 'show_hint', 'none'])
+  .describe('Action to take after audio completes');
+
+export type FollowUpAction = z.infer<typeof FollowUpActionSchema>;
+
+/**
+ * Follow-up configuration after audio plays
+ */
+export const AudioFollowUpSchema = z.object({
+  highlight: z.array(z.string())
+    .max(10)
+    .optional()
+    .describe('Element IDs to highlight after audio (e.g., ["letter_0", "letter_2"])'),
+
+  action: FollowUpActionSchema
+    .default('none')
+    .describe('Action to take after audio completes'),
+
+  delay: z.number()
+    .int()
+    .min(0)
+    .max(5000)
+    .default(0)
+    .describe('Delay in milliseconds before follow-up action'),
+});
+
+export type AudioFollowUp = z.infer<typeof AudioFollowUpSchema>;
+
+/**
+ * Audio response with text, URL, and optional follow-up actions
+ *
+ * Used for both predefined slots and custom rules.
+ */
+export const AudioResponseSchema = z.object({
+  text: z.string()
+    .min(1, 'Audio text is required')
+    .max(500, 'Audio text must be under 500 characters')
+    .describe('Text for TTS generation'),
+
+  audio_url: z.string()
+    .url()
+    .optional()
+    .describe('Generated audio URL (populated after TTS generation)'),
+
+  voice_id: z.string()
+    .optional()
+    .describe('ElevenLabs voice ID used for generation'),
+
+  followUp: AudioFollowUpSchema
+    .optional()
+    .describe('Actions to perform after audio finishes playing'),
+});
+
+export type AudioResponse = z.infer<typeof AudioResponseSchema>;
+
+/**
+ * Event types that can trigger conditional audio
+ */
+export const AudioTriggerEventSchema = z.enum(['tap', 'drag', 'drop', 'complete', 'timeout', 'submit'])
+  .describe('User interaction event type');
+
+export type AudioTriggerEvent = z.infer<typeof AudioTriggerEventSchema>;
+
+/**
+ * Comparison operators for condition matching
+ */
+export const AudioConditionOperatorSchema = z.enum(['equals', 'not_equals', 'contains'])
+  .describe('Comparison operator for condition matching');
+
+export type AudioConditionOperator = z.infer<typeof AudioConditionOperatorSchema>;
+
+/**
+ * Target element condition for audio rules
+ */
+export const AudioConditionTargetSchema = z.object({
+  property: z.string()
+    .min(1)
+    .max(50)
+    .describe('Property to check (e.g., "letterForm", "isCorrect", "elementId")'),
+
+  value: z.string()
+    .max(100)
+    .describe('Expected value (e.g., "medial", "true", "letter_2")'),
+
+  operator: AudioConditionOperatorSchema
+    .default('equals')
+    .describe('Comparison operator'),
+});
+
+export type AudioConditionTarget = z.infer<typeof AudioConditionTargetSchema>;
+
+/**
+ * Condition that determines when an audio rule triggers
+ *
+ * Conditions can match on:
+ * - Event type (tap, drag, complete, etc.)
+ * - Element properties (letterForm, isCorrect, etc.)
+ * - Attempt number
+ */
+export const AudioConditionSchema = z.object({
+  event: AudioTriggerEventSchema
+    .describe('User interaction event that triggers this condition'),
+
+  target: AudioConditionTargetSchema
+    .optional()
+    .describe('Element-specific condition (property/value match)'),
+
+  attemptNumber: z.number()
+    .int()
+    .positive()
+    .max(10)
+    .optional()
+    .describe('Trigger only on specific attempt number'),
+
+  isFirstAttempt: z.boolean()
+    .optional()
+    .describe('Trigger only on first attempt'),
+});
+
+export type AudioCondition = z.infer<typeof AudioConditionSchema>;
+
+/**
+ * Custom audio rule for activity-specific scenarios
+ *
+ * Rules are evaluated in priority order (highest first).
+ * Once a rule matches and plays, it won't play again.
+ */
+export const AudioRuleSchema = z.object({
+  id: z.string()
+    .uuid()
+    .describe('Unique identifier for this rule'),
+
+  name: z.string()
+    .min(1)
+    .max(50)
+    .describe('Human-readable name for dashboard display'),
+
+  condition: AudioConditionSchema
+    .describe('When this rule should trigger'),
+
+  response: AudioResponseSchema
+    .describe('Audio to play and follow-up actions'),
+
+  priority: z.number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(50)
+    .describe('Evaluation priority (higher = evaluated first, 1-100)'),
+
+  enabled: z.boolean()
+    .default(true)
+    .describe('Whether this rule is active'),
+});
+
+export type AudioRule = z.infer<typeof AudioRuleSchema>;
+
+/**
+ * Complete conditional audio configuration for an activity
+ *
+ * Combines predefined slots (covering 80% of use cases) with
+ * custom rules for complex activity-specific scenarios.
+ *
+ * Evaluation order:
+ * 1. Custom rules (sorted by priority, highest first)
+ * 2. Predefined slots (based on event type and success state)
+ */
+export const ConditionalAudioConfigSchema = z.object({
+  // ========== PREDEFINED SLOTS (common feedback patterns) ==========
+
+  onSuccess: AudioResponseSchema
+    .optional()
+    .describe('Plays when activity completed successfully'),
+
+  onPartialSuccess: AudioResponseSchema
+    .optional()
+    .describe('Plays when partially correct (e.g., found 1 of 2 targets)'),
+
+  onFirstWrongAttempt: AudioResponseSchema
+    .optional()
+    .describe('Encouragement on first wrong attempt'),
+
+  onSecondWrongAttempt: AudioResponseSchema
+    .optional()
+    .describe('Hint on second wrong attempt'),
+
+  onThirdWrongAttempt: AudioResponseSchema
+    .optional()
+    .describe('More explicit guidance on third wrong attempt'),
+
+  onCompletion: AudioResponseSchema
+    .optional()
+    .describe('Plays when activity ends (regardless of success)'),
+
+  // ========== CUSTOM RULES (activity-specific scenarios) ==========
+
+  rules: z.array(AudioRuleSchema)
+    .max(10)
+    .optional()
+    .describe('Custom audio rules for complex scenarios (max 10)'),
+});
+
+export type ConditionalAudioConfig = z.infer<typeof ConditionalAudioConfigSchema>;
+
+/**
+ * Extended LocalizedText with conditional audio support
+ *
+ * This extends the base LocalizedText to include conditional audio
+ * configuration for activities that need dynamic audio responses.
+ */
+export const LocalizedTextWithConditionalAudioSchema = LocalizedTextSchema.extend({
+  conditionalAudio: ConditionalAudioConfigSchema
+    .optional()
+    .describe('Conditional audio responses based on user interactions'),
+});
+
+export type LocalizedTextWithConditionalAudio = z.infer<typeof LocalizedTextWithConditionalAudioSchema>;
+
+// ============================================================================
 // ACTIVITY TYPE ENUM
 // ============================================================================
 

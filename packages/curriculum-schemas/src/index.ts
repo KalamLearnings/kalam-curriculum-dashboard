@@ -26,12 +26,36 @@ export {
   LetterPositionSchema,
   DifficultySchema,
 
+  // Conditional Audio Schemas
+  FollowUpActionSchema,
+  AudioFollowUpSchema,
+  AudioResponseSchema,
+  AudioTriggerEventSchema,
+  AudioConditionOperatorSchema,
+  AudioConditionTargetSchema,
+  AudioConditionSchema,
+  AudioRuleSchema,
+  ConditionalAudioConfigSchema,
+  LocalizedTextWithConditionalAudioSchema,
+
   // Types
   type LocalizedText,
   type ActivityType,
   type BaseActivity,
   type LetterPosition,
   type Difficulty,
+
+  // Conditional Audio Types
+  type FollowUpAction,
+  type AudioFollowUp,
+  type AudioResponse,
+  type AudioTriggerEvent,
+  type AudioConditionOperator,
+  type AudioConditionTarget,
+  type AudioCondition,
+  type AudioRule,
+  type ConditionalAudioConfig,
+  type LocalizedTextWithConditionalAudio,
 
   // Constants
   ACTIVITY_TYPE_LABELS,
