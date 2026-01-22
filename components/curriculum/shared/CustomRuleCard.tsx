@@ -12,7 +12,6 @@ import { cn } from '@/lib/utils';
 import { hasTemplates, resolveTemplateText } from '@/lib/utils/templateResolver';
 import { FollowUpActionsPanel } from './FollowUpActionsPanel';
 import { AudioControls } from './AudioControls';
-import { useAudioGeneration } from '@/lib/hooks/useAudioGeneration';
 import type {
   AudioRule,
   AudioTriggerEvent,
@@ -66,22 +65,142 @@ export function CustomRuleCard({
   voiceId,
 }: CustomRuleCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [generatedBlobUrl, setGeneratedBlobUrl] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Use the shared audio generation hook
-  const {
-    isGenerating,
-    isPlaying,
-    hasAudio,
-    generateAudio,
-    playAudio,
-  } = useAudioGeneration({
-    language: 'en',
-    text: rule.response.text || '',
-    existingAudioUrl: rule.response.audio_url,
-    letter,
-    voiceId,
-  });
+  const hasAudio = !!(generatedBlobUrl || rule.response.audio_url);
+
+  // Upload audio blob to Supabase Storage
+  const uploadAudioToStorage = async (blob: Blob, filePath: string): Promise<string> => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
+
+    const { data, error } = await supabase.storage
+      .from('curriculum-audio')
+      .upload(filePath, blob, {
+        contentType: 'audio/mpeg',
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      throw new Error(`Failed to upload audio: ${error.message}`);
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('curriculum-audio')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  };
+
+  // Generate audio via TTS and upload immediately
+  const generateAudio = async () => {
+    const text = rule.response.text;
+    if (!text?.trim()) {
+      alert('Please enter audio text first');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in.');
+      }
+
+      // Resolve template placeholders before sending to TTS
+      const resolvedText = resolveTemplateText(text, letter);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/tts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          text: resolvedText,
+          language: 'en',
+          voice_id: voiceId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate audio');
+      }
+
+      const responseData = await response.json();
+      const data = responseData.data || responseData;
+
+      // Convert base64 to blob
+      const binaryString = atob(data.audio_data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: data.content_type });
+
+      // Upload to storage immediately and get the public URL
+      const audioUrl = await uploadAudioToStorage(blob, data.suggested_file_path);
+      console.log('[CustomRuleCard] Audio uploaded, URL:', audioUrl);
+
+      // Create local blob URL for preview
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Clean up old blob URL
+      if (generatedBlobUrl) {
+        URL.revokeObjectURL(generatedBlobUrl);
+      }
+
+      setGeneratedBlobUrl(blobUrl);
+
+      // Update the rule with the uploaded audio_url
+      const updatedRule = {
+        ...rule,
+        response: {
+          ...rule.response,
+          audio_url: audioUrl,
+        },
+      };
+      console.log('[CustomRuleCard] Calling onChange with updated rule:', JSON.stringify(updatedRule, null, 2));
+      onChange(updatedRule);
+    } catch (error) {
+      console.error('Error generating audio:', error);
+      alert(error instanceof Error ? error.message : 'Failed to generate audio');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Play audio preview
+  const playAudio = () => {
+    const audioUrl = generatedBlobUrl || rule.response.audio_url;
+    if (!audioUrl) return;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    setIsPlaying(true);
+
+    audio.onended = () => setIsPlaying(false);
+    audio.onerror = () => setIsPlaying(false);
+    audio.play().catch((error) => {
+      console.error('Error playing audio:', error);
+      setIsPlaying(false);
+    });
+  };
 
   // Update rule field
   const updateRule = (updates: Partial<AudioRule>) => {

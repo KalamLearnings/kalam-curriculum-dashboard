@@ -74,6 +74,32 @@ export function AudioSlotCard({
 
   const hasAudio = !!(generatedBlob || value?.audio_url);
 
+  // Upload audio blob to Supabase Storage
+  const uploadAudioToStorage = async (blob: Blob, filePath: string): Promise<string> => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
+
+    const { data, error } = await supabase.storage
+      .from('curriculum-audio')
+      .upload(filePath, blob, {
+        contentType: 'audio/mpeg',
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      throw new Error(`Failed to upload audio: ${error.message}`);
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('curriculum-audio')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  };
+
   // Generate audio via TTS
   const handleGenerate = async () => {
     if (!text.trim()) return;
@@ -108,6 +134,11 @@ export function AudioSlotCard({
         bytes[i] = binaryString.charCodeAt(i);
       }
       const blob = new Blob([bytes], { type: data.content_type });
+
+      // Upload to storage immediately and get the public URL
+      const audioUrl = await uploadAudioToStorage(blob, data.suggested_file_path);
+
+      // Create local blob URL for preview
       const blobUrl = URL.createObjectURL(blob);
 
       // Clean up old blob URL
@@ -117,12 +148,11 @@ export function AudioSlotCard({
 
       setGeneratedBlob({ blob, blobUrl, filePath: data.suggested_file_path });
 
-      // Update parent with new text (audio_url will be set on form save)
+      // Update parent with new text AND the uploaded audio_url
       onChange({
         ...value,
         text,
-        // Mark that we have generated audio pending upload
-        audio_url: value?.audio_url, // Keep existing URL if any
+        audio_url: audioUrl,
       });
     } catch (error) {
       console.error('Error generating audio:', error);

@@ -361,6 +361,10 @@ export default function CurriculumBuilderPage() {
         config: formData.config
       };
 
+      // DEBUG: Log what we're saving
+      console.log('[Builder] Saving activity with data:', JSON.stringify(activityData, null, 2));
+      console.log('[Builder] conditionalAudio in config:', JSON.stringify(formData.config?.conditionalAudio, null, 2));
+
       if (isCreatingNew) {
         // Create new activity
         createActivity({
