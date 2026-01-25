@@ -81,7 +81,8 @@ export interface BreakTimeMiniGameConfig {
  * Build Word from Letters Activity Config
  */
 export interface BuildWordFromLettersConfig {
-  targetWord: string;
+  targetWord?: string;
+  useChildName?: boolean;
   showConnectedForm?: boolean;
   highlightCorrectPositions?: boolean;
   scrambleLetters?: boolean;
