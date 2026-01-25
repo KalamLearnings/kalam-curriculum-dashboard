@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, TextInput } from './FormField';
+import { FormField, TextInput, Checkbox } from './FormField';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
 import { WordSelector } from '../WordSelector';
 import type { BuildWordFromLettersConfig } from '@/lib/types/activity-configs';
@@ -18,6 +18,7 @@ export function BuildWordFromLettersForm({
   instruction,
   onInstructionChange
 }: BaseActivityFormProps<BuildWordFromLettersConfig>) {
+  const useChildName = config?.useChildName || false;
   const targetWord = config?.targetWord || '';
   const wordMeaningEn = config?.wordMeaning?.en || '';
   const wordMeaningAr = config?.wordMeaning?.ar || '';
@@ -35,42 +36,67 @@ export function BuildWordFromLettersForm({
     });
   };
 
+  const handleUseChildNameChange = (checked: boolean) => {
+    if (checked) {
+      // Clear targetWord when using child's name
+      updateConfig({ useChildName: true, targetWord: undefined });
+    } else {
+      updateConfig({ useChildName: false });
+    }
+  };
+
   return (
     <div className="space-y-4">
 
-      {/* Target Word */}
-      <WordSelector
-        value={targetWord}
-        onChange={(word) => updateConfig({ targetWord: word })}
-        label="Target Word"
-        required
-        showTranslation
-        translationValue={wordMeaningEn}
-        onTranslationChange={(translation) => updateWordMeaning('en', translation)}
-      />
-
-      {/* Word Meaning (Arabic) */}
+      {/* Use Child's Name Checkbox */}
       <FormField
-        label="Word Meaning (Arabic)"
-        hint="Arabic translation or meaning (optional)"
+        label="Word Source"
+        hint="Choose whether to use the child's name or a custom word"
       >
-        <TextInput
-          value={wordMeaningAr}
-          onChange={(value) => updateWordMeaning('ar', value)}
-          placeholder="باب"
-          dir="rtl"
+        <Checkbox
+          checked={useChildName}
+          onChange={handleUseChildNameChange}
+          label="Use child's name"
         />
       </FormField>
 
-      {/* Word Asset Status */}
-      {targetWord && (
-        <ActivityWordStatus
-          words={[{
-            arabic: targetWord,
-            transliteration: wordMeaningEn || undefined,
-            english: wordMeaningEn || undefined,
-          }]}
-        />
+      {/* Target Word - only show if not using child's name */}
+      {!useChildName && (
+        <>
+          <WordSelector
+            value={targetWord}
+            onChange={(word) => updateConfig({ targetWord: word })}
+            label="Target Word"
+            required
+            showTranslation
+            translationValue={wordMeaningEn}
+            onTranslationChange={(translation) => updateWordMeaning('en', translation)}
+          />
+
+          {/* Word Meaning (Arabic) */}
+          <FormField
+            label="Word Meaning (Arabic)"
+            hint="Arabic translation or meaning (optional)"
+          >
+            <TextInput
+              value={wordMeaningAr}
+              onChange={(value) => updateWordMeaning('ar', value)}
+              placeholder="باب"
+              dir="rtl"
+            />
+          </FormField>
+
+          {/* Word Asset Status */}
+          {targetWord && (
+            <ActivityWordStatus
+              words={[{
+                arabic: targetWord,
+                transliteration: wordMeaningEn || undefined,
+                english: wordMeaningEn || undefined,
+              }]}
+            />
+          )}
+        </>
       )}
     </div>
   );
