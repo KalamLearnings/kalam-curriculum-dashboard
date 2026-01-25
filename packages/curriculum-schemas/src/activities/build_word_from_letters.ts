@@ -38,7 +38,12 @@ import { BaseActivitySchema, ArabicTextSchema, LocalizedTextSchema } from '../ba
  */
 export const BuildWordFromLettersConfigSchema = z.object({
   targetWord: ArabicTextSchema
-    .describe('The Arabic word to build (can be a name, word, or phrase)'),
+    .optional()
+    .describe('The Arabic word to build (can be a name, word, or phrase). Not required if useChildName is true.'),
+
+  useChildName: z.boolean()
+    .default(false)
+    .describe('Use the child\'s name as the target word instead of a custom word'),
 
   showConnectedForm: z.boolean()
     .default(true)
@@ -60,6 +65,18 @@ export const BuildWordFromLettersConfigSchema = z.object({
     .optional()
     .describe('Translation/meaning to show (required if showWordMeaning is true)'),
 }).refine(
+  (data) => {
+    // Either targetWord or useChildName must be provided
+    if (!data.useChildName && !data.targetWord) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: 'Either targetWord or useChildName must be provided',
+    path: ['targetWord'],
+  }
+).refine(
   (data) => {
     // If showWordMeaning is true, wordMeaning must be provided
     if (data.showWordMeaning) {
