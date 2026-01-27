@@ -53,6 +53,10 @@ export const BreakTimeMiniGameConfigSchema = z.object({
     .optional()
     .describe('How dots are arranged (for dot_tapping variant)'),
 
+  color: z.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'])
+    .optional()
+    .describe('Target color to tap (for dot_tapping variant)'),
+
   // Coloring variant options
   coloringImage: z.string()
     .optional()
@@ -77,7 +81,7 @@ export const BreakTimeMiniGameConfigSchema = z.object({
       case 'tracing_lines':
         return data.linePattern !== undefined;
       case 'dot_tapping':
-        return data.dotCount !== undefined && data.dotPattern !== undefined;
+        return data.color !== undefined;
       case 'coloring':
         return data.coloringImage !== undefined && data.availableColors !== undefined;
       case 'memory_game':
