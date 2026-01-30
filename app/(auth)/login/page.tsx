@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createEnvironmentClient } from '@/lib/supabase/client';
-import { getCurrentEnvironment } from '@/lib/stores/environmentStore';
+import { useEnvironmentStore, type Environment } from '@/lib/stores/environmentStore';
 
 const EMAIL_DOMAIN = '@kalamkidslearning.com';
 
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
   const [fullEmail, setFullEmail] = useState('');
+  const { environment, setEnvironment } = useEnvironmentStore();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,12 +31,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const env = getCurrentEnvironment();
       const supabase = createEnvironmentClient();
       const { error: authError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback?env=${env}`,
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?env=${environment}`,
         },
       });
 
@@ -57,6 +57,12 @@ export default function LoginPage() {
             A magic link was sent to <strong>{fullEmail}</strong>
           </p>
           <p className="text-sm text-gray-500 mt-4 text-center">
+            Signing in to{' '}
+            <span className={environment === 'prod' ? 'font-semibold text-red-600' : 'font-semibold text-amber-500'}>
+              {environment.toUpperCase()}
+            </span>
+          </p>
+          <p className="text-sm text-gray-500 mt-2 text-center">
             Click the link to sign in
           </p>
         </div>
@@ -68,7 +74,34 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow">
         <h1 className="text-3xl font-bold text-center mb-2">Kalam Dashboard</h1>
-        <p className="text-gray-600 text-center mb-8">Sign in to manage curriculum</p>
+        <p className="text-gray-600 text-center mb-6">Sign in to manage curriculum</p>
+
+        <div className="flex justify-center mb-6">
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setEnvironment('dev')}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                environment === 'dev'
+                  ? 'bg-amber-500 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              DEV
+            </button>
+            <button
+              type="button"
+              onClick={() => setEnvironment('prod')}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                environment === 'prod'
+                  ? 'bg-red-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              PROD
+            </button>
+          </div>
+        </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -103,9 +136,13 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className={`w-full text-white py-2 rounded-md disabled:opacity-50 ${
+              environment === 'prod'
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
-            {loading ? 'Sending...' : 'Send Magic Link'}
+            {loading ? 'Sending...' : `Sign in to ${environment.toUpperCase()}`}
           </button>
         </form>
       </div>
