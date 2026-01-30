@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { useEnvironmentStore, type Environment, getConfigForEnvironment } from '@/lib/stores/environmentStore';
 import { useQueryClient } from '@tanstack/react-query';
@@ -108,9 +107,16 @@ export default function DashboardLayout({
     queryClient.clear();
   };
 
-  // Dashboard auth check (uses default/primary Supabase project)
+  // Dashboard auth check - uses current environment's session
   useEffect(() => {
-    const supabase = createClient();
+    const config = getConfigForEnvironment(environment);
+    const supabase = createSupabaseClient(config.url, config.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: `kalam-auth-${environment}`,
+      },
+    });
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
@@ -120,7 +126,7 @@ export default function DashboardLayout({
       setUser(user);
       setLoading(false);
     });
-  }, [router]);
+  }, [router, environment]);
 
   // Listen for environment session restoration after magic link callback
   useEffect(() => {
@@ -137,7 +143,13 @@ export default function DashboardLayout({
   }, [pathname, setEnvironment, queryClient]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
+    const config = getConfigForEnvironment(environment);
+    const supabase = createSupabaseClient(config.url, config.anonKey, {
+      auth: {
+        persistSession: true,
+        storageKey: `kalam-auth-${environment}`,
+      },
+    });
     await supabase.auth.signOut();
     router.push('/login');
   };

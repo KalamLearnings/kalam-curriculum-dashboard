@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createEnvironmentClient } from '@/lib/supabase/client';
+import { getCurrentEnvironment } from '@/lib/stores/environmentStore';
 
 const EMAIL_DOMAIN = '@kalamkidslearning.com';
 
@@ -29,11 +30,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      const env = getCurrentEnvironment();
+      const supabase = createEnvironmentClient();
       const { error: authError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?env=${env}`,
         },
       });
 
