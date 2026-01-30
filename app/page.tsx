@@ -3,7 +3,28 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { useEnvironmentStore, getConfigForEnvironment } from '@/lib/stores/environmentStore';
+import { getConfigForEnvironment, type Environment } from '@/lib/stores/environmentStore';
+
+/**
+ * Read the persisted environment directly from localStorage.
+ * This avoids the Zustand hydration race - the persist middleware
+ * hydrates asynchronously, so useEnvironmentStore().environment may
+ * still be the default 'dev' on the first render even if the user
+ * had selected 'prod' before sending the magic link.
+ */
+function getPersistedEnvironment(): Environment {
+  try {
+    const raw = localStorage.getItem('kalam-environment');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const env = parsed?.state?.environment;
+      if (env === 'dev' || env === 'prod') return env;
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return 'dev';
+}
 
 /**
  * Root page - handles magic link auth callback (hash fragment flow)
@@ -15,7 +36,6 @@ import { useEnvironmentStore, getConfigForEnvironment } from '@/lib/stores/envir
  */
 export default function RootPage() {
   const router = useRouter();
-  const { environment, setEnvironment } = useEnvironmentStore();
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -28,13 +48,21 @@ export default function RootPage() {
 
       if (accessToken && refreshToken) {
         // Determine which environment this login is for
-        // Check URL params first (from redirect), fall back to store
+        // Check URL params first, then localStorage (sync, no hydration race)
         const urlParams = new URLSearchParams(window.location.search);
-        const envParam = urlParams.get('env') as 'dev' | 'prod' | null;
-        const targetEnv = envParam || environment;
+        const envParam = urlParams.get('env') as Environment | null;
+        const targetEnv = envParam || getPersistedEnvironment();
 
+        // Persist the env selection if it came from URL
         if (envParam) {
-          setEnvironment(envParam);
+          try {
+            const raw = localStorage.getItem('kalam-environment');
+            const parsed = raw ? JSON.parse(raw) : { state: {}, version: 0 };
+            parsed.state.environment = envParam;
+            localStorage.setItem('kalam-environment', JSON.stringify(parsed));
+          } catch {
+            // ignore
+          }
         }
 
         const config = getConfigForEnvironment(targetEnv);
@@ -62,7 +90,7 @@ export default function RootPage() {
 
     // No auth callback - redirect to dashboard
     router.replace('/curricula');
-  }, [router, environment, setEnvironment]);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
