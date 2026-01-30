@@ -161,7 +161,7 @@ export function ActivityFormModal({
 
     setIsGeneratingAudio(true);
     try {
-      const response = await fetch('http://localhost:54321/functions/v1/tts', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/tts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

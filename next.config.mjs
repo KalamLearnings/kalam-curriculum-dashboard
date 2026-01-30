@@ -13,8 +13,18 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'http',
-        hostname: '192.168.5.165',
+        hostname: '127.0.0.1',
         port: '54321',
+        pathname: '/storage/v1/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.kalamkidslearning.com',
         pathname: '/storage/v1/**',
       },
     ],

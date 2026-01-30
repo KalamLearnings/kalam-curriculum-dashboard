@@ -27,19 +27,21 @@ import type {
 // HELPERS
 // ============================================================================
 
-const BASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+import { getEnvironmentConfig } from '@/lib/stores/environmentStore';
 
 async function fetchWithAuth<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
   const token = await getAuthToken();
+  const { url: baseUrl, anonKey } = getEnvironmentConfig();
 
-  const res = await fetch(`${BASE_URL}/functions/v1${path}`, {
+  const res = await fetch(`${baseUrl}/functions/v1${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
+      apikey: anonKey,
       ...options.headers,
     },
   });
@@ -58,15 +60,15 @@ async function getAuthToken(): Promise<string> {
     throw new Error('Auth token only available client-side');
   }
 
-  // Import dynamically to avoid SSR issues
-  const { createClient } = await import('@/lib/supabase/client');
-  const supabase = createClient();
+  // Use the environment-specific client to get a valid token for the target project
+  const { createEnvironmentClient } = await import('@/lib/supabase/client');
+  const supabase = createEnvironmentClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
   if (!session) {
-    throw new Error('Not authenticated');
+    throw new Error('NOT_AUTHENTICATED_FOR_ENV');
   }
 
   return session.access_token;
