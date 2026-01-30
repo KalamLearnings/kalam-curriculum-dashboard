@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { getEnvironmentConfig } from '@/lib/stores/environmentStore';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { getEnvironmentConfig, getCurrentEnvironment } from '@/lib/stores/environmentStore';
 
 /**
  * Auth client - always uses the default Supabase project (for login/session)
@@ -13,8 +14,18 @@ export function createClient() {
 
 /**
  * Data client - uses the currently selected environment (dev/prod)
+ * Uses @supabase/supabase-js directly with a per-environment storage key
+ * so dev and prod sessions don't collide.
  */
 export function createEnvironmentClient() {
   const config = getEnvironmentConfig();
-  return createBrowserClient(config.url, config.anonKey);
+  const env = getCurrentEnvironment();
+
+  return createSupabaseClient(config.url, config.anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      storageKey: `kalam-auth-${env}`,
+    },
+  });
 }

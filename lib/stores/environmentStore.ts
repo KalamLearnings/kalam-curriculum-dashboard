@@ -53,3 +53,7 @@ export function getEnvironmentConfig(): EnvironmentConfig {
 export function getCurrentEnvironment(): Environment {
   return useEnvironmentStore.getState().environment;
 }
+
+export function getConfigForEnvironment(env: Environment) {
+  return ENV_CONFIGS[env];
+}
