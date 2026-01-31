@@ -30,3 +30,9 @@ export function createEnvironmentClient(): SupabaseClient {
   const env = getPersistedEnvironment();
   return getClientForEnv(env);
 }
+
+/**
+ * Alias for createEnvironmentClient - maintains backward compatibility
+ * with existing code that imports { createClient } from '@/lib/supabase/client'.
+ */
+export const createClient = createEnvironmentClient;
