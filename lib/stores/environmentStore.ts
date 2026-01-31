@@ -28,6 +28,7 @@ interface EnvironmentStore {
   environment: Environment;
   setEnvironment: (env: Environment) => void;
   getConfig: () => EnvironmentConfig;
+  _hasHydrated: boolean;
 }
 
 export const useEnvironmentStore = create<EnvironmentStore>()(
@@ -36,9 +37,13 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
       environment: 'dev',
       setEnvironment: (env: Environment) => set({ environment: env }),
       getConfig: () => ENV_CONFIGS[get().environment],
+      _hasHydrated: false,
     }),
     {
       name: 'kalam-environment',
+      onRehydrateStorage: () => () => {
+        useEnvironmentStore.setState({ _hasHydrated: true });
+      },
     }
   )
 );

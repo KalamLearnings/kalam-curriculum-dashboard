@@ -18,7 +18,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { environment, setEnvironment } = useEnvironmentStore();
+  const { environment, setEnvironment, _hasHydrated } = useEnvironmentStore();
   const queryClient = useQueryClient();
 
   // Environment login dialog state
@@ -108,7 +108,11 @@ export default function DashboardLayout({
   };
 
   // Dashboard auth check - uses current environment's session
+  // Wait for Zustand to hydrate from localStorage before checking,
+  // otherwise environment defaults to 'dev' and we check the wrong session.
   useEffect(() => {
+    if (!_hasHydrated) return;
+
     const config = getConfigForEnvironment(environment);
     const supabase = createSupabaseClient(config.url, config.anonKey, {
       auth: {
@@ -126,7 +130,7 @@ export default function DashboardLayout({
       setUser(user);
       setLoading(false);
     });
-  }, [router, environment]);
+  }, [router, environment, _hasHydrated]);
 
   // Listen for environment session restoration after magic link callback
   useEffect(() => {
