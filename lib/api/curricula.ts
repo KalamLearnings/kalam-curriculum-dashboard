@@ -38,6 +38,13 @@ async function fetchWithAuth<T>(
   const config = getConfigForEnvironment(env);
   const token = await getAuthToken();
 
+  console.log('[fetchWithAuth]', {
+    env,
+    url: `${config.url}/functions/v1${path}`,
+    tokenPrefix: token?.substring(0, 20) + '...',
+    apikeyPrefix: config.anonKey?.substring(0, 20) + '...',
+  });
+
   const res = await fetch(`${config.url}/functions/v1${path}`, {
     ...options,
     headers: {
@@ -70,28 +77,37 @@ async function getAuthToken(): Promise<string> {
     data: { session },
   } = await supabase.auth.getSession();
 
+  console.log('[getAuthToken]', {
+    env,
+    sessionFromClient: !!session,
+    sessionIss: session ? JSON.parse(atob(session.access_token.split('.')[1])).iss : null,
+  });
+
   // If the client hasn't loaded from storage yet, hydrate it manually.
   // This handles the race where the singleton was just created and its
   // async _initialize() hasn't completed reading localStorage yet.
   if (!session) {
     const storageKey = `kalam-auth-${env}`;
     const raw = localStorage.getItem(storageKey);
+    console.log('[getAuthToken] fallback localStorage', { storageKey, hasRaw: !!raw, rawLength: raw?.length });
     if (raw) {
       try {
         const stored = JSON.parse(raw);
         const accessToken = stored?.access_token;
         const refreshToken = stored?.refresh_token;
+        console.log('[getAuthToken] parsed localStorage', { hasAccess: !!accessToken, hasRefresh: !!refreshToken });
         if (accessToken && refreshToken) {
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
+          console.log('[getAuthToken] setSession result', { hasSession: !!data.session, error: error?.message });
           if (!error) {
             session = data.session;
           }
         }
-      } catch {
-        // ignore parse errors
+      } catch (e) {
+        console.error('[getAuthToken] localStorage parse error', e);
       }
     }
   }
