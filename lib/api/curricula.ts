@@ -65,10 +65,36 @@ async function getAuthToken(): Promise<string> {
   const env = getPersistedEnvironment();
   const supabase = getClientForEnv(env);
 
-  // First try the cached session
-  const {
+  // Try the client's cached session first
+  let {
     data: { session },
   } = await supabase.auth.getSession();
+
+  // If the client hasn't loaded from storage yet, hydrate it manually.
+  // This handles the race where the singleton was just created and its
+  // async _initialize() hasn't completed reading localStorage yet.
+  if (!session) {
+    const storageKey = `kalam-auth-${env}`;
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      try {
+        const stored = JSON.parse(raw);
+        const accessToken = stored?.access_token;
+        const refreshToken = stored?.refresh_token;
+        if (accessToken && refreshToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (!error) {
+            session = data.session;
+          }
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+  }
 
   if (!session) {
     throw new Error('NOT_AUTHENTICATED_FOR_ENV');

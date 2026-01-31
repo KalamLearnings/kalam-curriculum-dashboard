@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { getConfigForEnvironment, type Environment } from '@/lib/stores/environmentStore';
+import { type Environment } from '@/lib/stores/environmentStore';
+import { getClientForEnv } from '@/lib/supabase/client';
 
 /**
  * Read the persisted environment directly from localStorage.
@@ -65,14 +65,10 @@ export default function RootPage() {
           }
         }
 
-        const config = getConfigForEnvironment(targetEnv);
-        const supabase = createSupabaseClient(config.url, config.anonKey, {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            storageKey: `kalam-auth-${targetEnv}`,
-          },
-        });
+        // Use the singleton client so the session is set in its in-memory
+        // cache, not just in localStorage. This prevents the race where the
+        // singleton is created before the session is loaded from storage.
+        const supabase = getClientForEnv(targetEnv);
 
         supabase.auth.setSession({
           access_token: accessToken,
