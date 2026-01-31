@@ -65,12 +65,25 @@ async function getAuthToken(): Promise<string> {
   const env = getPersistedEnvironment();
   const supabase = getClientForEnv(env);
 
+  // First try the cached session
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
   if (!session) {
     throw new Error('NOT_AUTHENTICATED_FOR_ENV');
+  }
+
+  // If the access token is expired or about to expire (within 60s), refresh it
+  const expiresAt = session.expires_at ?? 0; // unix seconds
+  const nowSec = Math.floor(Date.now() / 1000);
+
+  if (expiresAt - nowSec < 60) {
+    const { data: refreshed, error } = await supabase.auth.refreshSession();
+    if (error || !refreshed.session) {
+      throw new Error('NOT_AUTHENTICATED_FOR_ENV');
+    }
+    return refreshed.session.access_token;
   }
 
   return session.access_token;
