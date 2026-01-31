@@ -88,7 +88,7 @@ export default function DashboardLayout({
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback?env=${envLoginTarget}`,
+          emailRedirectTo: `${window.location.origin}/?env=${envLoginTarget}`,
         },
       });
 
