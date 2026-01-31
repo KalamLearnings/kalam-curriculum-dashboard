@@ -41,6 +41,7 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
     }),
     {
       name: 'kalam-environment',
+      partialize: (state) => ({ environment: state.environment }),
       onRehydrateStorage: () => () => {
         useEnvironmentStore.setState({ _hasHydrated: true });
       },
