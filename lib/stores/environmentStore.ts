@@ -28,7 +28,6 @@ interface EnvironmentStore {
   environment: Environment;
   setEnvironment: (env: Environment) => void;
   getConfig: () => EnvironmentConfig;
-  _hasHydrated: boolean;
 }
 
 export const useEnvironmentStore = create<EnvironmentStore>()(
@@ -37,14 +36,9 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
       environment: 'dev',
       setEnvironment: (env: Environment) => set({ environment: env }),
       getConfig: () => ENV_CONFIGS[get().environment],
-      _hasHydrated: false,
     }),
     {
       name: 'kalam-environment',
-      partialize: (state) => ({ environment: state.environment }),
-      onRehydrateStorage: () => () => {
-        useEnvironmentStore.setState({ _hasHydrated: true });
-      },
     }
   )
 );
@@ -62,4 +56,24 @@ export function getCurrentEnvironment(): Environment {
 
 export function getConfigForEnvironment(env: Environment) {
   return ENV_CONFIGS[env];
+}
+
+/**
+ * Read the persisted environment directly from localStorage (synchronous).
+ * Use this instead of the Zustand hook when you need the value immediately
+ * on page load, before Zustand's async hydration completes.
+ */
+export function getPersistedEnvironment(): Environment {
+  if (typeof window === 'undefined') return 'dev';
+  try {
+    const raw = localStorage.getItem('kalam-environment');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const env = parsed?.state?.environment;
+      if (env === 'dev' || env === 'prod') return env;
+    }
+  } catch {
+    // ignore
+  }
+  return 'dev';
 }

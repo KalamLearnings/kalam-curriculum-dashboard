@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { useEnvironmentStore, type Environment, getConfigForEnvironment } from '@/lib/stores/environmentStore';
+import { useEnvironmentStore, type Environment, getConfigForEnvironment, getPersistedEnvironment } from '@/lib/stores/environmentStore';
 import { useQueryClient } from '@tanstack/react-query';
 
 const EMAIL_DOMAIN = '@kalamkidslearning.com';
@@ -18,7 +18,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { environment, setEnvironment, _hasHydrated } = useEnvironmentStore();
+  const { environment, setEnvironment } = useEnvironmentStore();
   const queryClient = useQueryClient();
 
   // Environment login dialog state
@@ -107,11 +107,19 @@ export default function DashboardLayout({
     queryClient.clear();
   };
 
-  // Dashboard auth check - uses current environment's session
-  // Wait for Zustand to hydrate from localStorage before checking,
-  // otherwise environment defaults to 'dev' and we check the wrong session.
+  // Sync Zustand with localStorage on mount (before hydration completes)
   useEffect(() => {
-    if (!_hasHydrated) return;
+    const persisted = getPersistedEnvironment();
+    if (persisted !== environment) {
+      setEnvironment(persisted);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Dashboard auth check - uses current environment's session.
+  useEffect(() => {
+    setLoading(true);
+    setUser(null);
 
     const config = getConfigForEnvironment(environment);
     const supabase = createSupabaseClient(config.url, config.anonKey, {
@@ -130,7 +138,7 @@ export default function DashboardLayout({
       setUser(user);
       setLoading(false);
     });
-  }, [router, environment, _hasHydrated]);
+  }, [router, environment]);
 
   // Listen for environment session restoration after magic link callback
   useEffect(() => {
