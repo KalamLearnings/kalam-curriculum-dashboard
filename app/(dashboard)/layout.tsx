@@ -107,17 +107,24 @@ export default function DashboardLayout({
     queryClient.clear();
   };
 
+  // Track whether initial sync has happened to avoid auth check race
+  const [envReady, setEnvReady] = useState(false);
+
   // Sync Zustand with localStorage on mount (before hydration completes)
   useEffect(() => {
     const persisted = getPersistedEnvironment();
     if (persisted !== environment) {
       setEnvironment(persisted);
     }
+    setEnvReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Dashboard auth check - uses current environment's session.
+  // Only runs after envReady to prevent checking the wrong env on first render.
   useEffect(() => {
+    if (!envReady) return;
+
     setLoading(true);
     setUser(null);
 
@@ -138,7 +145,7 @@ export default function DashboardLayout({
       setUser(user);
       setLoading(false);
     });
-  }, [router, environment]);
+  }, [router, environment, envReady]);
 
   // Listen for environment session restoration after magic link callback
   useEffect(() => {
