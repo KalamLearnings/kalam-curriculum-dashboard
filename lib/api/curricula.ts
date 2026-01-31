@@ -27,21 +27,23 @@ import type {
 // HELPERS
 // ============================================================================
 
-import { getEnvironmentConfig } from '@/lib/stores/environmentStore';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { getPersistedEnvironment, getConfigForEnvironment } from '@/lib/stores/environmentStore';
 
 async function fetchWithAuth<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = await getAuthToken();
-  const { url: baseUrl, anonKey } = getEnvironmentConfig();
+  const env = getPersistedEnvironment();
+  const config = getConfigForEnvironment(env);
+  const token = await getAuthToken(env);
 
-  const res = await fetch(`${baseUrl}/functions/v1${path}`, {
+  const res = await fetch(`${config.url}/functions/v1${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
-      apikey: anonKey,
+      apikey: config.anonKey,
       ...options.headers,
     },
   });
@@ -55,14 +57,20 @@ async function fetchWithAuth<T>(
   return json.data?.data || json.data || json;
 }
 
-async function getAuthToken(): Promise<string> {
+async function getAuthToken(env: string): Promise<string> {
   if (typeof window === 'undefined') {
     throw new Error('Auth token only available client-side');
   }
 
-  // Use the environment-specific client to get a valid token for the target project
-  const { createEnvironmentClient } = await import('@/lib/supabase/client');
-  const supabase = createEnvironmentClient();
+  const config = getConfigForEnvironment(env as 'dev' | 'prod');
+  const supabase = createSupabaseClient(config.url, config.anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      storageKey: `kalam-auth-${env}`,
+    },
+  });
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
