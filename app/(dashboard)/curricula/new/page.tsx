@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { createCurriculum } from '@/lib/api/curricula';
 
 export default function NewCurriculumPage() {
   const router = useRouter();
@@ -20,33 +20,12 @@ export default function NewCurriculumPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-
-      // Send only essential data - backend will auto-generate IDs
-      const curriculumData = {
+      await createCurriculum({
         title: {
           en: formData.titleEn,
           ar: formData.titleAr,
         },
-      };
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/curriculum`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(curriculumData),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create curriculum');
-      }
 
       router.push('/curricula');
     } catch (err: any) {

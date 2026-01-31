@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, getEnvironmentBaseUrl } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 interface Word {
@@ -47,7 +47,7 @@ export function ActivityWordStatus({ activityId, words: providedWords }: Activit
       const { data: { session } } = await supabase.auth.getSession();
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/words?activity_id=${activityId}`,
+        `${getEnvironmentBaseUrl()}/functions/v1/words?activity_id=${activityId}`,
         {
           headers: {
             'Authorization': `Bearer ${session?.access_token}`,

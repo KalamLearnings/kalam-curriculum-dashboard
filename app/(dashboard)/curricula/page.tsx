@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { listCurricula as fetchCurricula } from '@/lib/api/curricula';
 import { useUpdateCurriculum, useDeleteCurriculum } from '@/lib/hooks/useCurriculum';
 import { EditCurriculumModal } from '@/components/curriculum/EditCurriculumModal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
@@ -27,26 +27,10 @@ export default function CurriculaPage() {
   const { mutate: deleteCurriculum, isPending: isDeleting } = useDeleteCurriculum();
 
   useEffect(() => {
-    const supabase = createClient();
-
     async function loadCurricula() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('Not authenticated');
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/curriculum/list`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to load curricula');
-        }
-
-        const result = await response.json();
-        setCurricula(result.data?.data || []);
+        const data = await fetchCurricula();
+        setCurricula(data || []);
       } catch (err) {
         console.error('Failed to load curricula:', err);
       } finally {

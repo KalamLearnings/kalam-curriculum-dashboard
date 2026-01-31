@@ -36,3 +36,13 @@ export function createEnvironmentClient(): SupabaseClient {
  * with existing code that imports { createClient } from '@/lib/supabase/client'.
  */
 export const createClient = createEnvironmentClient;
+
+/**
+ * Get the Supabase project base URL for the current environment.
+ * Use this instead of process.env.NEXT_PUBLIC_SUPABASE_URL in fetch() calls.
+ */
+export function getEnvironmentBaseUrl(): string {
+  const env = getPersistedEnvironment();
+  const config = getConfigForEnvironment(env);
+  return config.url;
+}

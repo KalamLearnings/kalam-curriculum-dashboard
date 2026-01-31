@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, getEnvironmentBaseUrl } from '@/lib/supabase/client';
 
 export interface LetterForm {
   isolated: string;
@@ -42,9 +42,9 @@ interface UseLettersReturn {
   refetch: () => Promise<void>;
 }
 
-const LETTERS_API_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/letters/list`
-  : '';
+function getLettersApiUrl() {
+  return `${getEnvironmentBaseUrl()}/functions/v1/letters/list`;
+}
 
 export function useLetters(): UseLettersReturn {
   const [letters, setLetters] = useState<Letter[]>([]);
@@ -64,7 +64,7 @@ export function useLetters(): UseLettersReturn {
       // Get auth session
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(LETTERS_API_URL, {
+      const response = await fetch(getLettersApiUrl(), {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json',

@@ -103,7 +103,8 @@ export function AudioSlotCard({
       // Resolve templates before sending to TTS
       const resolvedText = letter ? resolveTemplateText(text, letter) : text;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/tts`, {
+      const { getEnvironmentBaseUrl } = await import('@/lib/supabase/client');
+      const response = await fetch(`${getEnvironmentBaseUrl()}/functions/v1/tts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -93,7 +93,8 @@ export function useAudioGeneration({
       // Resolve template placeholders before sending to TTS
       const resolvedText = resolveTemplateText(text, letter);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/tts`, {
+      const { getEnvironmentBaseUrl } = await import('@/lib/supabase/client');
+      const response = await fetch(`${getEnvironmentBaseUrl()}/functions/v1/tts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

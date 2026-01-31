@@ -161,7 +161,8 @@ export function ActivityFormModal({
 
     setIsGeneratingAudio(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/tts`, {
+      const { getEnvironmentBaseUrl } = await import('@/lib/supabase/client');
+      const response = await fetch(`${getEnvironmentBaseUrl()}/functions/v1/tts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,11 +210,8 @@ export function ActivityFormModal({
   };
 
   const uploadAudioToStorage = async (blob: Blob, filePath: string): Promise<string> => {
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
 
     const { data, error } = await supabase.storage
       .from('curriculum-audio')

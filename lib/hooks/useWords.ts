@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, getEnvironmentBaseUrl } from '@/lib/supabase/client';
 
 export interface LetterComposition {
   letter_id: string;
@@ -63,9 +63,9 @@ interface UseWordsReturn {
   refetch: () => Promise<void>;
 }
 
-const WORDS_API_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/words`
-  : '';
+function getWordsApiUrl() {
+  return `${getEnvironmentBaseUrl()}/functions/v1/words`;
+}
 
 export function useWords(options?: UseWordsOptions): UseWordsReturn {
   const [words, setWords] = useState<Word[]>([]);
@@ -101,7 +101,7 @@ export function useWords(options?: UseWordsOptions): UseWordsReturn {
       }
 
       const queryString = params.toString();
-      const url = `${WORDS_API_URL}${queryString ? `?${queryString}` : ''}`;
+      const url = `${getWordsApiUrl()}${queryString ? `?${queryString}` : ''}`;
 
       const response = await fetch(url, {
         headers: {
@@ -133,7 +133,7 @@ export function useWords(options?: UseWordsOptions): UseWordsReturn {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(`${WORDS_API_URL}/${wordId}`, {
+      const response = await fetch(`${getWordsApiUrl()}/${wordId}`, {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json',
@@ -162,7 +162,7 @@ export function useWords(options?: UseWordsOptions): UseWordsReturn {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(`${WORDS_API_URL}/${wordId}/assets`, {
+      const response = await fetch(`${getWordsApiUrl()}/${wordId}/assets`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
