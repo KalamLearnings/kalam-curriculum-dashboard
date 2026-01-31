@@ -27,8 +27,8 @@ import type {
 // HELPERS
 // ============================================================================
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { getPersistedEnvironment, getConfigForEnvironment } from '@/lib/stores/environmentStore';
+import { getClientForEnv } from '@/lib/supabase/client';
 
 async function fetchWithAuth<T>(
   path: string,
@@ -36,7 +36,7 @@ async function fetchWithAuth<T>(
 ): Promise<T> {
   const env = getPersistedEnvironment();
   const config = getConfigForEnvironment(env);
-  const token = await getAuthToken(env);
+  const token = await getAuthToken();
 
   const res = await fetch(`${config.url}/functions/v1${path}`, {
     ...options,
@@ -57,19 +57,13 @@ async function fetchWithAuth<T>(
   return json.data?.data || json.data || json;
 }
 
-async function getAuthToken(env: string): Promise<string> {
+async function getAuthToken(): Promise<string> {
   if (typeof window === 'undefined') {
     throw new Error('Auth token only available client-side');
   }
 
-  const config = getConfigForEnvironment(env as 'dev' | 'prod');
-  const supabase = createSupabaseClient(config.url, config.anonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      storageKey: `kalam-auth-${env}`,
-    },
-  });
+  const env = getPersistedEnvironment();
+  const supabase = getClientForEnv(env);
 
   const {
     data: { session },

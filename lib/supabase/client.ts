@@ -1,31 +1,32 @@
-import { createBrowserClient } from '@supabase/ssr';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { getEnvironmentConfig, getCurrentEnvironment } from '@/lib/stores/environmentStore';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
+import { getPersistedEnvironment, getConfigForEnvironment, type Environment } from '@/lib/stores/environmentStore';
 
 /**
- * Auth client - always uses the default Supabase project (for login/session)
+ * Cached Supabase client instances per environment.
+ * Reusing the same client avoids "Multiple GoTrueClient instances" warnings
+ * and ensures the client has time to initialize auth state from localStorage.
  */
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+const clients: Partial<Record<Environment, SupabaseClient>> = {};
+
+export function getClientForEnv(env: Environment): SupabaseClient {
+  if (!clients[env]) {
+    const config = getConfigForEnvironment(env);
+    clients[env] = createSupabaseClient(config.url, config.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: `kalam-auth-${env}`,
+      },
+    });
+  }
+  return clients[env]!;
 }
 
 /**
- * Data client - uses the currently selected environment (dev/prod)
- * Uses @supabase/supabase-js directly with a per-environment storage key
- * so dev and prod sessions don't collide.
+ * Get the Supabase client for the currently selected environment.
+ * Reads environment from localStorage synchronously to avoid Zustand hydration race.
  */
-export function createEnvironmentClient() {
-  const config = getEnvironmentConfig();
-  const env = getCurrentEnvironment();
-
-  return createSupabaseClient(config.url, config.anonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      storageKey: `kalam-auth-${env}`,
-    },
-  });
+export function createEnvironmentClient(): SupabaseClient {
+  const env = getPersistedEnvironment();
+  return getClientForEnv(env);
 }

@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { useEnvironmentStore, type Environment, getConfigForEnvironment, getPersistedEnvironment } from '@/lib/stores/environmentStore';
+import { useEnvironmentStore, type Environment, getPersistedEnvironment } from '@/lib/stores/environmentStore';
+import { getClientForEnv } from '@/lib/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
 const EMAIL_DOMAIN = '@kalamkidslearning.com';
@@ -32,15 +32,7 @@ export default function DashboardLayout({
   // Check if the target environment has a valid session
   const checkEnvSession = useCallback(async (env: Environment): Promise<boolean> => {
     try {
-      const config = getConfigForEnvironment(env);
-      const client = createSupabaseClient(config.url, config.anonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          storageKey: `kalam-auth-${env}`,
-        },
-      });
-
+      const client = getClientForEnv(env);
       const { data: { session } } = await client.auth.getSession();
       return !!session;
     } catch {
@@ -75,14 +67,7 @@ export default function DashboardLayout({
     setEnvLoginLoading(true);
 
     try {
-      const config = getConfigForEnvironment(envLoginTarget);
-      const supabase = createSupabaseClient(config.url, config.anonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          storageKey: `kalam-auth-${envLoginTarget}`,
-        },
-      });
+      const supabase = getClientForEnv(envLoginTarget);
 
       const email = `${envLoginUsername.trim()}${EMAIL_DOMAIN}`;
       const { error } = await supabase.auth.signInWithOtp({
@@ -128,14 +113,7 @@ export default function DashboardLayout({
     setLoading(true);
     setUser(null);
 
-    const config = getConfigForEnvironment(environment);
-    const supabase = createSupabaseClient(config.url, config.anonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        storageKey: `kalam-auth-${environment}`,
-      },
-    });
+    const supabase = getClientForEnv(environment);
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
@@ -162,13 +140,7 @@ export default function DashboardLayout({
   }, [pathname, setEnvironment, queryClient]);
 
   const handleSignOut = async () => {
-    const config = getConfigForEnvironment(environment);
-    const supabase = createSupabaseClient(config.url, config.anonKey, {
-      auth: {
-        persistSession: true,
-        storageKey: `kalam-auth-${environment}`,
-      },
-    });
+    const supabase = getClientForEnv(environment);
     await supabase.auth.signOut();
     router.push('/login');
   };
