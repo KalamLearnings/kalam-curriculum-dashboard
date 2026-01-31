@@ -46,3 +46,21 @@ export function getEnvironmentBaseUrl(): string {
   const config = getConfigForEnvironment(env);
   return config.url;
 }
+
+/**
+ * Build auth headers for direct fetch() calls to Supabase edge functions.
+ *
+ * The relay verifies the Authorization Bearer token using the project's
+ * HS256 JWT secret. Newer Supabase projects issue ES256 user tokens which
+ * the relay can't verify. So we send the anon key (HS256) as the Bearer
+ * and put the user's access token in x-user-token for the edge function.
+ */
+export function getEdgeFunctionAuthHeaders(accessToken: string): Record<string, string> {
+  const env = getPersistedEnvironment();
+  const config = getConfigForEnvironment(env);
+  return {
+    Authorization: `Bearer ${config.anonKey}`,
+    apikey: config.anonKey,
+    'x-user-token': accessToken,
+  };
+}

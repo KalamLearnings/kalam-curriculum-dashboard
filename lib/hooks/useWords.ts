@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient, getEnvironmentBaseUrl } from '@/lib/supabase/client';
+import { createClient, getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders } from '@/lib/supabase/client';
 
 export interface LetterComposition {
   letter_id: string;
@@ -105,7 +105,7 @@ export function useWords(options?: UseWordsOptions): UseWordsReturn {
 
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          ...getEdgeFunctionAuthHeaders(session?.access_token || ''),
           'Content-Type': 'application/json',
         },
       });
@@ -135,7 +135,7 @@ export function useWords(options?: UseWordsOptions): UseWordsReturn {
 
       const response = await fetch(`${getWordsApiUrl()}/${wordId}`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          ...getEdgeFunctionAuthHeaders(session?.access_token || ''),
           'Content-Type': 'application/json',
         },
       });
@@ -165,7 +165,7 @@ export function useWords(options?: UseWordsOptions): UseWordsReturn {
       const response = await fetch(`${getWordsApiUrl()}/${wordId}/assets`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          ...getEdgeFunctionAuthHeaders(session?.access_token || ''),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(assets),

@@ -120,12 +120,12 @@ export function CustomRuleCard({
       // Resolve template placeholders before sending to TTS
       const resolvedText = resolveTemplateText(text, letter);
 
-      const { getEnvironmentBaseUrl } = await import('@/lib/supabase/client');
+      const { getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders } = await import('@/lib/supabase/client');
       const response = await fetch(`${getEnvironmentBaseUrl()}/functions/v1/tts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          ...getEdgeFunctionAuthHeaders(session.access_token),
         },
         body: JSON.stringify({
           text: resolvedText,

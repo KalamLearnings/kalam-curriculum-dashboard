@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createClient, getEnvironmentBaseUrl } from '@/lib/supabase/client';
+import { createClient, getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 interface Word {
@@ -50,7 +50,7 @@ export function ActivityWordStatus({ activityId, words: providedWords }: Activit
         `${getEnvironmentBaseUrl()}/functions/v1/words?activity_id=${activityId}`,
         {
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
+            ...getEdgeFunctionAuthHeaders(session?.access_token || ''),
             'Content-Type': 'application/json',
           },
         }

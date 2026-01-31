@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient, getEnvironmentBaseUrl } from '@/lib/supabase/client';
+import { createClient, getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders } from '@/lib/supabase/client';
 
 export interface LetterForm {
   isolated: string;
@@ -66,7 +66,7 @@ export function useLetters(): UseLettersReturn {
 
       const response = await fetch(getLettersApiUrl(), {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          ...getEdgeFunctionAuthHeaders(session?.access_token || ''),
           'Content-Type': 'application/json',
         },
       });
