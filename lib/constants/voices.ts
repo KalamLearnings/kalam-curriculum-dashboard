@@ -35,5 +35,5 @@ export const VOICES: Voice[] = [
   },
 ];
 
-// Default voice (first in the list)
-export const DEFAULT_VOICE = VOICES[0];
+// Default voice
+export const DEFAULT_VOICE = VOICES.find(v => v.name === 'Shelby')!;
