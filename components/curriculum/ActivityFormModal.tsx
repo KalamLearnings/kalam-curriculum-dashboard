@@ -161,11 +161,16 @@ export function ActivityFormModal({
 
     setIsGeneratingAudio(true);
     try {
-      const { getEnvironmentBaseUrl } = await import('@/lib/supabase/client');
+      const { getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders, createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
       const response = await fetch(`${getEnvironmentBaseUrl()}/functions/v1/tts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getEdgeFunctionAuthHeaders(session.access_token),
         },
         body: JSON.stringify({
           text: formData.instructionEn,
