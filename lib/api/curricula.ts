@@ -38,17 +38,12 @@ async function fetchWithAuth<T>(
   const config = getConfigForEnvironment(env);
   const token = await getAuthToken();
 
-  // Send the anon key as the Bearer token for the Supabase relay (it verifies
-  // the Authorization header using the project's HS256 JWT secret). The user's
-  // access token goes in x-user-token for the edge function to verify via
-  // supabase.auth.getUser().
   const res = await fetch(`${config.url}/functions/v1${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.anonKey}`,
+      Authorization: `Bearer ${token}`,
       apikey: config.anonKey,
-      'x-user-token': token,
       ...options.headers,
     },
   });
