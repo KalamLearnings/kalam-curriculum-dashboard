@@ -436,3 +436,56 @@ export async function instantiateTemplate(
     body: JSON.stringify(data),
   });
 }
+
+// ============================================================================
+// AI GENERATION
+// ============================================================================
+
+export interface GenerateTopicRequest {
+  curriculum_id: string;
+  topic_title: { en: string; ar?: string };
+  learning_objective: string;
+  letter_id?: string;
+  reference_topic_id?: string;
+  node_count?: number;
+  activities_per_node_min?: number;
+  activities_per_node_max?: number;
+}
+
+export interface GeneratedActivity {
+  type: string;
+  instruction: { en: string; ar?: string };
+  config: Record<string, unknown>;
+}
+
+export interface GeneratedNode {
+  type: 'intro' | 'lesson' | 'practice' | 'review' | 'boss';
+  title: { en: string; ar?: string };
+  activities: GeneratedActivity[];
+}
+
+export interface GeneratedTopic {
+  title: { en: string; ar?: string };
+  description?: { en: string; ar?: string };
+  nodes: GeneratedNode[];
+}
+
+export interface GenerateTopicResponse {
+  generated: GeneratedTopic;
+  validation: {
+    warnings: string[];
+  };
+}
+
+/**
+ * Generate a topic preview using AI. Does NOT save to database.
+ * Returns generated content for human review and editing.
+ */
+export async function generateTopicPreview(
+  data: GenerateTopicRequest
+): Promise<GenerateTopicResponse> {
+  return fetchWithAuth<GenerateTopicResponse>('/ai/generate-topic', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}

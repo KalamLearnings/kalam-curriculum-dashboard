@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles } from 'lucide-react';
 import { useCurriculum } from '@/lib/hooks/useCurriculum';
 import { useTopics, useDeleteTopic } from '@/lib/hooks/useTopics';
 import { useAllNodes, useDeleteNode } from '@/lib/hooks/useNodes';
@@ -23,6 +23,9 @@ import { TopicFormModal } from '@/components/curriculum/TopicFormModal';
 import { NodeFormModal } from '@/components/curriculum/NodeFormModal';
 import { ActivityTypeSelectorModal } from '@/components/curriculum/ActivityTypeSelectorModal';
 import { LetterSelectorModal } from '@/components/curriculum/LetterSelectorModal';
+import { GenerateTopicModal } from '@/components/curriculum/GenerateTopicModal';
+import { useSaveGeneratedTopic } from '@/lib/hooks/useGenerateTopic';
+import { AIButton } from '@/components/ui/AIEffects';
 import type { Article, ArticleType } from '@/lib/schemas/curriculum';
 import type { Letter } from '@/lib/hooks/useLetters';
 import { toast } from 'sonner';
@@ -104,6 +107,17 @@ export default function CurriculumBuilderPage() {
 
   // Voice selection for TTS (shared across both English and Arabic)
   const [selectedVoiceId, setSelectedVoiceId] = useState(DEFAULT_VOICE.id);
+
+  // AI topic generation
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const { mutate: saveGeneratedTopic, isPending: isSavingGenerated } = useSaveGeneratedTopic();
+
+  const handleAcceptGenerated = (generated: import('@/lib/api/curricula').GeneratedTopic) => {
+    saveGeneratedTopic({
+      curriculumId,
+      generated,
+    });
+  };
 
   const handleDuplicateTopic = (topicId: string) => {
     setTopicToDuplicate(topicId);
@@ -441,19 +455,26 @@ export default function CurriculumBuilderPage() {
           </h1>
         </div>
 
-        <button
-          onClick={handleSave}
-          disabled={(!selectedActivityId && !isCreatingNew) || isUpdating || isCreating}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors",
-            (selectedActivityId || isCreatingNew) && !isUpdating && !isCreating
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-          )}
-        >
-          <Save className="w-4 h-4" />
-          {isCreating ? 'Creating...' : isUpdating ? 'Saving...' : isCreatingNew ? 'Add Activity' : 'Save Changes'}
-        </button>
+        <div className="flex items-center gap-2">
+          <AIButton onClick={() => setGenerateModalOpen(true)} size="sm">
+            <Sparkles className="w-3.5 h-3.5" />
+            Generate with AI
+          </AIButton>
+
+          <button
+            onClick={handleSave}
+            disabled={(!selectedActivityId && !isCreatingNew) || isUpdating || isCreating}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors",
+              (selectedActivityId || isCreatingNew) && !isUpdating && !isCreating
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            )}
+          >
+            <Save className="w-4 h-4" />
+            {isCreating ? 'Creating...' : isUpdating ? 'Saving...' : isCreatingNew ? 'Add Activity' : 'Save Changes'}
+          </button>
+        </div>
       </header>
 
       {/* Drag and Drop Context */}
@@ -668,6 +689,14 @@ export default function CurriculumBuilderPage() {
         isOpen={!!topicToDuplicate}
         onClose={() => setTopicToDuplicate(null)}
         onSelect={handleConfirmDuplicate}
+      />
+
+      {/* AI Topic Generation */}
+      <GenerateTopicModal
+        isOpen={generateModalOpen}
+        onClose={() => setGenerateModalOpen(false)}
+        curriculumId={curriculumId}
+        onAccept={handleAcceptGenerated}
       />
     </div>
   );
