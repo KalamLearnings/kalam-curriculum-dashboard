@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useEnvironmentStore, type Environment, getPersistedEnvironment } from '@/lib/stores/environmentStore';
@@ -8,6 +8,7 @@ import { getClientForEnv } from '@/lib/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
 const EMAIL_DOMAIN = '@kalamkidslearning.com';
+const OTP_LENGTH = 6;
 
 export default function DashboardLayout({
   children,
@@ -28,6 +29,9 @@ export default function DashboardLayout({
   const [envLoginLoading, setEnvLoginLoading] = useState(false);
   const [envLoginSent, setEnvLoginSent] = useState(false);
   const [envLoginError, setEnvLoginError] = useState('');
+  const [envLoginOtp, setEnvLoginOtp] = useState(Array(OTP_LENGTH).fill(''));
+  const [envLoginVerifying, setEnvLoginVerifying] = useState(false);
+  const envOtpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Check if the target environment has a valid session
   const checkEnvSession = useCallback(async (env: Environment): Promise<boolean> => {
@@ -70,15 +74,11 @@ export default function DashboardLayout({
       const supabase = getClientForEnv(envLoginTarget);
 
       const email = `${envLoginUsername.trim()}${EMAIL_DOMAIN}`;
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/?env=${envLoginTarget}`,
-        },
-      });
+      const { error } = await supabase.auth.signInWithOtp({ email });
 
       if (error) throw error;
       setEnvLoginSent(true);
+      setTimeout(() => envOtpRefs.current[0]?.focus(), 100);
     } catch (err: any) {
       setEnvLoginError(err.message);
     } finally {
@@ -86,10 +86,92 @@ export default function DashboardLayout({
     }
   };
 
-  const handleEnvLoginComplete = () => {
-    setShowEnvLogin(false);
-    setEnvironment(envLoginTarget);
-    queryClient.clear();
+  const handleEnvOtpChange = (index: number, value: string) => {
+    if (value && !/^\d$/.test(value)) return;
+
+    const newOtp = [...envLoginOtp];
+    newOtp[index] = value;
+    setEnvLoginOtp(newOtp);
+
+    if (value && index < OTP_LENGTH - 1) {
+      envOtpRefs.current[index + 1]?.focus();
+    }
+
+    if (value && newOtp.every((d) => d !== '')) {
+      verifyEnvOtp(newOtp.join(''));
+    }
+  };
+
+  const handleEnvOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !envLoginOtp[index] && index > 0) {
+      envOtpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleEnvOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    if (!pasted) return;
+
+    const newOtp = [...envLoginOtp];
+    for (let i = 0; i < pasted.length; i++) {
+      newOtp[i] = pasted[i];
+    }
+    setEnvLoginOtp(newOtp);
+
+    const nextEmpty = newOtp.findIndex((d) => d === '');
+    envOtpRefs.current[nextEmpty >= 0 ? nextEmpty : OTP_LENGTH - 1]?.focus();
+
+    if (newOtp.every((d) => d !== '')) {
+      verifyEnvOtp(newOtp.join(''));
+    }
+  };
+
+  const verifyEnvOtp = async (token: string) => {
+    setEnvLoginError('');
+    setEnvLoginVerifying(true);
+
+    try {
+      const supabase = getClientForEnv(envLoginTarget);
+      const email = `${envLoginUsername.trim()}${EMAIL_DOMAIN}`;
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
+      });
+
+      if (error) throw error;
+
+      setShowEnvLogin(false);
+      setEnvLoginOtp(Array(OTP_LENGTH).fill(''));
+      setEnvironment(envLoginTarget);
+      queryClient.clear();
+    } catch (err: any) {
+      setEnvLoginError(err.message);
+      setEnvLoginOtp(Array(OTP_LENGTH).fill(''));
+      envOtpRefs.current[0]?.focus();
+    } finally {
+      setEnvLoginVerifying(false);
+    }
+  };
+
+  const handleEnvResend = async () => {
+    setEnvLoginError('');
+    setEnvLoginLoading(true);
+    setEnvLoginOtp(Array(OTP_LENGTH).fill(''));
+
+    try {
+      const supabase = getClientForEnv(envLoginTarget);
+      const email = `${envLoginUsername.trim()}${EMAIL_DOMAIN}`;
+      const { error } = await supabase.auth.signInWithOtp({ email });
+
+      if (error) throw error;
+      envOtpRefs.current[0]?.focus();
+    } catch (err: any) {
+      setEnvLoginError(err.message);
+    } finally {
+      setEnvLoginLoading(false);
+    }
   };
 
   // Track whether initial sync has happened to avoid auth check race
@@ -125,19 +207,13 @@ export default function DashboardLayout({
     });
   }, [router, environment, envReady]);
 
-  // Listen for environment session restoration after magic link callback
+  // Clean up any stale env param from URL (leftover from old magic link flow)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const envParam = params.get('env') as Environment | null;
-
-    if (envParam && (envParam === 'dev' || envParam === 'prod')) {
-      // User just came back from a magic link for this environment
-      setEnvironment(envParam);
-      queryClient.clear();
-      // Clean URL
+    if (params.has('env')) {
       window.history.replaceState({}, '', pathname);
     }
-  }, [pathname, setEnvironment, queryClient]);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     const supabase = getClientForEnv(environment);
@@ -255,20 +331,58 @@ export default function DashboardLayout({
             </p>
 
             {envLoginSent ? (
-              <div className="text-center py-4">
-                <p className="text-gray-700 mb-2">
-                  Magic link sent to{' '}
+              <div className="py-2">
+                <p className="text-sm text-gray-600 text-center mb-1">
+                  A 6-digit code was sent to{' '}
                   <strong>{envLoginUsername.trim()}{EMAIL_DOMAIN}</strong>
                 </p>
-                <p className="text-sm text-gray-500 mb-4">
-                  Click the link in your email, then come back here.
-                </p>
-                <button
-                  onClick={handleEnvLoginComplete}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                >
-                  I've signed in
-                </button>
+
+                <div className="flex justify-center gap-2 mt-4" onPaste={handleEnvOtpPaste}>
+                  {envLoginOtp.map((digit: string, i: number) => (
+                    <input
+                      key={i}
+                      ref={(el) => { envOtpRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleEnvOtpChange(i, e.target.value)}
+                      onKeyDown={(e) => handleEnvOtpKeyDown(i, e)}
+                      disabled={envLoginVerifying}
+                      className="w-10 h-12 text-center text-xl font-mono border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                    />
+                  ))}
+                </div>
+
+                {envLoginError && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mt-3">
+                    {envLoginError}
+                  </div>
+                )}
+
+                {envLoginVerifying && (
+                  <p className="text-sm text-gray-500 mt-3 text-center">Verifying...</p>
+                )}
+
+                <div className="mt-4 flex justify-between items-center">
+                  <button
+                    onClick={() => {
+                      setEnvLoginSent(false);
+                      setEnvLoginOtp(Array(OTP_LENGTH).fill(''));
+                      setEnvLoginError('');
+                    }}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleEnvResend}
+                    disabled={envLoginLoading || envLoginVerifying}
+                    className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                  >
+                    {envLoginLoading ? 'Sending...' : 'Resend code'}
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleEnvLogin} className="space-y-4">
@@ -311,7 +425,7 @@ export default function DashboardLayout({
                     disabled={envLoginLoading}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
                   >
-                    {envLoginLoading ? 'Sending...' : 'Send Magic Link'}
+                    {envLoginLoading ? 'Sending...' : 'Send Code'}
                   </button>
                 </div>
               </form>
