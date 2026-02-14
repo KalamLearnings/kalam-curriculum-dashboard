@@ -22,6 +22,9 @@ export default function CurriculaPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [curriculumToDelete, setCurriculumToDelete] = useState<any>(null);
 
+  // Track which curriculum is being toggled (for loading state)
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
   // Hooks
   const { mutate: updateCurriculum, isPending: isUpdating } = useUpdateCurriculum();
   const { mutate: deleteCurriculum, isPending: isDeleting } = useDeleteCurriculum();
@@ -76,6 +79,43 @@ export default function CurriculaPage() {
         },
         onError: (error: any) => {
           toast.error(error.message || 'Failed to update curriculum');
+        },
+      }
+    );
+  };
+
+  // Handle publish/unpublish toggle
+  const handleTogglePublish = (curriculum: any) => {
+    const newPublishedState = !curriculum.is_published;
+    setTogglingId(curriculum.id);
+
+    updateCurriculum(
+      {
+        id: curriculum.id,
+        data: {
+          is_published: newPublishedState,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            newPublishedState
+              ? 'Curriculum published successfully!'
+              : 'Curriculum unpublished successfully!'
+          );
+          // Update local state
+          setCurricula(prev =>
+            prev.map(c =>
+              c.id === curriculum.id
+                ? { ...c, is_published: newPublishedState }
+                : c
+            )
+          );
+          setTogglingId(null);
+        },
+        onError: (error: any) => {
+          toast.error(error.message || 'Failed to update curriculum status');
+          setTogglingId(null);
         },
       }
     );
@@ -167,14 +207,33 @@ export default function CurriculaPage() {
                       {curriculum.title?.en || 'Untitled'}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          curriculum.is_published
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTogglePublish(curriculum);
+                        }}
+                        disabled={togglingId === curriculum.id}
+                        className={`
+                          relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                          ${curriculum.is_published ? 'bg-green-500' : 'bg-gray-300'}
+                          ${togglingId === curriculum.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}
+                        `}
+                        title={curriculum.is_published ? 'Click to unpublish' : 'Click to publish'}
                       >
-                        {curriculum.is_published ? 'Published' : 'Draft'}
+                        <span
+                          className={`
+                            inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                            ${curriculum.is_published ? 'translate-x-6' : 'translate-x-1'}
+                          `}
+                        />
+                      </button>
+                      <span className={`ml-2 text-xs ${curriculum.is_published ? 'text-green-700' : 'text-gray-500'}`}>
+                        {togglingId === curriculum.id
+                          ? 'Updating...'
+                          : curriculum.is_published
+                            ? 'Published'
+                            : 'Draft'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-right">
