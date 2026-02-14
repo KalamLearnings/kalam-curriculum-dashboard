@@ -120,7 +120,8 @@ async function getAuthToken(): Promise<string> {
 // ============================================================================
 
 export async function listCurricula(): Promise<Curriculum[]> {
-  return fetchWithAuth<Curriculum[]>('/curriculum/list');
+  // CMS uses /list/all to include drafts, mobile app uses /list for published only
+  return fetchWithAuth<Curriculum[]>('/curriculum/list/all');
 }
 
 export async function getCurriculum(id: string): Promise<Curriculum> {
