@@ -13,6 +13,44 @@ interface EnvironmentConfig {
   anonKey: string;
 }
 
+/**
+ * Check if we're running on localhost (development server)
+ */
+function isLocalhost(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+}
+
+/**
+ * Get the appropriate config - use local Supabase when on localhost
+ */
+function getEnvConfig(env: Environment): EnvironmentConfig {
+  // When running locally, always use local Supabase
+  if (isLocalhost()) {
+    return {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321',
+      anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    };
+  }
+
+  // Otherwise use the remote environment
+  if (env === 'prod') {
+    return {
+      url: process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
+      anonKey: process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
+    };
+  }
+
+  return {
+    url: process.env.NEXT_PUBLIC_DEV_SUPABASE_URL!,
+    anonKey: process.env.NEXT_PUBLIC_DEV_SUPABASE_ANON_KEY!,
+  };
+}
+
+// Legacy static configs for backwards compatibility (used during SSR)
 const ENV_CONFIGS: Record<Environment, EnvironmentConfig> = {
   dev: {
     url: process.env.NEXT_PUBLIC_DEV_SUPABASE_URL!,
@@ -55,7 +93,7 @@ export function getCurrentEnvironment(): Environment {
 }
 
 export function getConfigForEnvironment(env: Environment) {
-  return ENV_CONFIGS[env];
+  return getEnvConfig(env);
 }
 
 /**
