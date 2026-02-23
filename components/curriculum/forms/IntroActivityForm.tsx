@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField, TextInput } from './FormField';
-import { PositionSelector } from './PositionSelector';
+import { LetterFormSelector, type LetterForm } from './LetterFormSelector';
 import { WordSelector } from '../WordSelector';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
 import { LetterSelectorModal } from '../LetterSelectorModal';
@@ -16,7 +16,7 @@ export function IntroActivityForm({ config, onChange, topic }: BaseActivityFormP
   const image = config?.image || '';
   const imageWidth = config?.imageWidth || 300;
   const imageHeight = config?.imageHeight || 300;
-  const position = config?.position || 'standalone';
+  const position = (config?.position as LetterForm) || 'isolated';
 
   const [showLetterSelector, setShowLetterSelector] = useState(false);
   const [showImageLibrary, setShowImageLibrary] = useState(false);
@@ -207,8 +207,8 @@ export function IntroActivityForm({ config, onChange, topic }: BaseActivityFormP
         </>
       )}
 
-      <FormField label="Position" hint="Position of letter in word context">
-        <PositionSelector
+      <FormField label="Letter Form" hint="Select the form of the letter to display">
+        <LetterFormSelector
           value={position}
           onChange={(value) => updateConfig({ position: value })}
           targetLetter={letter}
