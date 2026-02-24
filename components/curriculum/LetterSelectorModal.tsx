@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { useLetters, type Letter } from '@/lib/hooks/useLetters';
+import { ArabicLetterGrid, type LetterForm } from './forms/ArabicLetterGrid';
 
 interface LetterSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (letter: Letter) => void;
+  onSelect: (letter: Letter, form?: LetterForm) => void;
   selectedLetter?: string; // Current selected letter character
+  selectedForm?: LetterForm; // Current selected form
+  showFormSelector?: boolean; // Whether to show form selector (default: true)
 }
 
 export function LetterSelectorModal({
@@ -16,13 +19,28 @@ export function LetterSelectorModal({
   onClose,
   onSelect,
   selectedLetter,
+  selectedForm: initialForm = 'isolated',
+  showFormSelector = true,
 }: LetterSelectorModalProps) {
   const { letters, loading } = useLetters();
   const [selected, setSelected] = useState<Letter | null>(null);
+  const [selectedForm, setSelectedForm] = useState<LetterForm>(initialForm);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Find the letter object if we have a selectedLetter
+      const letterObj = selectedLetter
+        ? letters.find(l => l.letter === selectedLetter) || null
+        : null;
+      setSelected(letterObj);
+      setSelectedForm(initialForm);
+    }
+  }, [isOpen, selectedLetter, initialForm, letters]);
 
   const handleSelect = () => {
     if (selected) {
-      onSelect(selected);
+      onSelect(selected, showFormSelector ? selectedForm : undefined);
       onClose();
     }
   };
@@ -34,40 +52,23 @@ export function LetterSelectorModal({
       title="Select Letter"
     >
       <div className="p-6">
-        {/* Letter Grid */}
+        {/* Letter Grid with optional Form Selector */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Select an Arabic Letter *
           </label>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-500">Loading letters...</div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-7 gap-2">
-              {letters.map((letter) => (
-                <button
-                  key={letter.id}
-                  type="button"
-                  onClick={() => setSelected(letter)}
-                  className={`
-                    aspect-square rounded-lg border-2 transition-all
-                    flex flex-col items-center justify-center
-                    hover:border-blue-400 hover:bg-blue-50
-                    ${
-                      selected?.id === letter.id || selectedLetter === letter.letter
-                        ? 'border-blue-600 bg-blue-100 ring-2 ring-blue-600 ring-offset-2'
-                        : 'border-gray-300 bg-white'
-                    }
-                  `}
-                >
-                  <div className="text-3xl font-arabic mb-1">{letter.letter}</div>
-                  <div className="text-xs text-gray-600">{letter.name_english}</div>
-                </button>
-              ))}
-            </div>
-          )}
+          <ArabicLetterGrid
+            value={selected?.letter || ''}
+            onChange={(value) => {
+              const letter = letters.find(l => l.letter === value);
+              if (letter) setSelected(letter);
+            }}
+            loading={loading}
+            showFormSelector={showFormSelector}
+            selectedForm={selectedForm}
+            onFormChange={setSelectedForm}
+          />
         </div>
 
         {/* Actions */}

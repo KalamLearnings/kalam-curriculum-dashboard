@@ -2,44 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { LetterSelectorModal } from '../../LetterSelectorModal';
 import type { Letter } from '@/lib/hooks/useLetters';
 import type { Topic } from '@/lib/schemas/curriculum';
+import type { LetterForm } from '../ArabicLetterGrid';
 
 interface LetterSelectorProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, form?: LetterForm) => void;
   topic?: Topic | null;
   label?: string;
   hint?: string;
+  /** Current selected form */
+  selectedForm?: LetterForm;
+  /** Whether to show form selector in the modal */
+  showFormSelector?: boolean;
 }
 
 /**
  * Reusable letter selector component that:
  * - Auto-populates from topic metadata
  * - Displays letter in a nice card UI
- * - Allows changing via modal
+ * - Allows changing via modal with optional form selection
  */
 export function LetterSelector({
   value,
   onChange,
   topic,
   label = "Target Letter",
-  hint = "Letter from current topic"
+  hint = "Letter from current topic",
+  selectedForm = 'isolated',
+  showFormSelector = true,
 }: LetterSelectorProps) {
   const [showLetterSelector, setShowLetterSelector] = useState(false);
 
   // Auto-populate letter from topic when component mounts or topic changes
   useEffect(() => {
-    console.log('LetterSelector - topic:', topic);
-    console.log('LetterSelector - topic.letter:', topic?.letter);
-    console.log('LetterSelector - current value:', value);
-
     if (topic?.letter) {
       const topicLetter = topic.letter.letter;
-      console.log('LetterSelector - topicLetter to set:', topicLetter);
       if (topicLetter && !value) {
-        onChange(topicLetter);
+        onChange(topicLetter, selectedForm);
       }
     }
-  }, [topic, value, onChange]);
+  }, [topic, value, onChange, selectedForm]);
+
+  // Get form label for display
+  const formLabels: Record<LetterForm, string> = {
+    isolated: 'Isolated',
+    initial: 'Initial',
+    medial: 'Medial',
+    final: 'Final',
+  };
 
   return (
     <>
@@ -58,12 +68,12 @@ export function LetterSelector({
                   {topic.letter.name_english}
                 </div>
                 <div className="text-xs text-gray-600">
-                  Topic Letter
+                  {showFormSelector ? `${formLabels[selectedForm]} Form` : 'Topic Letter'}
                 </div>
               </>
             ) : (
               <div className="text-sm text-gray-500">
-                {value ? 'Custom Letter' : 'No letter selected'}
+                {value ? (showFormSelector ? `Custom Letter • ${formLabels[selectedForm]}` : 'Custom Letter') : 'No letter selected'}
               </div>
             )}
           </div>
@@ -86,10 +96,12 @@ export function LetterSelector({
       <LetterSelectorModal
         isOpen={showLetterSelector}
         onClose={() => setShowLetterSelector(false)}
-        onSelect={(selectedLetter: Letter) => {
-          onChange(selectedLetter.letter);
+        onSelect={(selectedLetter: Letter, form?: LetterForm) => {
+          onChange(selectedLetter.letter, form);
         }}
         selectedLetter={value}
+        selectedForm={selectedForm}
+        showFormSelector={showFormSelector}
       />
     </>
   );
