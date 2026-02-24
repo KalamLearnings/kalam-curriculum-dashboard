@@ -2,7 +2,7 @@ import React from 'react';
 import { BaseActivityFormProps } from '../ActivityFormProps';
 import { FormField, NumberInput } from '../FormField';
 import { LetterSelector } from './LetterSelector';
-import type { LetterForm } from '../ArabicLetterGrid';
+import type { LetterReference } from '../ArabicLetterGrid';
 
 interface TargetLetterWithDistractorsFormProps extends BaseActivityFormProps {
   labels: {
@@ -11,7 +11,8 @@ interface TargetLetterWithDistractorsFormProps extends BaseActivityFormProps {
     targetCountLabel?: string;
     targetCountHint?: string;
   };
-  targetLetterField?: string; // Field name for target letter (default: 'targetLetter')
+  /** Field name for target letter in config (default: 'targetLetter') */
+  targetLetterField?: string;
 }
 
 export function TargetLetterWithDistractorsForm({
@@ -21,14 +22,18 @@ export function TargetLetterWithDistractorsForm({
   labels,
   targetLetterField = 'targetLetter'
 }: TargetLetterWithDistractorsFormProps) {
-  const targetLetter = config?.[targetLetterField] || '';
-  const targetLetterForm: LetterForm = config?.targetLetterForm || 'isolated';
-  const distractorLetters: string[] = config?.distractorLetters || [];
-  const targetCount = config?.targetCount ?? '';
-  const duration = config?.duration ?? '';
+  // Note: config type from @kalam/curriculum-schemas still expects old format
+  // We're migrating to LetterReference format
+  const typedConfig = config as any;
+  // Target letter is now a LetterReference object
+  const targetLetter: LetterReference | null = typedConfig?.[targetLetterField] || null;
+  // Distractor letters is now an array of LetterReference objects
+  const distractorLetters: LetterReference[] = typedConfig?.distractorLetters || [];
+  const targetCount = typedConfig?.targetCount ?? '';
+  const duration = typedConfig?.duration ?? '';
 
-  const updateConfig = (updates: Partial<typeof config>) => {
-    onChange({ ...config, ...updates });
+  const updateConfig = (updates: Record<string, any>) => {
+    onChange({ ...config, ...updates } as any);
   };
 
   return (
@@ -40,23 +45,19 @@ export function TargetLetterWithDistractorsForm({
       >
         <LetterSelector
           value={targetLetter}
-          onChange={(value, form) => updateConfig({
-            [targetLetterField]: value,
-            targetLetterForm: form || 'isolated'
-          })}
+          onChange={(value) => updateConfig({ [targetLetterField]: value })}
           topic={topic}
-          selectedForm={targetLetterForm}
           showFormSelector={true}
         />
       </FormField>
 
-      <FormField label="Distractor Letters" hint="Select the wrong letters" required>
+      <FormField label="Distractor Letters" hint="Select letters and their forms" required>
         <LetterSelector
           value={distractorLetters}
           onChange={(value) => updateConfig({ distractorLetters: value })}
           multiSelect
-          showFormSelector={true}
-          disabledLetters={targetLetter ? [targetLetter] : []}
+          multiFormSelect
+          disabledLetterIds={targetLetter ? [targetLetter.letterId] : []}
           disabledTooltip="This is the target letter"
         />
       </FormField>

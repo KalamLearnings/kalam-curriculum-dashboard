@@ -27,7 +27,7 @@ import { GenerateTopicModal } from '@/components/curriculum/GenerateTopicModal';
 import { useSaveGeneratedTopic } from '@/lib/hooks/useGenerateTopic';
 import { AIButton } from '@/components/ui/AIEffects';
 import type { Article, ArticleType } from '@/lib/schemas/curriculum';
-import type { Letter } from '@/lib/hooks/useLetters';
+import type { LetterReference } from '@/components/curriculum/forms/ArabicLetterGrid';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { getActivityLabel } from '@/lib/constants/curriculum';
@@ -123,12 +123,16 @@ export default function CurriculumBuilderPage() {
     setTopicToDuplicate(topicId);
   };
 
-  const handleConfirmDuplicate = async (selectedLetter: Letter) => {
+  const handleConfirmDuplicate = async (selected: LetterReference | LetterReference[]) => {
     if (!topicToDuplicate) return;
+
+    // Get the letterId from the selection (single or array)
+    const letterRef = Array.isArray(selected) ? selected[0] : selected;
+    if (!letterRef) return;
 
     setIsDuplicating(true);
     try {
-      await duplicateTopicApi(curriculumId, topicToDuplicate, selectedLetter.id);
+      await duplicateTopicApi(curriculumId, topicToDuplicate, letterRef.letterId);
 
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['topics', curriculumId] });

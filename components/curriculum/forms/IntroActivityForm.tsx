@@ -1,40 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField, TextInput } from './FormField';
-import { LetterFormSelector, type LetterForm } from './LetterFormSelector';
+import { LetterSelector } from './shared/LetterSelector';
 import { WordSelector } from '../WordSelector';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
-import { LetterSelectorModal } from '../LetterSelectorModal';
 import { ImageLibraryModal } from './ImageLibraryModal';
-import type { Letter } from '@/lib/hooks/useLetters';
 import { cn } from '@/lib/utils';
+import type { LetterReference } from './ArabicLetterGrid';
 
 export function IntroActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
-  const contentType = config?.contentType || 'letter';
-  const letter = config?.letter || '';
-  const word = config?.word || '';
-  const image = config?.image || '';
-  const imageWidth = config?.imageWidth || 300;
-  const imageHeight = config?.imageHeight || 300;
-  const position = (config?.position as LetterForm) || 'isolated';
+  // Note: config type from @kalam/curriculum-schemas still expects old format
+  // We're migrating to LetterReference format
+  const typedConfig = config as any;
+  const contentType = typedConfig?.contentType || 'letter';
+  // letter is now a LetterReference object that includes the form
+  const letter: LetterReference | null = typedConfig?.letter || null;
+  const word = typedConfig?.word || '';
+  const image = typedConfig?.image || '';
+  const imageWidth = typedConfig?.imageWidth || 300;
+  const imageHeight = typedConfig?.imageHeight || 300;
 
-  const [showLetterSelector, setShowLetterSelector] = useState(false);
   const [showImageLibrary, setShowImageLibrary] = useState(false);
 
-  const updateConfig = (updates: Partial<typeof config>) => {
-    onChange({ ...config, ...updates });
+  const updateConfig = (updates: Record<string, any>) => {
+    onChange({ ...config, ...updates } as any);
   };
-
-  // Auto-populate letter from topic when component mounts or topic changes
-  useEffect(() => {
-    if (topic?.letter && contentType === 'letter') {
-      // Extract letter from topic.letter object (attached by backend)
-      const topicLetter = topic.letter.letter;
-      if (topicLetter && !letter) {
-        updateConfig({ letter: topicLetter });
-      }
-    }
-  }, [topic, contentType, letter]);
 
   return (
     <div className="space-y-4">
@@ -88,45 +78,13 @@ export function IntroActivityForm({ config, onChange, topic }: BaseActivityFormP
       </FormField>
 
       {contentType === 'letter' && (
-        <FormField label="Letter" hint="Letter from current topic" required>
-          <div className="flex items-center gap-3">
-            {/* Letter Display Card */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg flex-1">
-              <div className="flex items-center justify-center w-16 h-16 bg-white rounded-lg shadow-sm border border-blue-100">
-                <span className="text-4xl font-arabic text-blue-900">
-                  {letter || '—'}
-                </span>
-              </div>
-              <div className="flex-1">
-                {topic?.letter ? (
-                  <>
-                    <div className="text-sm font-medium text-gray-900">
-                      {topic.letter.name_english}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      Topic Letter • {topic.letter.name_arabic || 'All Forms'}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-sm text-gray-500">
-                    {letter ? 'Custom Letter' : 'No letter selected'}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Change Button */}
-            <button
-              type="button"
-              onClick={() => setShowLetterSelector(true)}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-blue-700 bg-white border-2 border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-              Change
-            </button>
-          </div>
+        <FormField label="Letter" hint="Select letter and form to display" required>
+          <LetterSelector
+            value={letter}
+            onChange={(value) => updateConfig({ letter: value })}
+            topic={topic}
+            showFormSelector={true}
+          />
         </FormField>
       )}
 
@@ -206,24 +164,6 @@ export function IntroActivityForm({ config, onChange, topic }: BaseActivityFormP
           </div>
         </>
       )}
-
-      <FormField label="Letter Form" hint="Select the form of the letter to display">
-        <LetterFormSelector
-          value={position}
-          onChange={(value) => updateConfig({ position: value })}
-          targetLetter={letter}
-        />
-      </FormField>
-
-      {/* Letter Selector Modal */}
-      <LetterSelectorModal
-        isOpen={showLetterSelector}
-        onClose={() => setShowLetterSelector(false)}
-        onSelect={(selectedLetter: Letter) => {
-          updateConfig({ letter: selectedLetter.letter });
-        }}
-        selectedLetter={letter}
-      />
 
       {/* Image Library Modal */}
       <ImageLibraryModal

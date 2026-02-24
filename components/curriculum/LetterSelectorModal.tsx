@@ -3,98 +3,76 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { useLetters, type Letter } from '@/lib/hooks/useLetters';
-import { ArabicLetterGrid, type LetterForm } from './forms/ArabicLetterGrid';
+import { ArabicLetterGrid, type LetterForm, type LetterReference, type LetterWithForms } from './forms/ArabicLetterGrid';
 
 interface LetterSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (letter: Letter | Letter[], form?: LetterForm) => void;
-  selectedLetter?: string | string[]; // Current selected letter(s)
-  selectedForm?: LetterForm; // Current selected form
-  showFormSelector?: boolean; // Whether to show form selector (default: true for single, false for multi)
-  multiSelect?: boolean; // Whether to allow multiple letter selection
-  disabledLetters?: string[]; // Letters to disable (e.g., target letter when selecting distractors)
-  disabledTooltip?: string; // Tooltip for disabled letters
+  onSelect: (value: LetterReference | LetterReference[]) => void;
+  /** Current selected value (LetterReference format) */
+  selectedValue?: LetterReference | LetterReference[] | null;
+  /** Whether to show form selector */
+  showFormSelector?: boolean;
+  /** Whether to allow multiple letter selection */
+  multiSelect?: boolean;
+  /** Whether to allow multiple forms per letter (requires multiSelect) */
+  multiFormSelect?: boolean;
+  /** Letter IDs to disable (e.g., target letter when selecting distractors) */
+  disabledLetterIds?: string[];
+  /** Tooltip for disabled letters */
+  disabledTooltip?: string;
 }
 
 export function LetterSelectorModal({
   isOpen,
   onClose,
   onSelect,
-  selectedLetter,
-  selectedForm: initialForm = 'isolated',
-  showFormSelector,
+  selectedValue,
+  showFormSelector = true,
   multiSelect = false,
-  disabledLetters = [],
+  multiFormSelect = false,
+  disabledLetterIds = [],
   disabledTooltip,
 }: LetterSelectorModalProps) {
   const { letters, loading } = useLetters();
-  const [selected, setSelected] = useState<Letter | Letter[] | null>(null);
-  const [selectedForm, setSelectedForm] = useState<LetterForm>(initialForm);
 
-  // Default showFormSelector based on multiSelect (single = show, multi = hide)
-  const shouldShowFormSelector = showFormSelector ?? !multiSelect;
+  // Internal state for the grid - uses LetterReference format
+  const [gridValue, setGridValue] = useState<LetterReference | LetterReference[] | null>(null);
 
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      if (multiSelect) {
-        // For multi-select, find all letter objects
-        const selectedLetters = Array.isArray(selectedLetter) ? selectedLetter : [];
-        const letterObjs = letters.filter(l => selectedLetters.includes(l.letter));
-        setSelected(letterObjs);
-      } else {
-        // For single select, find the letter object
-        const letterChar = Array.isArray(selectedLetter) ? selectedLetter[0] : selectedLetter;
-        const letterObj = letterChar
-          ? letters.find(l => l.letter === letterChar) || null
-          : null;
-        setSelected(letterObj);
-      }
-      setSelectedForm(initialForm);
+      setGridValue(selectedValue ?? null);
     }
-  }, [isOpen, selectedLetter, initialForm, letters, multiSelect]);
+  }, [isOpen, selectedValue]);
 
-  const handleGridChange = (value: string | string[]) => {
-    if (multiSelect) {
-      const selectedLetters = Array.isArray(value) ? value : [value];
-      const letterObjs = letters.filter(l => selectedLetters.includes(l.letter));
-      setSelected(letterObjs);
-    } else {
-      const letter = letters.find(l => l.letter === value);
-      if (letter) setSelected(letter);
-    }
+  const handleGridChange = (value: LetterReference | LetterReference[] | null) => {
+    setGridValue(value);
   };
 
   const handleSelect = () => {
+    if (!gridValue) return;
+
     if (multiSelect) {
-      const selectedArr = selected as Letter[];
-      if (selectedArr && selectedArr.length > 0) {
-        onSelect(selectedArr, shouldShowFormSelector ? selectedForm : undefined);
+      const refs = Array.isArray(gridValue) ? gridValue : [gridValue];
+      if (refs.length > 0) {
+        onSelect(refs);
         onClose();
       }
     } else {
-      const selectedSingle = selected as Letter;
-      if (selectedSingle) {
-        onSelect(selectedSingle, shouldShowFormSelector ? selectedForm : undefined);
+      const ref = Array.isArray(gridValue) ? gridValue[0] : gridValue;
+      if (ref) {
+        onSelect(ref);
         onClose();
       }
     }
   };
 
-  const getGridValue = () => {
-    if (multiSelect) {
-      const arr = selected as Letter[] | null;
-      return arr ? arr.map(l => l.letter) : [];
-    } else {
-      const single = selected as Letter | null;
-      return single?.letter || '';
-    }
-  };
-
-  const isValid = multiSelect
-    ? (selected as Letter[] | null)?.length && (selected as Letter[]).length > 0
-    : selected !== null;
+  const isValid = (() => {
+    if (!gridValue) return false;
+    if (Array.isArray(gridValue)) return gridValue.length > 0;
+    return true;
+  })();
 
   return (
     <Modal
@@ -110,14 +88,13 @@ export function LetterSelectorModal({
           </label>
 
           <ArabicLetterGrid
-            value={getGridValue()}
+            value={gridValue}
             onChange={handleGridChange}
             loading={loading}
             multiSelect={multiSelect}
-            showFormSelector={shouldShowFormSelector}
-            selectedForm={selectedForm}
-            onFormChange={setSelectedForm}
-            disabledLetters={disabledLetters}
+            multiFormSelect={multiFormSelect}
+            showFormSelector={showFormSelector}
+            disabledLetterIds={disabledLetterIds}
             disabledTooltip={disabledTooltip}
           />
         </div>

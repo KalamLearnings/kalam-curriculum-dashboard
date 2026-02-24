@@ -5,7 +5,7 @@ import { Modal } from '../ui/Modal';
 import type { Topic, CreateTopic, UpdateTopic } from '@/lib/schemas/curriculum';
 import { useCreateTopic, useUpdateTopic } from '@/lib/hooks/useTopics';
 import { useLetters, type Letter } from '@/lib/hooks/useLetters';
-import { ArabicLetterGrid, type LetterForm } from './forms/ArabicLetterGrid';
+import { ArabicLetterGrid, type LetterForm, type LetterReference } from './forms/ArabicLetterGrid';
 
 interface TopicFormModalProps {
   isOpen: boolean;
@@ -29,15 +29,22 @@ export function TopicFormModal({
   const [customTopicName, setCustomTopicName] = useState('');
   const [topicType, setTopicType] = useState<'lesson' | 'review' | 'quiz' | 'assessment'>('lesson');
 
-  const [selectedLetter, setSelectedLetter] = useState<Letter | null>(
-    topic?.metadata?.reference?.id
-      ? letters.find(l => l.id === topic.metadata?.reference?.id) || null
-      : null
-  );
+  // Store selected letter as LetterReference
+  const [selectedLetterRef, setSelectedLetterRef] = useState<LetterReference | null>(() => {
+    if (topic?.metadata?.reference?.id) {
+      return {
+        letterId: topic.metadata.reference.id,
+        form: (topic.metadata.reference.form as LetterForm) || 'isolated'
+      };
+    }
+    return null;
+  });
 
-  const [selectedForm, setSelectedForm] = useState<LetterForm>(
-    (topic?.metadata?.reference?.form as LetterForm) || 'isolated'
-  );
+  // Helper to get the Letter object from the reference
+  const selectedLetter = selectedLetterRef
+    ? letters.find(l => l.id === selectedLetterRef.letterId) || null
+    : null;
+  const selectedForm = selectedLetterRef?.form || 'isolated';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,17 +132,22 @@ export function TopicFormModal({
   };
 
   const handleClose = () => {
-    setSelectedLetter(null);
-    setSelectedForm('isolated');
+    setSelectedLetterRef(null);
     setUseCustomInput(false);
     setCustomTopicName('');
     setTopicType('lesson');
     onClose();
   };
 
-  const handleLetterSelect = (letter: Letter) => {
-    setSelectedLetter(letter);
-    setSelectedForm('isolated'); // Default to isolated form when changing letter
+  const handleGridChange = (value: LetterReference | LetterReference[] | null) => {
+    // For topic form, we only use single select
+    if (value && !Array.isArray(value)) {
+      setSelectedLetterRef(value);
+    } else if (Array.isArray(value) && value.length > 0) {
+      setSelectedLetterRef(value[0]);
+    } else {
+      setSelectedLetterRef(null);
+    }
   };
 
   return (
@@ -155,7 +167,7 @@ export function TopicFormModal({
               type="button"
               onClick={() => {
                 setUseCustomInput(!useCustomInput);
-                setSelectedLetter(null);
+                setSelectedLetterRef(null);
                 setCustomTopicName('');
               }}
               className={`
@@ -230,15 +242,10 @@ export function TopicFormModal({
               </label>
 
               <ArabicLetterGrid
-                value={selectedLetter?.letter || ''}
-                onChange={(value) => {
-                  const letter = letters.find(l => l.letter === value);
-                  if (letter) handleLetterSelect(letter);
-                }}
+                value={selectedLetterRef}
+                onChange={handleGridChange}
                 loading={lettersLoading}
                 showFormSelector
-                selectedForm={selectedForm}
-                onFormChange={setSelectedForm}
               />
 
               {!selectedLetter && (

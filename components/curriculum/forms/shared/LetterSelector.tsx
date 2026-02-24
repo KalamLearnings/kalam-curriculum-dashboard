@@ -1,142 +1,183 @@
 import React, { useState, useEffect } from 'react';
 import { LetterSelectorModal } from '../../LetterSelectorModal';
-import type { Letter } from '@/lib/hooks/useLetters';
+import { useLetters } from '@/lib/hooks/useLetters';
 import type { Topic } from '@/lib/schemas/curriculum';
-import type { LetterForm } from '../ArabicLetterGrid';
+import type { LetterForm, LetterReference } from '../ArabicLetterGrid';
 
 interface LetterSelectorPropsBase {
   topic?: Topic | null;
-  label?: string;
-  hint?: string;
   /** Whether to show form selector in the modal */
   showFormSelector?: boolean;
-  /** Letters to disable in the grid */
-  disabledLetters?: string[];
+  /** Letter IDs to disable in the grid */
+  disabledLetterIds?: string[];
   /** Tooltip for disabled letters */
   disabledTooltip?: string;
 }
 
 interface SingleSelectProps extends LetterSelectorPropsBase {
   multiSelect?: false;
-  value: string;
-  onChange: (value: string, form?: LetterForm) => void;
-  /** Current selected form */
-  selectedForm?: LetterForm;
+  multiFormSelect?: false;
+  value: LetterReference | null;
+  onChange: (value: LetterReference | null) => void;
 }
 
 interface MultiSelectProps extends LetterSelectorPropsBase {
   multiSelect: true;
-  value: string[];
-  onChange: (value: string[]) => void;
-  selectedForm?: never;
+  multiFormSelect?: boolean;
+  value: LetterReference[];
+  onChange: (value: LetterReference[]) => void;
 }
 
 type LetterSelectorProps = SingleSelectProps | MultiSelectProps;
+
+const formLabels: Record<LetterForm, string> = {
+  isolated: 'Isolated',
+  initial: 'Initial',
+  medial: 'Medial',
+  final: 'Final',
+};
 
 /**
  * Reusable letter selector component that:
  * - Auto-populates from topic metadata (single select only)
  * - Displays letter(s) in a nice card UI
  * - Allows changing via modal with optional form selection
- * - Supports both single and multi-select modes
+ * - Supports single and multi-select modes
+ * - Uses LetterReference format ({ letterId, form })
  */
 export function LetterSelector(props: LetterSelectorProps) {
   const {
     topic,
-    label = "Target Letter",
-    hint = "Letter from current topic",
-    showFormSelector,
-    disabledLetters = [],
+    showFormSelector = true,
+    disabledLetterIds = [],
     disabledTooltip,
   } = props;
 
+  const { letters } = useLetters();
   const [showLetterSelector, setShowLetterSelector] = useState(false);
 
   const isMultiSelect = props.multiSelect === true;
-  const value = props.value;
-  const selectedForm = isMultiSelect ? 'isolated' : (props.selectedForm || 'isolated');
+  const isMultiFormSelect = isMultiSelect && props.multiFormSelect === true;
 
   // Auto-populate letter from topic when component mounts or topic changes (single select only)
   useEffect(() => {
     if (!isMultiSelect && topic?.letter) {
-      const topicLetter = topic.letter.letter;
-      const singleValue = value as string;
-      if (topicLetter && !singleValue) {
-        (props as SingleSelectProps).onChange(topicLetter, selectedForm);
+      const topicLetterId = topic.letter.id;
+      const currentValue = props.value as LetterReference | null;
+      if (topicLetterId && !currentValue) {
+        (props as SingleSelectProps).onChange({
+          letterId: topicLetterId,
+          form: 'isolated'
+        });
       }
     }
-  }, [topic, value, isMultiSelect, selectedForm]);
+  }, [topic, isMultiSelect]);
 
-  // Get form label for display
-  const formLabels: Record<LetterForm, string> = {
-    isolated: 'Isolated',
-    initial: 'Initial',
-    medial: 'Medial',
-    final: 'Final',
+  const handleSelect = (selected: LetterReference | LetterReference[]) => {
+    if (isMultiSelect) {
+      const refs = Array.isArray(selected) ? selected : [selected];
+      (props as MultiSelectProps).onChange(refs);
+    } else {
+      const ref = Array.isArray(selected) ? selected[0] : selected;
+      (props as SingleSelectProps).onChange(ref);
+    }
   };
 
-  const handleSelect = (letter: Letter | Letter[], form?: LetterForm) => {
-    if (isMultiSelect) {
-      const letters = letter as Letter[];
-      (props as MultiSelectProps).onChange(letters.map(l => l.letter));
-    } else {
-      const singleLetter = letter as Letter;
-      (props as SingleSelectProps).onChange(singleLetter.letter, form);
+  // Helper to get letter data from letterId
+  const getLetterData = (letterId: string) => {
+    return letters.find(l => l.id === letterId);
+  };
+
+  // Helper to get the display character for a letter reference
+  const getDisplayChar = (ref: LetterReference): string => {
+    const letterData = getLetterData(ref.letterId);
+    if (!letterData) return '?';
+    if (letterData.forms && letterData.forms[ref.form]) {
+      return letterData.forms[ref.form]!;
     }
+    return letterData.letter;
   };
 
   // Render display based on mode
   const renderDisplay = () => {
     if (isMultiSelect) {
-      const letters = value as string[];
-      if (letters.length === 0) {
+      const refs = props.value as LetterReference[];
+      if (refs.length === 0) {
         return (
           <div className="text-sm text-gray-500">No letters selected</div>
         );
       }
+
+      // Group references by letterId for display
+      const groupedByLetter = refs.reduce((acc, ref) => {
+        if (!acc[ref.letterId]) {
+          acc[ref.letterId] = [];
+        }
+        acc[ref.letterId].push(ref.form);
+        return acc;
+      }, {} as Record<string, LetterForm[]>);
+
       return (
         <div className="flex flex-wrap gap-2">
-          {letters.map((letter, idx) => (
-            <div
-              key={idx}
-              className="flex items-center justify-center w-10 h-10 bg-white rounded-lg shadow-sm border border-blue-100"
-            >
-              <span className="text-2xl font-arabic text-blue-900">{letter}</span>
-            </div>
-          ))}
+          {Object.entries(groupedByLetter).map(([letterId, forms]) => {
+            const letterData = getLetterData(letterId);
+            const displayChar = letterData?.letter || '?';
+            return (
+              <div
+                key={letterId}
+                className="flex flex-col items-center px-3 py-2 bg-white rounded-lg shadow-sm border border-blue-100"
+              >
+                <span className="text-2xl font-arabic text-blue-900">{displayChar}</span>
+                {isMultiFormSelect && (
+                  <span className="text-xs text-gray-500 mt-1">
+                    {forms.map(f => formLabels[f].charAt(0)).join(', ')}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       );
     } else {
-      const singleValue = value as string;
-      const shouldShowForm = showFormSelector !== false;
+      const ref = props.value as LetterReference | null;
+      const letterData = ref ? getLetterData(ref.letterId) : null;
+      const displayChar = ref ? getDisplayChar(ref) : null;
+
       return (
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-16 h-16 bg-white rounded-lg shadow-sm border border-blue-100">
             <span className="text-4xl font-arabic text-blue-900">
-              {singleValue || '—'}
+              {displayChar || '—'}
             </span>
           </div>
           <div className="flex-1">
-            {topic?.letter?.name_english ? (
+            {letterData ? (
               <>
                 <div className="text-sm font-medium text-gray-900">
-                  {topic.letter.name_english}
+                  {letterData.name_english}
                 </div>
                 <div className="text-xs text-gray-600">
-                  {shouldShowForm ? `${formLabels[selectedForm]} Form` : 'Topic Letter'}
+                  {showFormSelector && ref ? `${formLabels[ref.form]} Form` : 'Selected Letter'}
                 </div>
               </>
             ) : (
               <div className="text-sm text-gray-500">
-                {singleValue
-                  ? (shouldShowForm ? `Custom Letter • ${formLabels[selectedForm]}` : 'Custom Letter')
-                  : 'No letter selected'}
+                {ref ? 'Loading...' : 'No letter selected'}
               </div>
             )}
           </div>
         </div>
       );
     }
+  };
+
+  // Convert value to modal format
+  const getModalValue = (): LetterReference | LetterReference[] | null => {
+    if (isMultiSelect) {
+      const refs = props.value as LetterReference[];
+      return refs.length > 0 ? refs : null;
+    }
+    return props.value as LetterReference | null;
   };
 
   return (
@@ -165,11 +206,11 @@ export function LetterSelector(props: LetterSelectorProps) {
         isOpen={showLetterSelector}
         onClose={() => setShowLetterSelector(false)}
         onSelect={handleSelect}
-        selectedLetter={value}
-        selectedForm={selectedForm}
+        selectedValue={getModalValue()}
         showFormSelector={showFormSelector}
         multiSelect={isMultiSelect}
-        disabledLetters={disabledLetters}
+        multiFormSelect={isMultiFormSelect}
+        disabledLetterIds={disabledLetterIds}
         disabledTooltip={disabledTooltip}
       />
     </>

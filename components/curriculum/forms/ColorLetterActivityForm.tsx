@@ -1,48 +1,45 @@
-
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField } from './FormField';
 import { LetterSelector } from './shared/LetterSelector';
-import { OptionSelector } from './OptionSelector';
-import type { ColorLetterConfig } from '@kalam/curriculum-schemas';
+import type { LetterReference } from './ArabicLetterGrid';
 
 export function ColorLetterActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
-    const typedConfig = (config || {}) as Partial<ColorLetterConfig>;
+    // letter is now a LetterReference object that includes the form
+    // Note: config type still expects string, but we're migrating to LetterReference
+    const letter: LetterReference | null = (config as any)?.letter || null;
+    const strokeWidth = (config as any)?.strokeWidth || 10;
 
-    const handleChange = (key: keyof ColorLetterConfig, value: any) => {
-        onChange({ ...typedConfig, [key]: value });
+    const handleLetterChange = (value: LetterReference | null) => {
+        onChange({ ...config, letter: value } as any);
+    };
+
+    const handleStrokeWidthChange = (value: number) => {
+        onChange({ ...config, strokeWidth: value } as any);
     };
 
     return (
         <div className="space-y-6">
-            <FormField label="Letter to Color">
+            <FormField
+                label="Letter to Color"
+                hint="Select the letter and form to color"
+                required
+            >
                 <LetterSelector
-                    value={typedConfig.letter || ''}
-                    onChange={(value) => handleChange('letter', value)}
+                    value={letter}
+                    onChange={handleLetterChange}
                     topic={topic}
+                    showFormSelector={true}
                 />
             </FormField>
 
-            <FormField label="Letter Form">
-                <OptionSelector
-                    options={[
-                        { value: 'isolated', label: 'Isolated' },
-                        { value: 'initial', label: 'Initial' },
-                        { value: 'medial', label: 'Medial' },
-                        { value: 'final', label: 'Final' },
-                    ]}
-                    value={typedConfig.letterForm || 'isolated'}
-                    onChange={(value) => handleChange('letterForm', value)}
-                />
-            </FormField>
-
-            <FormField label="Stroke Width">
+            <FormField label="Stroke Width" hint="Width of the coloring brush (1-50)">
                 <input
                     type="number"
                     min="1"
                     max="50"
-                    value={typedConfig.strokeWidth || 10}
-                    onChange={(e) => handleChange('strokeWidth', parseInt(e.target.value))}
+                    value={strokeWidth}
+                    onChange={(e) => handleStrokeWidthChange(parseInt(e.target.value))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
             </FormField>
