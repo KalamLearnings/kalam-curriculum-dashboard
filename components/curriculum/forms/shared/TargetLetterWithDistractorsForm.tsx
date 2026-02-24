@@ -2,7 +2,7 @@ import React from 'react';
 import { BaseActivityFormProps } from '../ActivityFormProps';
 import { FormField, NumberInput } from '../FormField';
 import { LetterSelector } from './LetterSelector';
-import { ArabicLetterGrid, type LetterForm } from '../ArabicLetterGrid';
+import type { LetterForm } from '../ArabicLetterGrid';
 
 interface TargetLetterWithDistractorsFormProps extends BaseActivityFormProps {
   labels: {
@@ -50,11 +50,12 @@ export function TargetLetterWithDistractorsForm({
         />
       </FormField>
 
-      <FormField label="Distractor Letters" hint="Select the wrong letters (click to toggle)" required>
-        <ArabicLetterGrid
+      <FormField label="Distractor Letters" hint="Select the wrong letters" required>
+        <LetterSelector
           value={distractorLetters}
-          onChange={(value) => updateConfig({ distractorLetters: value as string[] })}
+          onChange={(value) => updateConfig({ distractorLetters: value })}
           multiSelect
+          showFormSelector={true}
           disabledLetters={targetLetter ? [targetLetter] : []}
           disabledTooltip="This is the target letter"
         />

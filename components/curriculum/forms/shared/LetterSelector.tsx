@@ -4,44 +4,68 @@ import type { Letter } from '@/lib/hooks/useLetters';
 import type { Topic } from '@/lib/schemas/curriculum';
 import type { LetterForm } from '../ArabicLetterGrid';
 
-interface LetterSelectorProps {
-  value: string;
-  onChange: (value: string, form?: LetterForm) => void;
+interface LetterSelectorPropsBase {
   topic?: Topic | null;
   label?: string;
   hint?: string;
-  /** Current selected form */
-  selectedForm?: LetterForm;
   /** Whether to show form selector in the modal */
   showFormSelector?: boolean;
+  /** Letters to disable in the grid */
+  disabledLetters?: string[];
+  /** Tooltip for disabled letters */
+  disabledTooltip?: string;
 }
+
+interface SingleSelectProps extends LetterSelectorPropsBase {
+  multiSelect?: false;
+  value: string;
+  onChange: (value: string, form?: LetterForm) => void;
+  /** Current selected form */
+  selectedForm?: LetterForm;
+}
+
+interface MultiSelectProps extends LetterSelectorPropsBase {
+  multiSelect: true;
+  value: string[];
+  onChange: (value: string[]) => void;
+  selectedForm?: never;
+}
+
+type LetterSelectorProps = SingleSelectProps | MultiSelectProps;
 
 /**
  * Reusable letter selector component that:
- * - Auto-populates from topic metadata
- * - Displays letter in a nice card UI
+ * - Auto-populates from topic metadata (single select only)
+ * - Displays letter(s) in a nice card UI
  * - Allows changing via modal with optional form selection
+ * - Supports both single and multi-select modes
  */
-export function LetterSelector({
-  value,
-  onChange,
-  topic,
-  label = "Target Letter",
-  hint = "Letter from current topic",
-  selectedForm = 'isolated',
-  showFormSelector = true,
-}: LetterSelectorProps) {
+export function LetterSelector(props: LetterSelectorProps) {
+  const {
+    topic,
+    label = "Target Letter",
+    hint = "Letter from current topic",
+    showFormSelector,
+    disabledLetters = [],
+    disabledTooltip,
+  } = props;
+
   const [showLetterSelector, setShowLetterSelector] = useState(false);
 
-  // Auto-populate letter from topic when component mounts or topic changes
+  const isMultiSelect = props.multiSelect === true;
+  const value = props.value;
+  const selectedForm = isMultiSelect ? 'isolated' : (props.selectedForm || 'isolated');
+
+  // Auto-populate letter from topic when component mounts or topic changes (single select only)
   useEffect(() => {
-    if (topic?.letter) {
+    if (!isMultiSelect && topic?.letter) {
       const topicLetter = topic.letter.letter;
-      if (topicLetter && !value) {
-        onChange(topicLetter, selectedForm);
+      const singleValue = value as string;
+      if (topicLetter && !singleValue) {
+        (props as SingleSelectProps).onChange(topicLetter, selectedForm);
       }
     }
-  }, [topic, value, onChange, selectedForm]);
+  }, [topic, value, isMultiSelect, selectedForm]);
 
   // Get form label for display
   const formLabels: Record<LetterForm, string> = {
@@ -51,14 +75,45 @@ export function LetterSelector({
     final: 'Final',
   };
 
-  return (
-    <>
-      <div className="flex items-center gap-3">
-        {/* Letter Display Card */}
-        <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg flex-1">
+  const handleSelect = (letter: Letter | Letter[], form?: LetterForm) => {
+    if (isMultiSelect) {
+      const letters = letter as Letter[];
+      (props as MultiSelectProps).onChange(letters.map(l => l.letter));
+    } else {
+      const singleLetter = letter as Letter;
+      (props as SingleSelectProps).onChange(singleLetter.letter, form);
+    }
+  };
+
+  // Render display based on mode
+  const renderDisplay = () => {
+    if (isMultiSelect) {
+      const letters = value as string[];
+      if (letters.length === 0) {
+        return (
+          <div className="text-sm text-gray-500">No letters selected</div>
+        );
+      }
+      return (
+        <div className="flex flex-wrap gap-2">
+          {letters.map((letter, idx) => (
+            <div
+              key={idx}
+              className="flex items-center justify-center w-10 h-10 bg-white rounded-lg shadow-sm border border-blue-100"
+            >
+              <span className="text-2xl font-arabic text-blue-900">{letter}</span>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      const singleValue = value as string;
+      const shouldShowForm = showFormSelector !== false;
+      return (
+        <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-16 h-16 bg-white rounded-lg shadow-sm border border-blue-100">
             <span className="text-4xl font-arabic text-blue-900">
-              {value || '—'}
+              {singleValue || '—'}
             </span>
           </div>
           <div className="flex-1">
@@ -68,15 +123,28 @@ export function LetterSelector({
                   {topic.letter.name_english}
                 </div>
                 <div className="text-xs text-gray-600">
-                  {showFormSelector ? `${formLabels[selectedForm]} Form` : 'Topic Letter'}
+                  {shouldShowForm ? `${formLabels[selectedForm]} Form` : 'Topic Letter'}
                 </div>
               </>
             ) : (
               <div className="text-sm text-gray-500">
-                {value ? (showFormSelector ? `Custom Letter • ${formLabels[selectedForm]}` : 'Custom Letter') : 'No letter selected'}
+                {singleValue
+                  ? (shouldShowForm ? `Custom Letter • ${formLabels[selectedForm]}` : 'Custom Letter')
+                  : 'No letter selected'}
               </div>
             )}
           </div>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <>
+      <div className="flex items-center gap-3">
+        {/* Letter Display Card */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg flex-1 min-h-[88px]">
+          {renderDisplay()}
         </div>
 
         {/* Change Button */}
@@ -96,12 +164,13 @@ export function LetterSelector({
       <LetterSelectorModal
         isOpen={showLetterSelector}
         onClose={() => setShowLetterSelector(false)}
-        onSelect={(selectedLetter: Letter, form?: LetterForm) => {
-          onChange(selectedLetter.letter, form);
-        }}
+        onSelect={handleSelect}
         selectedLetter={value}
         selectedForm={selectedForm}
         showFormSelector={showFormSelector}
+        multiSelect={isMultiSelect}
+        disabledLetters={disabledLetters}
+        disabledTooltip={disabledTooltip}
       />
     </>
   );

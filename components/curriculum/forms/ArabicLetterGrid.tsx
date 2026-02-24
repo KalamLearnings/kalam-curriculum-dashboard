@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useLetters, type Letter } from '@/lib/hooks/useLetters';
 
@@ -45,14 +45,29 @@ export function ArabicLetterGrid({
 }: ArabicLetterGridProps) {
   const { letters, loading: lettersLoading } = useLetters();
 
+  // Track the last clicked letter for multi-select form display
+  const [lastClickedLetter, setLastClickedLetter] = useState<string | null>(null);
+
   const isLoading = loading ?? lettersLoading;
+
+  // Reset lastClickedLetter when value changes externally (e.g., modal opens with existing selection)
+  useEffect(() => {
+    if (multiSelect && Array.isArray(value) && value.length > 0 && !lastClickedLetter) {
+      setLastClickedLetter(value[value.length - 1]);
+    }
+  }, [value, multiSelect, lastClickedLetter]);
 
   const handleLetterClick = (letter: Letter) => {
     if (multiSelect) {
       const currentValues = Array.isArray(value) ? value : [];
       if (currentValues.includes(letter.letter)) {
-        onChange(currentValues.filter(l => l !== letter.letter));
+        // Removing a letter - update lastClicked to another selected letter if available
+        const remaining = currentValues.filter(l => l !== letter.letter);
+        setLastClickedLetter(remaining.length > 0 ? remaining[remaining.length - 1] : null);
+        onChange(remaining);
       } else {
+        // Adding a letter - this becomes the last clicked
+        setLastClickedLetter(letter.letter);
         onChange([...currentValues, letter.letter]);
       }
     } else {
@@ -75,10 +90,18 @@ export function ArabicLetterGrid({
     return disabledLetters.includes(letterChar);
   };
 
-  // Get selected letter data for form selector
-  const selectedLetterData = !multiSelect && typeof value === 'string'
-    ? letters.find(l => l.letter === value)
-    : null;
+  // Get selected letter data for form selector (for single select, use selected letter; for multi, use last clicked)
+  const selectedLetterData = (() => {
+    if (multiSelect) {
+      // Use last clicked letter for form display
+      return lastClickedLetter ? letters.find(l => l.letter === lastClickedLetter) : null;
+    } else {
+      return typeof value === 'string' && value ? letters.find(l => l.letter === value) : null;
+    }
+  })();
+
+  // For multi-select, show form selector if enabled (even without selection)
+  const shouldShowFormSelector = showFormSelector && (multiSelect || selectedLetterData);
 
   if (isLoading) {
     return (
@@ -120,8 +143,8 @@ export function ArabicLetterGrid({
         })}
       </div>
 
-      {/* Form Selector - shown when a letter is selected and showFormSelector is true */}
-      {showFormSelector && selectedLetterData && (
+      {/* Form Selector - shown when showFormSelector is true and (multiSelect OR a letter is selected) */}
+      {shouldShowFormSelector && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Select Letter Form
@@ -129,7 +152,7 @@ export function ArabicLetterGrid({
           <div className="grid grid-cols-4 gap-2">
             {(['isolated', 'initial', 'medial', 'final'] as LetterForm[]).map((form) => {
               const isFormSelected = selectedForm === form;
-              const formCharacter = selectedLetterData.forms?.[form] || selectedLetterData.letter;
+              const formCharacter = selectedLetterData?.forms?.[form] || selectedLetterData?.letter || formLabels[form];
 
               return (
                 <button
