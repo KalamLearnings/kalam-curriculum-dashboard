@@ -25,23 +25,29 @@ function isLocalhost(): boolean {
 }
 
 /**
- * Get the appropriate config - use local Supabase when on localhost
+ * Get the appropriate config based on the selected environment.
+ * Respects the environment toggle even when running locally.
  */
 function getEnvConfig(env: Environment): EnvironmentConfig {
-  // When running locally, always use local Supabase
-  if (isLocalhost()) {
-    return {
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321',
-      anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    };
-  }
-
-  // Otherwise use the remote environment
   if (env === 'prod') {
     return {
       url: process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
       anonKey: process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
     };
+  }
+
+  // For 'dev' environment:
+  // - Use local Supabase if running locally and local URL is configured
+  // - Otherwise use remote dev environment
+  if (isLocalhost() && process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('127.0.0.1')) {
+    // Check if user wants to use local Supabase (default when running locally)
+    // To use remote dev, set NEXT_PUBLIC_USE_REMOTE_DEV=true
+    if (process.env.NEXT_PUBLIC_USE_REMOTE_DEV !== 'true') {
+      return {
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      };
+    }
   }
 
   return {
