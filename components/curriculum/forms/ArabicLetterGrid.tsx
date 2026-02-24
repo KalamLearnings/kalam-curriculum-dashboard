@@ -4,25 +4,35 @@ import { useLetters, type Letter } from '@/lib/hooks/useLetters';
 
 export type LetterForm = 'isolated' | 'initial' | 'medial' | 'final';
 
+// Standardized letter reference format - used across the app
+export interface LetterReference {
+  letterId: string;  // e.g., 'ba', 'alif', 'jeem'
+  form: LetterForm;
+}
+
+// For multi-form selection: a letter with multiple forms selected
+export interface LetterWithForms {
+  letterId: string;
+  forms: LetterForm[];
+}
+
 interface ArabicLetterGridProps {
-  /** Currently selected letter(s) - single string for single select, array for multi-select */
-  value: string | string[];
+  /** Currently selected letter(s) */
+  value: LetterReference | LetterReference[] | null;
   /** Callback when letter selection changes */
-  onChange: (value: string | string[]) => void;
+  onChange: (value: LetterReference | LetterReference[] | null) => void;
   /** Allow multiple letter selection */
   multiSelect?: boolean;
-  /** Letters to disable (e.g., target letter when selecting distractors) */
-  disabledLetters?: string[];
+  /** Allow multiple form selection per letter (only for multiSelect mode) */
+  multiFormSelect?: boolean;
+  /** Letter IDs to disable (e.g., target letter when selecting distractors) */
+  disabledLetterIds?: string[];
   /** Tooltip for disabled letters */
   disabledTooltip?: string;
   /** Show loading state */
   loading?: boolean;
-  /** Show form selector when a letter is selected (only for single select mode) */
+  /** Show form selector when a letter is selected */
   showFormSelector?: boolean;
-  /** Currently selected form */
-  selectedForm?: LetterForm;
-  /** Callback when form selection changes */
-  onFormChange?: (form: LetterForm) => void;
 }
 
 const formLabels: Record<LetterForm, string> = {
@@ -36,72 +46,164 @@ export function ArabicLetterGrid({
   value,
   onChange,
   multiSelect = false,
-  disabledLetters = [],
+  multiFormSelect = false,
+  disabledLetterIds = [],
   disabledTooltip = 'This letter is not available',
   loading,
   showFormSelector = false,
-  selectedForm = 'isolated',
-  onFormChange,
 }: ArabicLetterGridProps) {
   const { letters, loading: lettersLoading } = useLetters();
 
   // Track the last clicked letter for multi-select form display
-  const [lastClickedLetter, setLastClickedLetter] = useState<string | null>(null);
+  const [lastClickedLetterId, setLastClickedLetterId] = useState<string | null>(null);
 
   const isLoading = loading ?? lettersLoading;
 
-  // Reset lastClickedLetter when value changes externally (e.g., modal opens with existing selection)
+  // Helper to normalize value to array
+  const getSelectedRefs = (): LetterReference[] => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    return [value];
+  };
+
+  // Get unique selected letter IDs
+  const getSelectedLetterIds = (): string[] => {
+    return [...new Set(getSelectedRefs().map(ref => ref.letterId))];
+  };
+
+  // Get forms for a specific letter (for multiFormSelect mode)
+  const getFormsForLetter = (letterId: string): LetterForm[] => {
+    return getSelectedRefs()
+      .filter(ref => ref.letterId === letterId)
+      .map(ref => ref.form);
+  };
+
+  // Reset lastClickedLetterId when value changes externally
   useEffect(() => {
-    if (multiSelect && Array.isArray(value) && value.length > 0 && !lastClickedLetter) {
-      setLastClickedLetter(value[value.length - 1]);
+    if (multiSelect) {
+      const selectedIds = getSelectedLetterIds();
+      if (selectedIds.length > 0 && !lastClickedLetterId) {
+        setLastClickedLetterId(selectedIds[selectedIds.length - 1]);
+      } else if (selectedIds.length === 0) {
+        setLastClickedLetterId(null);
+      }
     }
-  }, [value, multiSelect, lastClickedLetter]);
+  }, [value, multiSelect]);
 
   const handleLetterClick = (letter: Letter) => {
     if (multiSelect) {
-      const currentValues = Array.isArray(value) ? value : [];
-      if (currentValues.includes(letter.letter)) {
-        // Removing a letter - update lastClicked to another selected letter if available
-        const remaining = currentValues.filter(l => l !== letter.letter);
-        setLastClickedLetter(remaining.length > 0 ? remaining[remaining.length - 1] : null);
-        onChange(remaining);
+      const currentRefs = getSelectedRefs();
+      const letterForms = getFormsForLetter(letter.id);
+
+      if (multiFormSelect) {
+        // Multi-form select mode
+        if (letterForms.length > 0) {
+          // Letter already selected - just update lastClicked (form toggle handles removal)
+          setLastClickedLetterId(letter.id);
+        } else {
+          // New letter - add with 'isolated' form by default
+          setLastClickedLetterId(letter.id);
+          onChange([...currentRefs, { letterId: letter.id, form: 'isolated' }]);
+        }
       } else {
-        // Adding a letter - this becomes the last clicked
-        setLastClickedLetter(letter.letter);
-        onChange([...currentValues, letter.letter]);
+        // Simple multi-select mode (each letter gets one form - 'isolated' by default)
+        if (letterForms.length > 0) {
+          // Remove this letter
+          const remaining = currentRefs.filter(ref => ref.letterId !== letter.id);
+          const remainingIds = [...new Set(remaining.map(r => r.letterId))];
+          setLastClickedLetterId(remainingIds.length > 0 ? remainingIds[remainingIds.length - 1] : null);
+          onChange(remaining.length > 0 ? remaining : null);
+        } else {
+          // Add this letter
+          setLastClickedLetterId(letter.id);
+          onChange([...currentRefs, { letterId: letter.id, form: 'isolated' }]);
+        }
       }
     } else {
-      onChange(letter.letter);
-      // Reset to isolated form when changing letter
-      if (showFormSelector && onFormChange) {
-        onFormChange('isolated');
+      // Single select mode
+      const currentRef = value && !Array.isArray(value) ? value : null;
+      if (currentRef?.letterId === letter.id) {
+        // Same letter clicked - keep selection, just update lastClicked for form selector
+        setLastClickedLetterId(letter.id);
+      } else {
+        // New letter selected - default to 'isolated' form
+        setLastClickedLetterId(letter.id);
+        onChange({ letterId: letter.id, form: 'isolated' });
       }
     }
   };
 
-  const isSelected = (letterChar: string) => {
-    if (multiSelect) {
-      return Array.isArray(value) && value.includes(letterChar);
+  const handleFormChange = (form: LetterForm) => {
+    if (multiSelect && multiFormSelect && lastClickedLetterId) {
+      // Multi-form select mode - toggle form for last clicked letter
+      const currentRefs = getSelectedRefs();
+      const letterForms = getFormsForLetter(lastClickedLetterId);
+
+      if (letterForms.includes(form)) {
+        // Remove this form
+        const newRefs = currentRefs.filter(
+          ref => !(ref.letterId === lastClickedLetterId && ref.form === form)
+        );
+
+        // Check if letter still has any forms
+        const remainingForms = newRefs.filter(ref => ref.letterId === lastClickedLetterId);
+        if (remainingForms.length === 0) {
+          // No forms left - letter is removed
+          const remainingIds = [...new Set(newRefs.map(r => r.letterId))];
+          setLastClickedLetterId(remainingIds.length > 0 ? remainingIds[remainingIds.length - 1] : null);
+        }
+
+        onChange(newRefs.length > 0 ? newRefs : null);
+      } else {
+        // Add this form
+        onChange([...currentRefs, { letterId: lastClickedLetterId, form }]);
+      }
+    } else if (multiSelect && !multiFormSelect && lastClickedLetterId) {
+      // Multi-select but single form per letter - update the form for last clicked letter
+      const currentRefs = getSelectedRefs();
+      const newRefs = currentRefs.map(ref =>
+        ref.letterId === lastClickedLetterId ? { ...ref, form } : ref
+      );
+      onChange(newRefs);
+    } else if (!multiSelect) {
+      // Single select mode - update the form
+      const currentRef = value && !Array.isArray(value) ? value : null;
+      if (currentRef) {
+        onChange({ ...currentRef, form });
+      }
     }
-    return value === letterChar;
   };
 
-  const isDisabled = (letterChar: string) => {
-    return disabledLetters.includes(letterChar);
+  const isSelected = (letterId: string) => {
+    return getSelectedLetterIds().includes(letterId);
   };
 
-  // Get selected letter data for form selector (for single select, use selected letter; for multi, use last clicked)
-  const selectedLetterData = (() => {
-    if (multiSelect) {
-      // Use last clicked letter for form display
-      return lastClickedLetter ? letters.find(l => l.letter === lastClickedLetter) : null;
-    } else {
-      return typeof value === 'string' && value ? letters.find(l => l.letter === value) : null;
-    }
-  })();
+  const isDisabled = (letterId: string) => {
+    return disabledLetterIds.includes(letterId);
+  };
 
-  // For multi-select, show form selector if enabled (even without selection)
-  const shouldShowFormSelector = showFormSelector && (multiSelect || selectedLetterData);
+  const isFormSelected = (form: LetterForm): boolean => {
+    if (multiSelect && multiFormSelect && lastClickedLetterId) {
+      return getFormsForLetter(lastClickedLetterId).includes(form);
+    }
+    if (multiSelect && !multiFormSelect && lastClickedLetterId) {
+      const ref = getSelectedRefs().find(r => r.letterId === lastClickedLetterId);
+      return ref?.form === form;
+    }
+    if (!multiSelect && value && !Array.isArray(value)) {
+      return value.form === form;
+    }
+    return form === 'isolated';
+  };
+
+  // Get selected letter data for form selector display
+  const getSelectedLetterData = (): Letter | null => {
+    const targetId = multiSelect ? lastClickedLetterId : (value && !Array.isArray(value) ? value.letterId : null);
+    return targetId ? letters.find(l => l.id === targetId) || null : null;
+  };
+
+  const selectedLetterData = getSelectedLetterData();
+  const shouldShowFormSelector = showFormSelector && (multiSelect ? lastClickedLetterId : selectedLetterData);
 
   if (isLoading) {
     return (
@@ -116,8 +218,9 @@ export function ArabicLetterGrid({
       {/* Letter Grid */}
       <div className="grid grid-cols-7 gap-2">
         {letters.map((letter) => {
-          const selected = isSelected(letter.letter);
-          const disabled = isDisabled(letter.letter);
+          const selected = isSelected(letter.id);
+          const disabled = isDisabled(letter.id);
+          const isLastClicked = multiSelect && lastClickedLetterId === letter.id;
 
           return (
             <button
@@ -132,7 +235,9 @@ export function ArabicLetterGrid({
                 disabled
                   ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
                   : selected
-                    ? 'border-blue-600 bg-blue-100 ring-2 ring-blue-600 ring-offset-2'
+                    ? isLastClicked
+                      ? 'border-blue-600 bg-blue-100 ring-2 ring-blue-600 ring-offset-2'
+                      : 'border-blue-600 bg-blue-100'
                     : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50'
               )}
             >
@@ -143,29 +248,34 @@ export function ArabicLetterGrid({
         })}
       </div>
 
-      {/* Form Selector - shown when showFormSelector is true and (multiSelect OR a letter is selected) */}
+      {/* Form Selector */}
       {shouldShowFormSelector && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            Select Letter Form
+            {multiFormSelect
+              ? `Select Letter Forms${selectedLetterData ? ` for "${selectedLetterData.name_english}"` : ''}`
+              : 'Select Letter Form'}
           </label>
           <div className="grid grid-cols-4 gap-2">
             {(['isolated', 'initial', 'medial', 'final'] as LetterForm[]).map((form) => {
-              const isFormSelected = selectedForm === form;
+              const formSelected = isFormSelected(form);
               const formCharacter = selectedLetterData?.forms?.[form] || selectedLetterData?.letter || formLabels[form];
 
               return (
                 <button
                   key={form}
                   type="button"
-                  onClick={() => onFormChange?.(form)}
+                  onClick={() => handleFormChange(form)}
+                  disabled={multiFormSelect && !lastClickedLetterId}
                   className={cn(
                     'px-4 py-3 rounded-lg border-2 transition-all',
                     'flex flex-col items-center justify-center',
                     'hover:border-blue-400 hover:bg-blue-50',
-                    isFormSelected
-                      ? 'border-blue-600 bg-blue-100 ring-2 ring-blue-600 ring-offset-2'
-                      : 'border-gray-300 bg-white'
+                    multiFormSelect && !lastClickedLetterId
+                      ? 'opacity-50 cursor-not-allowed'
+                      : formSelected
+                        ? 'border-blue-600 bg-blue-100 ring-2 ring-blue-600 ring-offset-2'
+                        : 'border-gray-300 bg-white'
                   )}
                 >
                   <div className="text-2xl font-arabic mb-1">{formCharacter}</div>
@@ -175,7 +285,11 @@ export function ArabicLetterGrid({
             })}
           </div>
           <p className="mt-2 text-xs text-gray-500">
-            This will focus specifically on the {selectedForm} form
+            {multiFormSelect
+              ? lastClickedLetterId
+                ? 'Click forms to toggle selection for this letter'
+                : 'Select a letter first to choose its forms'
+              : `Selected form: ${formLabels[isFormSelected('isolated') ? 'isolated' : isFormSelected('initial') ? 'initial' : isFormSelected('medial') ? 'medial' : 'final']}`}
           </p>
         </div>
       )}
