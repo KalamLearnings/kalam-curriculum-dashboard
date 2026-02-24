@@ -1,10 +1,11 @@
 /**
  * useLetters Hook
  *
- * Manages Arabic letters state and operations
+ * Manages Arabic letters state with React Query caching.
+ * Letters are cached globally and rarely change, so we use a long staleTime.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClient, getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders } from '@/lib/supabase/client';
 
 export interface LetterForm {
@@ -46,70 +47,53 @@ function getLettersApiUrl() {
   return `${getEnvironmentBaseUrl()}/functions/v1/letters/list`;
 }
 
-export function useLetters(): UseLettersReturn {
-  const [letters, setLetters] = useState<Letter[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+async function fetchLetters(): Promise<Letter[]> {
   const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
 
-  /**
-   * Load letters from API
-   */
-  const loadLetters = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const response = await fetch(getLettersApiUrl(), {
+    headers: {
+      ...getEdgeFunctionAuthHeaders(session?.access_token || ''),
+      'Content-Type': 'application/json',
+    },
+  });
 
-    try {
-      // Get auth session
-      const { data: { session } } = await supabase.auth.getSession();
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to load letters');
+  }
 
-      const response = await fetch(getLettersApiUrl(), {
-        headers: {
-          ...getEdgeFunctionAuthHeaders(session?.access_token || ''),
-          'Content-Type': 'application/json',
-        },
-      });
+  const { data } = await response.json();
+  return data || [];
+}
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to load letters');
-      }
+export function useLetters(): UseLettersReturn {
+  const queryClient = useQueryClient();
 
-      const { data } = await response.json();
-      setLetters(data || []);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load letters';
-      setError(message);
-      console.error('Error loading letters:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase]);
+  const {
+    data: letters = [],
+    isLoading: loading,
+    error,
+    refetch: queryRefetch,
+  } = useQuery({
+    queryKey: ['letters'],
+    queryFn: fetchLetters,
+    staleTime: 30 * 60 * 1000, // 30 minutes - letters rarely change
+    gcTime: 60 * 60 * 1000, // 1 hour cache time (formerly cacheTime)
+  });
 
-  /**
-   * Get a single letter by ID
-   */
-  const getLetter = useCallback((letterId: string): Letter | undefined => {
+  const getLetter = (letterId: string): Letter | undefined => {
     return letters.find(l => l.id === letterId);
-  }, [letters]);
+  };
 
-  /**
-   * Refetch letters
-   */
-  const refetch = useCallback(async () => {
-    await loadLetters();
-  }, [loadLetters]);
-
-  // Load letters on mount
-  useEffect(() => {
-    loadLetters();
-  }, [loadLetters]);
+  const refetch = async () => {
+    await queryRefetch();
+  };
 
   return {
     letters,
     loading,
-    error,
+    error: error ? (error instanceof Error ? error.message : 'Failed to load letters') : null,
     getLetter,
     refetch,
   };
