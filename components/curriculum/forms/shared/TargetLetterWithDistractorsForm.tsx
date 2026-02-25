@@ -57,8 +57,6 @@ export function TargetLetterWithDistractorsForm({
           onChange={(value) => updateConfig({ distractorLetters: value })}
           multiSelect
           multiFormSelect
-          disabledLetterIds={targetLetter ? [targetLetter.letterId] : []}
-          disabledTooltip="This is the target letter"
         />
       </FormField>
 

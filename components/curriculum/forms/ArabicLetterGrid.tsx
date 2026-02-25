@@ -252,8 +252,8 @@ export function ArabicLetterGrid({
       {shouldShowFormSelector && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            {multiFormSelect
-              ? `Select Letter Forms${selectedLetterData ? ` for "${selectedLetterData.name_english}"` : ''}`
+            {selectedLetterData
+              ? `Select Letter Form${multiFormSelect ? 's' : ''} for "${selectedLetterData.name_english}"`
               : 'Select Letter Form'}
           </label>
           <div className="grid grid-cols-4 gap-2">
