@@ -6,9 +6,35 @@
 
 import type { PreviewProps } from '../PreviewProps';
 import { PreviewContainer } from '../shared/PreviewContainer';
+import { useLetters } from '@/lib/hooks/useLetters';
+
+// Helper to check if value is a LetterReference object
+function isLetterReference(value: unknown): value is { letterId: string; form: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'letterId' in value &&
+    'form' in value
+  );
+}
 
 export function DragDotsToLetterPreview({ instruction, config }: PreviewProps) {
-  const targetLetter = config.targetLetter || 'ب';
+  const { letters } = useLetters();
+
+  // Resolve targetLetter to a character string
+  const resolveTargetLetter = (): string | null => {
+    const value = config.targetLetter;
+    if (!value) return null;
+
+    if (isLetterReference(value)) {
+      const letterData = letters.find(l => l.id === value.letterId);
+      return letterData?.letter || null;
+    }
+
+    return typeof value === 'string' ? value : null;
+  };
+
+  const targetLetter = resolveTargetLetter();
   const position = config.position || 'isolated';
   const distractorDotsCount = config.distractorDotsCount ?? 0;
 
@@ -31,9 +57,9 @@ export function DragDotsToLetterPreview({ instruction, config }: PreviewProps) {
     'ي': { base: 'ى', dotCount: 2 },
   };
 
-  const info = letterInfo[targetLetter] || { base: targetLetter, dotCount: 1 };
-  const baseLetter = info.base;
-  const correctDotsCount = info.dotCount;
+  const info = targetLetter ? letterInfo[targetLetter] : null;
+  const baseLetter = info?.base || '—';
+  const correctDotsCount = info?.dotCount || 0;
   const totalDots = correctDotsCount + distractorDotsCount;
 
   return (

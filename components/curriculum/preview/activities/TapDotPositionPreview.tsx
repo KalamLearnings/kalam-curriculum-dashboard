@@ -6,9 +6,35 @@
 
 import type { PreviewProps } from '../PreviewProps';
 import { PreviewContainer } from '../shared/PreviewContainer';
+import { useLetters } from '@/lib/hooks/useLetters';
+
+// Helper to check if value is a LetterReference object
+function isLetterReference(value: unknown): value is { letterId: string; form: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'letterId' in value &&
+    'form' in value
+  );
+}
 
 export function TapDotPositionPreview({ instruction, config }: PreviewProps) {
-  const targetLetter = config.targetLetter || 'ج';
+  const { letters } = useLetters();
+
+  // Resolve targetLetter to a character string
+  const resolveTargetLetter = (): string | null => {
+    const value = config.targetLetter;
+    if (!value) return null;
+
+    if (isLetterReference(value)) {
+      const letterData = letters.find(l => l.id === value.letterId);
+      return letterData?.letter || null;
+    }
+
+    return typeof value === 'string' ? value : null;
+  };
+
+  const targetLetter = resolveTargetLetter();
   const position = config.position || 'isolated';
   const distractorPositions = (config.distractorPositions || []) as string[];
 
@@ -31,8 +57,8 @@ export function TapDotPositionPreview({ instruction, config }: PreviewProps) {
     'ي': { base: 'ى', dotCount: 2, correctPositions: ['bottom-left', 'bottom-right'] },
   };
 
-  const info = letterInfo[targetLetter] || { base: targetLetter, dotCount: 1, correctPositions: ['middle'] };
-  const baseLetter = info.base;
+  const info = targetLetter ? letterInfo[targetLetter] : null;
+  const baseLetter = info?.base || '—';
 
   // Map position names to CSS positioning
   const positionStyles: Record<string, string> = {
@@ -48,7 +74,7 @@ export function TapDotPositionPreview({ instruction, config }: PreviewProps) {
   };
 
   // Get all dot positions (correct + distractors)
-  const allDotPositions = [...info.correctPositions, ...distractorPositions];
+  const allDotPositions = [...(info?.correctPositions || []), ...distractorPositions];
 
   return (
     <PreviewContainer variant="centered">
@@ -63,7 +89,7 @@ export function TapDotPositionPreview({ instruction, config }: PreviewProps) {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative w-full h-full">
               {allDotPositions.map((position, index) => {
-                const isCorrect = info.correctPositions.includes(position);
+                const isCorrect = info?.correctPositions.includes(position) || false;
                 return (
                   <div
                     key={`${position}-${index}`}
