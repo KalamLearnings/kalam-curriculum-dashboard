@@ -10,8 +10,10 @@ import type { ArticleType } from '@/lib/schemas/curriculum';
 // Base types
 export type ContentType = 'letter' | 'word';
 export type LetterPosition = 'isolated' | 'initial' | 'medial' | 'final';
-export type BreakVariant = 'tracing_lines' | 'dot_tapping' | 'coloring' | 'memory_game';
+export type BreakVariant = 'tracing_lines' | 'dot_tapping' | 'coloring' | 'memory_game' | 'shape_sequence';
 export type WritingMode = 'guided' | 'freehand';
+export type HamzaPosition = 'above' | 'below' | 'on_line';
+export type ShapeType = 'circle' | 'square' | 'triangle' | 'star' | 'rectangle' | 'diamond' | 'oval' | 'heart';
 
 /**
  * Show Letter or Word Activity Config
@@ -69,12 +71,21 @@ export interface PopBalloonsWithLetterConfig {
 export interface BreakTimeMiniGameConfig {
   variant: BreakVariant;
   duration?: number;
+  // Tracing Lines
   linePattern?: string;
+  // Dot Tapping
   dotCount?: number;
   dotPattern?: string;
+  color?: string;
+  // Coloring
   coloringImage?: string;
   availableColors?: string[];
-  pairCount?: number;
+  // Memory Game
+  cardCount?: number;
+  pairCount?: number; // deprecated, use cardCount
+  // Shape Sequence
+  shapeSequence?: ShapeType[];
+  totalShapes?: number;
 }
 
 /**
@@ -131,6 +142,7 @@ export interface CatchFishWithLetterConfig {
   distractorLetters: string[];
   duration: number;
   targetCount: number;
+  letterPositions?: LetterPosition[];
 }
 
 /**
@@ -151,6 +163,7 @@ export interface LetterRainConfig {
   targetCount: number;
   speed?: number;
   difficulty?: 'easy' | 'medium' | 'hard';
+  letterPositions?: LetterPosition[];
 }
 
 
@@ -194,10 +207,36 @@ export interface ColorLetterConfig {
 export interface LetterDiscriminationConfig {
   targetLetter: string;
   confusableLetter: string;
+  distractorLetters?: string[];
   prompt: string;
   showInForm?: 'isolated' | 'initial' | 'medial' | 'final' | 'all';
   playAudio?: boolean;
   highlightDifference?: boolean;
+  /** Labels explaining differences between letters */
+  comparisonLabels?: {
+    targetLabel?: string;
+    confusableLabel?: string;
+  };
+}
+
+/**
+ * Drag Hamza to Letter Activity Config
+ */
+export interface DragHamzaToLetterConfig {
+  targetLetter: string;
+  correctPosition: HamzaPosition;
+  showAllPositions?: boolean;
+  distractorPositions?: HamzaPosition[];
+}
+
+/**
+ * Slingshot Activity Config
+ */
+export interface SlingshotConfig {
+  targetLetter: string;
+  distractorLetters?: string[];
+  targetCount?: number;
+  letterPositions?: LetterPosition[];
 }
 
 /**
@@ -251,7 +290,9 @@ export type ActivityConfig =
   | MemoryCardMatchConfig
   | ColorLetterConfig
   | LetterDiscriminationConfig
-  | ContentWithCardsConfig;
+  | ContentWithCardsConfig
+  | DragHamzaToLetterConfig
+  | SlingshotConfig;
 
 /**
  * Mapped type for activity configs by type
@@ -273,6 +314,8 @@ export type ActivityConfigMap = {
   color_letter: ColorLetterConfig;
   letter_discrimination: LetterDiscriminationConfig;
   content_with_cards: ContentWithCardsConfig;
+  drag_hamza_to_letter: DragHamzaToLetterConfig;
+  slingshot: SlingshotConfig;
 };
 
 /**

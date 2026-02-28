@@ -44,6 +44,8 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'balance_scale', label: 'Balance Scale' },
   { value: 'ice_cream_stacking', label: 'Ice Cream Stacking' },
   { value: 'content_with_cards', label: 'Content with Cards' },
+  { value: 'drag_hamza_to_letter', label: 'Drag Hamza to Letter' },
+  { value: 'slingshot', label: 'Slingshot Game' },
 ];
 
 /**
@@ -86,6 +88,8 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   balance_scale: '⚖️',
   ice_cream_stacking: '🍦',
   content_with_cards: '🃏',
+  drag_hamza_to_letter: 'ء',
+  slingshot: '🎯',
 };
 
 /**
