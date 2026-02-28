@@ -9,17 +9,11 @@ import { cn } from '@/lib/utils';
 export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   const { resolveToChar } = useLetterResolver();
 
-  // Debug: log what config is received
-  console.log('TapActivityForm config:', JSON.stringify(config, null, 2));
-
   const targetWord = config?.targetWord || '';
   // Resolve targetLetter - could be LetterReference or string from saved config
   const targetLetter = resolveToChar(config?.targetLetter) || '';
   const targetCount = config?.targetCount || 1;
   const wordMeaning = config?.wordMeaning || '';
-
-  // Debug: log extracted values
-  console.log('TapActivityForm values:', { targetWord, targetLetter, targetCount, wordMeaning });
 
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });

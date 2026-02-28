@@ -5,6 +5,115 @@
 import type { ArticleType } from '@/lib/schemas/curriculum';
 
 /**
+ * Activity category definitions
+ */
+export type ActivityCategory =
+  | 'all'
+  | 'introduction'
+  | 'writing'
+  | 'tap'
+  | 'drag'
+  | 'catch'
+  | 'feeding'
+  | 'learning'
+  | 'misc';
+
+export interface ActivityCategoryInfo {
+  id: ActivityCategory;
+  label: string;
+  icon: string;
+}
+
+export const ACTIVITY_CATEGORIES: ActivityCategoryInfo[] = [
+  { id: 'all', label: 'All', icon: '📋' },
+  { id: 'introduction', label: 'Intro', icon: '📖' },
+  { id: 'writing', label: 'Write', icon: '✏️' },
+  { id: 'tap', label: 'Tap', icon: '👆' },
+  { id: 'drag', label: 'Drag', icon: '🎯' },
+  { id: 'catch', label: 'Catch', icon: '🎮' },
+  { id: 'feeding', label: 'Feed', icon: '🍽️' },
+  { id: 'learning', label: 'Learn', icon: '🧠' },
+  { id: 'misc', label: 'Misc', icon: '☕' },
+];
+
+/**
+ * Mapping of activity types to their categories
+ */
+export const ACTIVITY_TYPE_CATEGORIES: Record<ArticleType, ActivityCategory> = {
+  // Introduction & Display
+  show_letter_or_word: 'introduction',
+  content_with_cards: 'introduction',
+
+  // Writing & Tracing
+  trace_letter: 'writing',
+  color_letter: 'writing',
+  drag_dots_to_letter: 'writing',
+
+  // Tap & Select
+  tap_letter_in_word: 'tap',
+  tap_dot_position: 'tap',
+  grid_tap: 'tap',
+  tap_crescent_moons: 'tap',
+  pop_balloons_with_letter: 'tap',
+
+  // Drag & Drop
+  drag_items_to_target: 'drag',
+  drag_to_animal_mouth: 'drag',
+  balance_scale: 'drag',
+  drag_hamza_to_letter: 'drag',
+
+  // Catch & Collect
+  catch_fish_with_letter: 'catch',
+  letter_rain: 'catch',
+  snowflakes: 'catch',
+  pick_from_tree: 'catch',
+  pick_flowers: 'catch',
+  fly_on_flowers: 'catch',
+  bear_honey: 'catch',
+  piggy_bank: 'catch',
+
+  // Feeding & Delivery
+  add_pizza_toppings_with_letter: 'feeding',
+  feed_rabbit: 'feeding',
+  feed_baby: 'feeding',
+  deliver_envelope: 'feeding',
+  plant_seeds: 'feeding',
+  ice_cream_stacking: 'feeding',
+
+  // Learning & Practice
+  build_word_from_letters: 'learning',
+  multiple_choice_question: 'learning',
+  audio_letter_match: 'learning',
+  memory_card_match: 'learning',
+  letter_discrimination: 'learning',
+  speech_practice: 'learning',
+
+  // Misc
+  break_time_minigame: 'misc',
+  activity_request: 'misc',
+  slingshot: 'misc',
+};
+
+/**
+ * Get activities by category
+ */
+export function getActivitiesByCategory(category: ActivityCategory): ArticleType[] {
+  if (category === 'all') {
+    return ACTIVITY_TYPES.map(at => at.value);
+  }
+  return Object.entries(ACTIVITY_TYPE_CATEGORIES)
+    .filter(([_, cat]) => cat === category)
+    .map(([type, _]) => type as ArticleType);
+}
+
+/**
+ * Get activity count by category
+ */
+export function getActivityCountByCategory(category: ActivityCategory): number {
+  return getActivitiesByCategory(category).length;
+}
+
+/**
  * Activity type definitions with labels
  */
 export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [

@@ -259,36 +259,9 @@ export default function CurriculumBuilderPage() {
     voiceId: selectedVoiceId,
   });
 
-  // Debug current activity
-  useEffect(() => {
-    console.log('Activity selection changed:', {
-      selectedActivityId,
-      isCreatingNew,
-      currentActivity: currentActivity ? {
-        id: currentActivity.id,
-        instruction: currentActivity.instruction
-      } : null,
-      activitiesCount: selectedNodeActivities?.length || 0
-    });
-  }, [selectedActivityId, isCreatingNew, currentActivity, selectedNodeActivities]);
-
   // Load activity data into form when selected
   useEffect(() => {
-    console.log('Load activity useEffect triggered:', {
-      hasCurrentActivity: !!currentActivity,
-      isCreatingNew,
-      willLoad: currentActivity && !isCreatingNew
-    });
-
     if (currentActivity && !isCreatingNew) {
-      console.log('Loading activity into form:', {
-        id: currentActivity.id,
-        type: currentActivity.type,
-        instruction: currentActivity.instruction,
-        instructionEn: currentActivity.instruction.en,
-        instructionAr: currentActivity.instruction.ar,
-        config: currentActivity.config  // Added config to log
-      });
       setFormData({
         type: currentActivity.type,
         instructionEn: currentActivity.instruction.en || '',

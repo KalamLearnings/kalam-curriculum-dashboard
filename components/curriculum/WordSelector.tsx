@@ -36,9 +36,6 @@ export function WordSelector({
   const [showDropdown, setShowDropdown] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
 
-  // Debug: log what value is received
-  console.log('WordSelector value prop:', value, 'inputValue state:', inputValue);
-
   // Find if the current value matches an existing word
   const selectedWord = words.find(w => w.arabic === value);
 
@@ -56,8 +53,6 @@ export function WordSelector({
 
   // Sync input value with prop value - always sync when value changes externally
   useEffect(() => {
-    console.log('WordSelector useEffect - syncing value:', value, '-> inputValue');
-    // Only sync if value is different from current input
     // This handles both initial load and when parent updates the value
     setInputValue(value || '');
   }, [value]);
