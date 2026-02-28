@@ -50,8 +50,8 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
   // Only coloring needs duration
   const needsDuration = variant === 'coloring';
 
-  // Card count options (multiples of 2, min 6)
-  const cardCountOptions = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+  // Card count options (multiples of 2, min 6, max 12)
+  const cardCountOptions = [6, 8, 10, 12];
 
   // Toggle shape in sequence
   const toggleShapeInSequence = (shape: ShapeType) => {
@@ -105,7 +105,7 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
       )}
 
       {variant === 'memory_game' && (
-        <FormField label="Card Count" required hint="Total number of cards (must be multiple of 2, minimum 6)">
+        <FormField label="Card Count" required hint="Total number of cards (must be multiple of 2, 6-12)">
           <div className="grid grid-cols-5 gap-2">
             {cardCountOptions.map((count) => (
               <button
