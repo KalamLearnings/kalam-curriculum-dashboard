@@ -37,6 +37,7 @@ export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseAct
                     value={letters}
                     onChange={handleLettersChange}
                     multiSelect
+                    multiFormSelect
                     showFormSelector={true}
                 />
             </FormField>
