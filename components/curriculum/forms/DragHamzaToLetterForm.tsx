@@ -6,11 +6,13 @@ import type { DragHamzaToLetterConfig, HamzaPosition } from '@/lib/types/activit
 
 /**
  * Letters that can receive hamza
+ * Note: Ya is shown without dots (ى) because when hamza is placed on ya,
+ * it becomes ئ which has no dots underneath
  */
 const HAMZA_LETTERS = [
   'ا', // Alif (most common)
   'و', // Waw
-  'ي', // Ya
+  'ى', // Ya (dotless form - hamza ya ئ has no dots)
 ] as const;
 
 /**
@@ -25,7 +27,6 @@ const HAMZA_POSITIONS: { value: HamzaPosition; label: string; example: string }[
 export function DragHamzaToLetterForm({ config, onChange, topic }: BaseActivityFormProps<DragHamzaToLetterConfig>) {
   const targetLetter = config?.targetLetter || 'ا';
   const correctPosition = config?.correctPosition || 'above';
-  const showAllPositions = config?.showAllPositions ?? true;
 
   const updateConfig = (updates: Partial<DragHamzaToLetterConfig>) => {
     onChange({ ...config, ...updates });
@@ -34,7 +35,7 @@ export function DragHamzaToLetterForm({ config, onChange, topic }: BaseActivityF
   // Auto-set default values on mount
   useEffect(() => {
     if (!config?.targetLetter) {
-      updateConfig({ targetLetter: 'ا', correctPosition: 'above', showAllPositions: true });
+      updateConfig({ targetLetter: 'ا', correctPosition: 'above', showAllPositions: false });
     }
   }, []);
 
@@ -53,9 +54,9 @@ export function DragHamzaToLetterForm({ config, onChange, topic }: BaseActivityF
         default: return 'ء';
       }
     }
-    if (letter === 'ي') {
+    if (letter === 'ى') {
       switch (position) {
-        case 'below': return 'ئ';
+        case 'above': return 'ئ'; // Hamza on ya is placed above
         default: return 'ء';
       }
     }
@@ -113,38 +114,6 @@ export function DragHamzaToLetterForm({ config, onChange, topic }: BaseActivityF
         </div>
       </FormField>
 
-      <FormField
-        label="Show All Drop Zones"
-        hint="Whether to show all possible positions or just the correct one"
-      >
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => updateConfig({ showAllPositions: true })}
-            className={cn(
-              'flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all',
-              showAllPositions
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-gray-50'
-            )}
-          >
-            Show All Positions
-          </button>
-          <button
-            type="button"
-            onClick={() => updateConfig({ showAllPositions: false })}
-            className={cn(
-              'flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all',
-              !showAllPositions
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-gray-50'
-            )}
-          >
-            Only Correct Position
-          </button>
-        </div>
-      </FormField>
-
       {targetLetter && correctPosition && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
@@ -153,11 +122,6 @@ export function DragHamzaToLetterForm({ config, onChange, topic }: BaseActivityF
             the letter <span className="text-3xl font-arabic">{targetLetter}</span> to create{' '}
             <span className="text-3xl font-arabic">{getResultLetter(targetLetter, correctPosition)}</span>
           </p>
-          {showAllPositions && (
-            <p className="text-xs text-blue-600 mt-2">
-              All three positions will be shown as drop zones.
-            </p>
-          )}
         </div>
       )}
     </div>

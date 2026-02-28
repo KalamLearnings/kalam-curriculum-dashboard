@@ -28,7 +28,9 @@ const activityTypes: Array<{
     'break_time_minigame',
     'build_word_from_letters',
     'multiple_choice_question',
+    'drag_items_to_target',
     'catch_fish_with_letter',
+    'add_pizza_toppings_with_letter',
     'drag_dots_to_letter',
     'tap_dot_position',
     'activity_request',
@@ -55,6 +57,7 @@ const activityTypes: Array<{
     'balance_scale',
     'ice_cream_stacking',
     'content_with_cards',
+    'drag_hamza_to_letter',
   ].includes(value),
 }));
 
