@@ -94,8 +94,11 @@ export function ArabicLetterGrid({
       if (multiFormSelect) {
         // Multi-form select mode
         if (letterForms.length > 0) {
-          // Letter already selected - just update lastClicked (form toggle handles removal)
-          setLastClickedLetterId(letter.id);
+          // Letter already selected - remove it (toggle off)
+          const remaining = currentRefs.filter(ref => ref.letterId !== letter.id);
+          const remainingIds = [...new Set(remaining.map(r => r.letterId))];
+          setLastClickedLetterId(remainingIds.length > 0 ? remainingIds[remainingIds.length - 1] : null);
+          onChange(remaining.length > 0 ? remaining : null);
         } else {
           // New letter - add with 'isolated' form by default
           setLastClickedLetterId(letter.id);
