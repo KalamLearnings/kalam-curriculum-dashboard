@@ -47,7 +47,6 @@ export const ACTIVITY_TYPE_CATEGORIES: Record<ArticleType, ActivityCategory> = {
   // Writing & Tracing
   trace_letter: 'writing',
   color_letter: 'writing',
-  drag_dots_to_letter: 'writing',
 
   // Tap & Select
   tap_letter_in_word: 'tap',
@@ -61,6 +60,7 @@ export const ACTIVITY_TYPE_CATEGORIES: Record<ArticleType, ActivityCategory> = {
   drag_to_animal_mouth: 'drag',
   balance_scale: 'drag',
   drag_hamza_to_letter: 'drag',
+  drag_dots_to_letter: 'drag',
 
   // Catch & Collect
   catch_fish_with_letter: 'catch',

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { useLetters, type Letter } from '@/lib/hooks/useLetters';
-import { ArabicLetterGrid, type LetterForm, type LetterReference, type LetterWithForms } from './forms/ArabicLetterGrid';
+import { ArabicLetterGrid, type LetterForm, type LetterReference, type LetterWithForms, type LetterFilterFn } from './forms/ArabicLetterGrid';
 
 interface LetterSelectorModalProps {
   isOpen: boolean;
@@ -21,6 +21,8 @@ interface LetterSelectorModalProps {
   disabledLetterIds?: string[];
   /** Tooltip for disabled letters */
   disabledTooltip?: string;
+  /** Filter function to show only specific letters */
+  letterFilter?: LetterFilterFn;
 }
 
 export function LetterSelectorModal({
@@ -33,6 +35,7 @@ export function LetterSelectorModal({
   multiFormSelect = false,
   disabledLetterIds = [],
   disabledTooltip,
+  letterFilter,
 }: LetterSelectorModalProps) {
   const { letters, loading } = useLetters();
 
@@ -96,6 +99,7 @@ export function LetterSelectorModal({
             showFormSelector={showFormSelector}
             disabledLetterIds={disabledLetterIds}
             disabledTooltip={disabledTooltip}
+            letterFilter={letterFilter}
           />
         </div>
 

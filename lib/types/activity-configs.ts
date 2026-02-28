@@ -10,7 +10,7 @@ import type { ArticleType } from '@/lib/schemas/curriculum';
 // Base types
 export type ContentType = 'letter' | 'word';
 export type LetterPosition = 'isolated' | 'initial' | 'medial' | 'final';
-export type BreakVariant = 'tracing_lines' | 'dot_tapping' | 'coloring' | 'memory_game' | 'shape_sequence';
+export type BreakVariant = 'tracing_lines' | 'dot_tapping' | 'coloring' | 'memory_game' | 'tap_shapes';
 export type WritingMode = 'guided' | 'freehand';
 export type HamzaPosition = 'above' | 'below' | 'on_line';
 export type ShapeType = 'circle' | 'square' | 'triangle' | 'star' | 'rectangle' | 'diamond' | 'oval' | 'heart';
@@ -83,8 +83,9 @@ export interface BreakTimeMiniGameConfig {
   // Memory Game
   cardCount?: number;
   pairCount?: number; // deprecated, use cardCount
-  // Shape Sequence
-  shapeSequence?: ShapeType[];
+  // Tap Shapes (tap all target shapes)
+  targetShape?: ShapeType;
+  targetCount?: number;
   totalShapes?: number;
 }
 

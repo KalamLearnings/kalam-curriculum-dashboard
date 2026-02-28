@@ -1,25 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField } from './FormField';
+import { LetterSelector } from './shared/LetterSelector';
+import { letterFilters, type LetterReference } from './ArabicLetterGrid';
 import { cn } from '@/lib/utils';
-import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
-
-/**
- * Letters that are supported for this activity (letters with dots)
- */
-const SUPPORTED_DOTTED_LETTERS = [
-  'ب', 'ت', 'ث',  // Ba family
-  'ج', 'خ',      // Jeem family
-  'ذ',           // Dal family
-  'ز',           // Ra family
-  'ش',           // Seen family
-  'ض',           // Sad family
-  'ظ',           // Tah family
-  'غ',           // Ain family
-  'ف', 'ق',      // Fa/Qaf
-  'ن',           // Noon
-  'ي',           // Ya
-] as const;
 
 /**
  * Available dot positions
@@ -37,35 +21,16 @@ const DOT_POSITIONS = [
 ] as const;
 
 export function TapDotPositionForm({ config, onChange, topic }: BaseActivityFormProps) {
-  const { resolveToChar } = useLetterResolver();
-
-  // Resolve targetLetter - could be LetterReference or string from saved config
-  const targetLetter = resolveToChar(config?.targetLetter) || '';
-  const position = config?.position || 'isolated';
+  // targetLetter is now a LetterReference with form built-in
+  const targetLetter: LetterReference | null = config?.targetLetter || null;
   const distractorPositions = (config?.distractorPositions || []) as string[];
 
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });
   };
 
-  // Auto-populate targetLetter from topic when component mounts or topic changes
-  useEffect(() => {
-    if (!targetLetter && topic?.letter) {
-      // Extract letter from topic.letter object (attached by backend)
-      const topicLetter = topic.letter.letter;
-
-      // Check if topic letter is in the supported dotted letters list
-      if (SUPPORTED_DOTTED_LETTERS.includes(topicLetter as any)) {
-        updateConfig({ targetLetter: topicLetter });
-      } else {
-        // Topic letter not supported, default to 'ب' (ba)
-        updateConfig({ targetLetter: 'ب' });
-      }
-    } else if (!targetLetter) {
-      // No topic, default to 'ب' (ba)
-      updateConfig({ targetLetter: 'ب' });
-    }
-  }, [topic, targetLetter]);
+  // Get the form from the letter reference (defaults to 'isolated')
+  const currentForm = targetLetter?.form || 'isolated';
 
   return (
     <div className="space-y-4">
@@ -74,46 +39,13 @@ export function TapDotPositionForm({ config, onChange, topic }: BaseActivityForm
         hint="Select a letter with dots that students will identify"
         required
       >
-        <div className="grid grid-cols-6 gap-2">
-          {SUPPORTED_DOTTED_LETTERS.map((letter) => (
-            <button
-              key={letter}
-              type="button"
-              onClick={() => updateConfig({ targetLetter: letter })}
-              className={cn(
-                'aspect-square flex items-center justify-center text-4xl font-arabic rounded-lg border-2 transition-all hover:scale-105',
-                targetLetter === letter
-                  ? 'border-blue-500 bg-blue-50 shadow-md'
-                  : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
-              )}
-            >
-              {letter}
-            </button>
-          ))}
-        </div>
-      </FormField>
-
-      <FormField
-        label="Letter Position"
-        hint="Form of the letter (affects appearance in Arabic)"
-      >
-        <div className="grid grid-cols-4 gap-2">
-          {(['isolated', 'initial', 'medial', 'final'] as const).map((pos) => (
-            <button
-              key={pos}
-              type="button"
-              onClick={() => updateConfig({ position: pos })}
-              className={cn(
-                'px-4 py-3 rounded-lg border-2 text-sm font-medium capitalize transition-all',
-                position === pos
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-gray-50'
-              )}
-            >
-              {pos}
-            </button>
-          ))}
-        </div>
+        <LetterSelector
+          value={targetLetter}
+          onChange={(value) => updateConfig({ targetLetter: value })}
+          topic={topic}
+          showFormSelector={true}
+          letterFilter={letterFilters.withDots}
+        />
       </FormField>
 
       <FormField
@@ -156,7 +88,7 @@ export function TapDotPositionForm({ config, onChange, topic }: BaseActivityForm
       {!targetLetter && (
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800">
-            ⚠️ Please select a target letter to continue
+            Please select a target letter to continue
           </p>
         </div>
       )}
@@ -164,7 +96,7 @@ export function TapDotPositionForm({ config, onChange, topic }: BaseActivityForm
       {targetLetter && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Activity:</strong> Students will see the base letter with multiple dots and tap on the correct dot position(s) for <span className="text-3xl font-arabic">{targetLetter}</span> in {position} form.
+            <strong>Activity:</strong> Students will see the base letter with multiple dots and tap on the correct dot position(s) in {currentForm} form.
             {distractorPositions.length > 0 && (
               <> Distractor dots will appear at: <strong>{distractorPositions.join(', ')}</strong>.</>
             )}

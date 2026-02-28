@@ -1,13 +1,12 @@
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField, TextInput, NumberInput, Select } from './FormField';
-import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
+import { LetterSelector } from './shared/LetterSelector';
+import type { LetterReference } from './ArabicLetterGrid';
 
-export function PizzaActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const { resolveToChar } = useLetterResolver();
-
-  // Resolve targetLetter - could be LetterReference or string from saved config
-  const targetLetter = resolveToChar(config?.targetLetter) || '';
+export function PizzaActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
+  // targetLetter is now a LetterReference
+  const targetLetter: LetterReference | null = config?.targetLetter || null;
   const toppings = config?.toppings || [];
   const toppingsStr = toppings.map((t: any) => `${t.letter}:${t.name}`).join(', ');
   const requiredToppingsCount = config?.requiredToppingsCount || 2;
@@ -20,13 +19,12 @@ export function PizzaActivityForm({ config, onChange }: BaseActivityFormProps) {
 
   return (
     <div className="space-y-4">
-
       <FormField label="Target Letter" hint="The letter to find in toppings" required>
-        <TextInput
+        <LetterSelector
           value={targetLetter}
           onChange={(value) => updateConfig({ targetLetter: value })}
-          placeholder="أ"
-          dir="rtl"
+          topic={topic}
+          showFormSelector={false}
         />
       </FormField>
 
@@ -45,7 +43,7 @@ export function PizzaActivityForm({ config, onChange }: BaseActivityFormProps) {
                 letter: letter?.trim() || '',
                 name: name?.trim() || '',
                 image: `${name?.trim() || 'default'}.png`,
-                isCorrect: letter === targetLetter,
+                // Note: isCorrect is now determined by backend when resolving targetLetter
               };
             });
             updateConfig({ toppings: items });

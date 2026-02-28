@@ -12,6 +12,25 @@ export interface LetterWithForms {
   forms: LetterForm[];
 }
 
+/** Filter function type for filtering letters */
+export type LetterFilterFn = (letter: Letter) => boolean;
+
+/** Predefined letter filters */
+export const letterFilters = {
+  /** Letters that have dots (ba, ta, tha, jeem, etc.) */
+  withDots: (letter: Letter) => {
+    const dottedLetters = ['ب', 'ت', 'ث', 'ج', 'خ', 'ذ', 'ز', 'ش', 'ض', 'ظ', 'غ', 'ف', 'ق', 'ن', 'ي'];
+    return dottedLetters.includes(letter.letter);
+  },
+  /** Letters that can receive hamza (alif, waw, ya) */
+  hamzaCarriers: (letter: Letter) => {
+    const hamzaLetters = ['ا', 'و', 'ي', 'ى'];
+    return hamzaLetters.includes(letter.letter);
+  },
+  /** All letters (no filtering) */
+  all: () => true,
+};
+
 interface ArabicLetterGridProps {
   /** Currently selected letter(s) */
   value: LetterReference | LetterReference[] | null;
@@ -29,6 +48,8 @@ interface ArabicLetterGridProps {
   loading?: boolean;
   /** Show form selector when a letter is selected */
   showFormSelector?: boolean;
+  /** Filter function to show only specific letters */
+  letterFilter?: LetterFilterFn;
 }
 
 const formLabels: Record<LetterForm, string> = {
@@ -47,8 +68,12 @@ export function ArabicLetterGrid({
   disabledTooltip = 'This letter is not available',
   loading,
   showFormSelector = false,
+  letterFilter,
 }: ArabicLetterGridProps) {
-  const { letters, loading: lettersLoading } = useLetters();
+  const { letters: allLetters, loading: lettersLoading } = useLetters();
+
+  // Apply filter to letters if provided
+  const letters = letterFilter ? allLetters.filter(letterFilter) : allLetters;
 
   // Track the last clicked letter for multi-select form display
   const [lastClickedLetterId, setLastClickedLetterId] = useState<string | null>(null);
@@ -196,9 +221,10 @@ export function ArabicLetterGrid({
   };
 
   // Get selected letter data for form selector display
+  // Use allLetters to find letter data, since selected letter might not be in filtered list
   const getSelectedLetterData = (): Letter | null => {
     const targetId = multiSelect ? lastClickedLetterId : (value && !Array.isArray(value) ? value.letterId : null);
-    return targetId ? letters.find(l => l.id === targetId) || null : null;
+    return targetId ? allLetters.find(l => l.id === targetId) || null : null;
   };
 
   const selectedLetterData = getSelectedLetterData();

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LetterSelectorModal } from '../../LetterSelectorModal';
 import { useLetters } from '@/lib/hooks/useLetters';
 import type { Topic } from '@/lib/schemas/curriculum';
-import type { LetterForm, LetterReference } from '../ArabicLetterGrid';
+import type { LetterForm, LetterReference, LetterFilterFn } from '../ArabicLetterGrid';
 
 interface LetterSelectorPropsBase {
   topic?: Topic | null;
@@ -12,6 +12,8 @@ interface LetterSelectorPropsBase {
   disabledLetterIds?: string[];
   /** Tooltip for disabled letters */
   disabledTooltip?: string;
+  /** Filter function to show only specific letters */
+  letterFilter?: LetterFilterFn;
 }
 
 interface SingleSelectProps extends LetterSelectorPropsBase {
@@ -51,6 +53,7 @@ export function LetterSelector(props: LetterSelectorProps) {
     showFormSelector = true,
     disabledLetterIds = [],
     disabledTooltip,
+    letterFilter,
   } = props;
 
   const { letters } = useLetters();
@@ -212,6 +215,7 @@ export function LetterSelector(props: LetterSelectorProps) {
         multiFormSelect={isMultiFormSelect}
         disabledLetterIds={disabledLetterIds}
         disabledTooltip={disabledTooltip}
+        letterFilter={letterFilter}
       />
     </>
   );

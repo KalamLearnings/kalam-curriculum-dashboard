@@ -21,8 +21,9 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
   const duration = config?.duration || 30;
   const color = config?.color;
   const cardCount = config?.cardCount || 6;
-  const shapeSequence = config?.shapeSequence || [];
-  const totalShapes = config?.totalShapes || 6;
+  const targetShape = config?.targetShape;
+  const targetCount = config?.targetCount || 5;
+  const totalShapes = config?.totalShapes || 10;
 
   const updateConfig = (updates: Partial<BreakTimeMiniGameConfig>) => {
     onChange({ ...config, ...updates });
@@ -33,7 +34,7 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
     { value: 'dot_tapping', label: 'Dot Tapping', icon: '👆' },
     { value: 'coloring', label: 'Coloring', icon: '🎨' },
     { value: 'memory_game', label: 'Memory Game', icon: '🧠' },
-    { value: 'shape_sequence', label: 'Shape Sequence', icon: '🔷' },
+    { value: 'tap_shapes', label: 'Tap Shapes', icon: '🔷' },
   ];
 
   // Color options for dot_tapping (matches COLOR_NAME_MAP in mobile app)
@@ -52,36 +53,6 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
 
   // Card count options (multiples of 2, min 6, max 12)
   const cardCountOptions = [6, 8, 10, 12];
-
-  // Toggle shape in sequence
-  const toggleShapeInSequence = (shape: ShapeType) => {
-    const newSequence = shapeSequence.includes(shape)
-      ? shapeSequence.filter(s => s !== shape)
-      : [...shapeSequence, shape];
-    updateConfig({ shapeSequence: newSequence });
-  };
-
-  // Move shape up in sequence
-  const moveShapeUp = (index: number) => {
-    if (index === 0) return;
-    const newSequence = [...shapeSequence];
-    [newSequence[index - 1], newSequence[index]] = [newSequence[index], newSequence[index - 1]];
-    updateConfig({ shapeSequence: newSequence });
-  };
-
-  // Move shape down in sequence
-  const moveShapeDown = (index: number) => {
-    if (index === shapeSequence.length - 1) return;
-    const newSequence = [...shapeSequence];
-    [newSequence[index], newSequence[index + 1]] = [newSequence[index + 1], newSequence[index]];
-    updateConfig({ shapeSequence: newSequence });
-  };
-
-  // Remove shape from sequence
-  const removeFromSequence = (index: number) => {
-    const newSequence = shapeSequence.filter((_, i) => i !== index);
-    updateConfig({ shapeSequence: newSequence });
-  };
 
   return (
     <div className="space-y-4">
@@ -129,18 +100,18 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
         </FormField>
       )}
 
-      {variant === 'shape_sequence' && (
+      {variant === 'tap_shapes' && (
         <>
-          <FormField label="Shape Sequence" required hint="Select shapes in the order they should be tapped (minimum 2)">
-            <div className="grid grid-cols-4 gap-2 mb-4">
+          <FormField label="Target Shape" required hint="The shape children should tap">
+            <div className="grid grid-cols-4 gap-2">
               {SHAPE_OPTIONS.map((shape) => (
                 <button
                   key={shape.value}
                   type="button"
-                  onClick={() => toggleShapeInSequence(shape.value)}
+                  onClick={() => updateConfig({ targetShape: shape.value })}
                   className={cn(
                     'flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all',
-                    shapeSequence.includes(shape.value)
+                    targetShape === shape.value
                       ? 'border-blue-500 bg-blue-50 shadow-md'
                       : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                   )}
@@ -150,68 +121,26 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
                 </button>
               ))}
             </div>
-
-            {shapeSequence.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-600 mb-2">Tap order (drag to reorder):</p>
-                <div className="flex flex-wrap gap-2">
-                  {shapeSequence.map((shape, index) => {
-                    const shapeInfo = SHAPE_OPTIONS.find(s => s.value === shape);
-                    return (
-                      <div
-                        key={`${shape}-${index}`}
-                        className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1"
-                      >
-                        <span className="text-sm font-bold text-gray-500">{index + 1}.</span>
-                        <span className="text-lg">{shapeInfo?.icon}</span>
-                        <div className="flex flex-col ml-1">
-                          <button
-                            type="button"
-                            onClick={() => moveShapeUp(index)}
-                            disabled={index === 0}
-                            className="text-xs text-gray-400 hover:text-blue-500 disabled:opacity-30"
-                          >
-                            ▲
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveShapeDown(index)}
-                            disabled={index === shapeSequence.length - 1}
-                            className="text-xs text-gray-400 hover:text-blue-500 disabled:opacity-30"
-                          >
-                            ▼
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeFromSequence(index)}
-                          className="text-xs text-red-400 hover:text-red-600 ml-1"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {shapeSequence.length < 2 && (
-              <p className="text-sm text-amber-600 mt-2">
-                Please select at least 2 shapes for the sequence.
-              </p>
-            )}
           </FormField>
 
-          <FormField label="Total Shapes on Screen" hint="Number of shapes displayed (including distractors)">
+          <FormField label="Target Count" hint="How many target shapes to find">
+            <NumberInput
+              value={targetCount}
+              onChange={(value) => updateConfig({ targetCount: value })}
+              min={3}
+              max={10}
+            />
+          </FormField>
+
+          <FormField label="Total Shapes on Screen" hint="Total shapes displayed (including distractors)">
             <NumberInput
               value={totalShapes}
               onChange={(value) => updateConfig({ totalShapes: value })}
-              min={Math.max(4, shapeSequence.length)}
-              max={12}
+              min={targetCount + 2}
+              max={20}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {totalShapes - shapeSequence.length} distractor shapes will be shown
+              {totalShapes - targetCount} distractor shapes will be shown
             </p>
           </FormField>
         </>
@@ -227,19 +156,13 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
         </FormField>
       )}
 
-      {variant === 'shape_sequence' && shapeSequence.length >= 2 && (
+      {variant === 'tap_shapes' && targetShape && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Preview:</strong> Children will tap shapes in this order:{' '}
-            {shapeSequence.map((shape, i) => {
-              const info = SHAPE_OPTIONS.find(s => s.value === shape);
-              return (
-                <span key={i}>
-                  {info?.icon} {info?.label}
-                  {i < shapeSequence.length - 1 ? ' → ' : ''}
-                </span>
-              );
-            })}
+            <strong>Preview:</strong> Children will tap all{' '}
+            <span className="text-lg">{SHAPE_OPTIONS.find(s => s.value === targetShape)?.icon}</span>{' '}
+            <strong>{SHAPE_OPTIONS.find(s => s.value === targetShape)?.label}s</strong>{' '}
+            ({targetCount} targets among {totalShapes} total shapes)
           </p>
         </div>
       )}
