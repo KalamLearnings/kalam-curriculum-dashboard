@@ -1,9 +1,13 @@
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField, TextInput, NumberInput, Select } from './FormField';
+import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 
 export function PizzaActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const targetLetter = config?.targetLetter || '';
+  const { resolveToChar } = useLetterResolver();
+
+  // Resolve targetLetter - could be LetterReference or string from saved config
+  const targetLetter = resolveToChar(config?.targetLetter) || '';
   const toppings = config?.toppings || [];
   const toppingsStr = toppings.map((t: any) => `${t.letter}:${t.name}`).join(', ');
   const requiredToppingsCount = config?.requiredToppingsCount || 2;

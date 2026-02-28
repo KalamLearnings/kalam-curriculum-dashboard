@@ -6,35 +6,13 @@
 
 import type { PreviewProps } from '../PreviewProps';
 import { PreviewContainer } from '../shared/PreviewContainer';
-import { useLetters } from '@/lib/hooks/useLetters';
-
-// Helper to check if value is a LetterReference object
-function isLetterReference(value: unknown): value is { letterId: string; form: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'letterId' in value &&
-    'form' in value
-  );
-}
+import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 
 export function TapDotPositionPreview({ instruction, config }: PreviewProps) {
-  const { letters } = useLetters();
+  const { resolveToChar } = useLetterResolver();
 
-  // Resolve targetLetter to a character string
-  const resolveTargetLetter = (): string | null => {
-    const value = config.targetLetter;
-    if (!value) return null;
-
-    if (isLetterReference(value)) {
-      const letterData = letters.find(l => l.id === value.letterId);
-      return letterData?.letter || null;
-    }
-
-    return typeof value === 'string' ? value : null;
-  };
-
-  const targetLetter = resolveTargetLetter();
+  // Resolve targetLetter to a character string (handles both LetterReference and string)
+  const targetLetter = resolveToChar(config.targetLetter);
   const position = config.position || 'isolated';
   const distractorPositions = (config.distractorPositions || []) as string[];
 

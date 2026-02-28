@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField } from './FormField';
 import { cn } from '@/lib/utils';
+import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 
 /**
  * Letters that are supported for this activity (letters with dots)
@@ -36,7 +37,10 @@ const DOT_POSITIONS = [
 ] as const;
 
 export function TapDotPositionForm({ config, onChange, topic }: BaseActivityFormProps) {
-  const targetLetter = config?.targetLetter || '';
+  const { resolveToChar } = useLetterResolver();
+
+  // Resolve targetLetter - could be LetterReference or string from saved config
+  const targetLetter = resolveToChar(config?.targetLetter) || '';
   const position = config?.position || 'isolated';
   const distractorPositions = (config?.distractorPositions || []) as string[];
 

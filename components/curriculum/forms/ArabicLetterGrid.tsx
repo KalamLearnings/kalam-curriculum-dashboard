@@ -2,13 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useLetters, type Letter } from '@/lib/hooks/useLetters';
 
-export type LetterForm = 'isolated' | 'initial' | 'medial' | 'final';
-
-// Standardized letter reference format - used across the app
-export interface LetterReference {
-  letterId: string;  // e.g., 'ba', 'alif', 'jeem'
-  form: LetterForm;
-}
+// Re-export types from central utilities for backward compatibility
+export type { LetterForm, LetterReference } from '@/lib/utils/letterReference';
+import type { LetterForm, LetterReference } from '@/lib/utils/letterReference';
 
 // For multi-form selection: a letter with multiple forms selected
 export interface LetterWithForms {

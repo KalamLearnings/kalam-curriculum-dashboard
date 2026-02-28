@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField } from './FormField';
 import { cn } from '@/lib/utils';
+import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 
 /**
  * Letters that are supported for this activity (letters with dots)
@@ -21,7 +22,10 @@ const SUPPORTED_DOTTED_LETTERS = [
 ] as const;
 
 export function DragDotsToLetterForm({ config, onChange, topic }: BaseActivityFormProps) {
-  const targetLetter = config?.targetLetter || '';
+  const { resolveToChar } = useLetterResolver();
+
+  // Resolve targetLetter - could be LetterReference or string from saved config
+  const targetLetter = resolveToChar(config?.targetLetter) || '';
   const position = config?.position || 'isolated';
   const distractorDotsCount = config?.distractorDotsCount ?? 0;
 

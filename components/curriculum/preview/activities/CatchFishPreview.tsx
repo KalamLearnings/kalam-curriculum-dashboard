@@ -8,6 +8,7 @@ import type { PreviewProps } from '../PreviewProps';
 import { PreviewContainer } from '../shared/PreviewContainer';
 import { InstructionDisplay } from '../shared/InstructionDisplay';
 import { getConfigValue, ARABIC_DEFAULTS } from '../shared/previewUtils';
+import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 
 interface FishProps {
   letter: string;
@@ -61,15 +62,28 @@ function Fish({ letter, isTarget, animationDelay, yPosition }: FishProps) {
 }
 
 export function CatchFishPreview({ instruction, config }: PreviewProps) {
-  const targetLetter = getConfigValue(config, 'targetLetter', ARABIC_DEFAULTS.targetLetter);
-  const distractorLetters = getConfigValue(config, 'distractorLetters', ['ا', 'م', 'ت', 'ن']);
+  const { resolveToChar, resolveArrayToChars, loading } = useLetterResolver();
+
+  // Resolve target letter - could be LetterReference or string
+  const rawTargetLetter = getConfigValue(config, 'targetLetter', null);
+  const targetLetter = resolveToChar(rawTargetLetter, ARABIC_DEFAULTS.targetLetter) || ARABIC_DEFAULTS.targetLetter;
+
+  // Resolve distractor letters - could be LetterReference[] or string[]
+  const rawDistractorLetters = getConfigValue(config, 'distractorLetters', []);
+  const defaultDistractors = ['ا', 'م', 'ت', 'ن'];
+  const distractorLetters = rawDistractorLetters.length > 0
+    ? resolveArrayToChars(rawDistractorLetters)
+    : defaultDistractors;
+
+  // Use default distractors if resolution yielded empty array
+  const effectiveDistractors = distractorLetters.length > 0 ? distractorLetters : defaultDistractors;
 
   // Generate fish data - show 6 fish in preview (2 correct, 4 distractors)
   const previewFishCount = 6;
   const previewCorrectCount = 2;
 
   const fishData = Array.from({ length: previewFishCount }).map((_, i) => ({
-    letter: i < previewCorrectCount ? targetLetter : distractorLetters[i % distractorLetters.length],
+    letter: i < previewCorrectCount ? targetLetter : effectiveDistractors[i % effectiveDistractors.length],
     isTarget: i < previewCorrectCount,
     animationDelay: i * 0.5,
     yPosition: 20 + (i * 12) % 60,

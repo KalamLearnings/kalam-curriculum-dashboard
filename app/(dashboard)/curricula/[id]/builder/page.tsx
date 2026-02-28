@@ -283,9 +283,11 @@ export default function CurriculumBuilderPage() {
     if (currentActivity && !isCreatingNew) {
       console.log('Loading activity into form:', {
         id: currentActivity.id,
+        type: currentActivity.type,
         instruction: currentActivity.instruction,
         instructionEn: currentActivity.instruction.en,
-        instructionAr: currentActivity.instruction.ar
+        instructionAr: currentActivity.instruction.ar,
+        config: currentActivity.config  // Added config to log
       });
       setFormData({
         type: currentActivity.type,
