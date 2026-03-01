@@ -8,12 +8,10 @@ import { cn } from '@/lib/utils';
 import type { LetterReference } from './ArabicLetterGrid';
 
 export function SpeechPracticeActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
-  // Note: config type from @kalam/curriculum-schemas still expects old format
-  // We're migrating to LetterReference format
   const typedConfig = config as any;
   const contentType = typedConfig?.contentType || 'letter';
-  // letter is now a LetterReference object
-  const letter: LetterReference | null = typedConfig?.letter || null;
+  // targetLetter is a LetterReference object
+  const targetLetter: LetterReference | null = typedConfig?.targetLetter || null;
   const word = typedConfig?.word || '';
   const maxAttempts = typedConfig?.maxAttempts || 3;
   const passingScore = typedConfig?.passingScore || 60;
@@ -61,8 +59,8 @@ export function SpeechPracticeActivityForm({ config, onChange, topic }: BaseActi
       {contentType === 'letter' && (
         <FormField label="Letter" hint="Select letter and form to pronounce" required>
           <LetterSelector
-            value={letter}
-            onChange={(value) => updateConfig({ letter: value })}
+            value={targetLetter}
+            onChange={(value) => updateConfig({ targetLetter: value })}
             topic={topic}
             showFormSelector={true}
           />
