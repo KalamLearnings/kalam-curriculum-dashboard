@@ -5,11 +5,9 @@ import { LetterSelector } from './shared/LetterSelector';
 import type { LetterReference } from './ArabicLetterGrid';
 
 export function WriteActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
-  // Note: config type from @kalam/curriculum-schemas still expects old format
-  // We're migrating to LetterReference format
   const typedConfig = config as any;
-  // letter is now a LetterReference object
-  const letter: LetterReference | null = typedConfig?.letter || null;
+  // targetLetter is a LetterReference object
+  const targetLetter: LetterReference | null = typedConfig?.targetLetter || null;
   const mode = typedConfig?.mode || 'guided';
   const traceCount = typedConfig?.traceCount || 3;
 
@@ -21,8 +19,8 @@ export function WriteActivityForm({ config, onChange, topic }: BaseActivityFormP
     <div className="space-y-4">
       <FormField label="Letter" hint="The Arabic letter and form to trace" required>
         <LetterSelector
-          value={letter}
-          onChange={(value) => updateConfig({ letter: value })}
+          value={targetLetter}
+          onChange={(value) => updateConfig({ targetLetter: value })}
           topic={topic}
           showFormSelector={true}
         />
