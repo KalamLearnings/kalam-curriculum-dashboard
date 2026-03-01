@@ -38,7 +38,7 @@ interface ArabicLetterGridProps {
   onChange: (value: LetterReference | LetterReference[] | null) => void;
   /** Allow multiple letter selection */
   multiSelect?: boolean;
-  /** Allow multiple form selection per letter (only for multiSelect mode) */
+  /** Allow multiple form selection per letter */
   multiFormSelect?: boolean;
   /** Letter IDs to disable (e.g., target letter when selecting distractors) */
   disabledLetterIds?: string[];
@@ -143,8 +143,21 @@ export function ArabicLetterGrid({
           onChange([...currentRefs, { letterId: letter.id, form: 'isolated' }]);
         }
       }
+    } else if (multiFormSelect) {
+      // Single letter + multi-form select mode
+      const currentRefs = getSelectedRefs();
+      const currentLetterId = currentRefs.length > 0 ? currentRefs[0].letterId : null;
+
+      if (currentLetterId === letter.id) {
+        // Same letter clicked - keep selection, just update lastClicked for form selector
+        setLastClickedLetterId(letter.id);
+      } else {
+        // New letter selected - default to 'isolated' form, clear previous letter
+        setLastClickedLetterId(letter.id);
+        onChange([{ letterId: letter.id, form: 'isolated' }]);
+      }
     } else {
-      // Single select mode
+      // Single select mode (single letter, single form)
       const currentRef = value && !Array.isArray(value) ? value : null;
       if (currentRef?.letterId === letter.id) {
         // Same letter clicked - keep selection, just update lastClicked for form selector
@@ -159,7 +172,7 @@ export function ArabicLetterGrid({
 
   const handleFormChange = (form: LetterForm) => {
     if (multiSelect && multiFormSelect && lastClickedLetterId) {
-      // Multi-form select mode - toggle form for last clicked letter
+      // Multi-letter + multi-form select mode - toggle form for last clicked letter
       const currentRefs = getSelectedRefs();
       const letterForms = getFormsForLetter(lastClickedLetterId);
 
@@ -182,6 +195,24 @@ export function ArabicLetterGrid({
         // Add this form
         onChange([...currentRefs, { letterId: lastClickedLetterId, form }]);
       }
+    } else if (!multiSelect && multiFormSelect && lastClickedLetterId) {
+      // Single letter + multi-form select mode - toggle form for selected letter
+      const currentRefs = getSelectedRefs();
+      const letterForms = getFormsForLetter(lastClickedLetterId);
+
+      if (letterForms.includes(form)) {
+        // Remove this form (but keep at least one)
+        if (letterForms.length > 1) {
+          const newRefs = currentRefs.filter(
+            ref => !(ref.letterId === lastClickedLetterId && ref.form === form)
+          );
+          onChange(newRefs.length > 0 ? newRefs : null);
+        }
+        // If only one form left, don't allow removing it
+      } else {
+        // Add this form
+        onChange([...currentRefs, { letterId: lastClickedLetterId, form }]);
+      }
     } else if (multiSelect && !multiFormSelect && lastClickedLetterId) {
       // Multi-select but single form per letter - update the form for last clicked letter
       const currentRefs = getSelectedRefs();
@@ -189,8 +220,8 @@ export function ArabicLetterGrid({
         ref.letterId === lastClickedLetterId ? { ...ref, form } : ref
       );
       onChange(newRefs);
-    } else if (!multiSelect) {
-      // Single select mode - update the form
+    } else if (!multiSelect && !multiFormSelect) {
+      // Single select mode (single letter, single form) - update the form
       const currentRef = value && !Array.isArray(value) ? value : null;
       if (currentRef) {
         onChange({ ...currentRef, form });
@@ -207,14 +238,15 @@ export function ArabicLetterGrid({
   };
 
   const isFormSelected = (form: LetterForm): boolean => {
-    if (multiSelect && multiFormSelect && lastClickedLetterId) {
+    if (multiFormSelect && lastClickedLetterId) {
+      // Multi-form mode (either multi-letter or single-letter)
       return getFormsForLetter(lastClickedLetterId).includes(form);
     }
     if (multiSelect && !multiFormSelect && lastClickedLetterId) {
       const ref = getSelectedRefs().find(r => r.letterId === lastClickedLetterId);
       return ref?.form === form;
     }
-    if (!multiSelect && value && !Array.isArray(value)) {
+    if (!multiSelect && !multiFormSelect && value && !Array.isArray(value)) {
       return value.form === form;
     }
     return form === 'isolated';
@@ -223,12 +255,21 @@ export function ArabicLetterGrid({
   // Get selected letter data for form selector display
   // Use allLetters to find letter data, since selected letter might not be in filtered list
   const getSelectedLetterData = (): Letter | null => {
-    const targetId = multiSelect ? lastClickedLetterId : (value && !Array.isArray(value) ? value.letterId : null);
+    // For multi-form (single or multi letter), use lastClickedLetterId
+    if (multiFormSelect) {
+      return lastClickedLetterId ? allLetters.find(l => l.id === lastClickedLetterId) || null : null;
+    }
+    // For multi-select without multi-form, use lastClickedLetterId
+    if (multiSelect) {
+      return lastClickedLetterId ? allLetters.find(l => l.id === lastClickedLetterId) || null : null;
+    }
+    // For single select, use value
+    const targetId = value && !Array.isArray(value) ? value.letterId : null;
     return targetId ? allLetters.find(l => l.id === targetId) || null : null;
   };
 
   const selectedLetterData = getSelectedLetterData();
-  const shouldShowFormSelector = showFormSelector && (multiSelect ? lastClickedLetterId : selectedLetterData);
+  const shouldShowFormSelector = showFormSelector && (multiSelect || multiFormSelect ? lastClickedLetterId : selectedLetterData);
 
   if (isLoading) {
     return (

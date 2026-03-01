@@ -71,6 +71,7 @@ export function TargetLetterWithDistractorsForm({
           onChange={(value) => updateConfig({ [targetLetterField]: value })}
           topic={topic}
           showFormSelector={true}
+          multiFormSelect
         />
       </FormField>
 

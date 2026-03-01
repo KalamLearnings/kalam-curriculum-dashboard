@@ -18,9 +18,10 @@ interface LetterSelectorPropsBase {
 
 interface SingleSelectProps extends LetterSelectorPropsBase {
   multiSelect?: false;
-  multiFormSelect?: false;
-  value: LetterReference | null;
-  onChange: (value: LetterReference | null) => void;
+  /** Allow selecting multiple forms for a single letter */
+  multiFormSelect?: boolean;
+  value: LetterReference | LetterReference[] | null;
+  onChange: (value: LetterReference | LetterReference[] | null) => void;
 }
 
 interface MultiSelectProps extends LetterSelectorPropsBase {
@@ -60,7 +61,7 @@ export function LetterSelector(props: LetterSelectorProps) {
   const [showLetterSelector, setShowLetterSelector] = useState(false);
 
   const isMultiSelect = props.multiSelect === true;
-  const isMultiFormSelect = isMultiSelect && props.multiFormSelect === true;
+  const isMultiFormSelect = props.multiFormSelect === true;
 
   // Auto-populate letter from topic when component mounts or topic changes (single select only)
   useEffect(() => {
@@ -80,6 +81,10 @@ export function LetterSelector(props: LetterSelectorProps) {
     if (isMultiSelect) {
       const refs = Array.isArray(selected) ? selected : [selected];
       (props as MultiSelectProps).onChange(refs);
+    } else if (isMultiFormSelect) {
+      // Single letter with multiple forms - keep as array
+      const refs = Array.isArray(selected) ? selected : [selected];
+      (props as SingleSelectProps).onChange(refs);
     } else {
       const ref = Array.isArray(selected) ? selected[0] : selected;
       (props as SingleSelectProps).onChange(ref);
@@ -141,6 +146,48 @@ export function LetterSelector(props: LetterSelectorProps) {
           })}
         </div>
       );
+    } else if (isMultiFormSelect) {
+      // Single letter with multiple forms
+      const value = props.value as LetterReference | LetterReference[] | null;
+      const refs = Array.isArray(value) ? value : (value ? [value] : []);
+
+      if (refs.length === 0) {
+        return (
+          <div className="text-sm text-gray-500">No letter selected</div>
+        );
+      }
+
+      // All refs should have the same letterId for single letter mode
+      const letterId = refs[0].letterId;
+      const forms = refs.map(r => r.form);
+      const letterData = getLetterData(letterId);
+      const displayChar = letterData?.letter || '?';
+
+      return (
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-16 h-16 bg-white rounded-lg shadow-sm border border-blue-100">
+            <span className="text-4xl font-arabic text-blue-900">
+              {displayChar}
+            </span>
+          </div>
+          <div className="flex-1">
+            {letterData ? (
+              <>
+                <div className="text-sm font-medium text-gray-900">
+                  {letterData.name_english}
+                </div>
+                <div className="text-xs text-gray-600">
+                  {forms.length === 1
+                    ? `${formLabels[forms[0]]} Form`
+                    : `${forms.map(f => formLabels[f]).join(', ')} Forms`}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-gray-500">Loading...</div>
+            )}
+          </div>
+        </div>
+      );
     } else {
       const ref = props.value as LetterReference | null;
       const letterData = ref ? getLetterData(ref.letterId) : null;
@@ -176,9 +223,12 @@ export function LetterSelector(props: LetterSelectorProps) {
 
   // Convert value to modal format
   const getModalValue = (): LetterReference | LetterReference[] | null => {
-    if (isMultiSelect) {
-      const refs = props.value as LetterReference[];
-      return refs.length > 0 ? refs : null;
+    if (isMultiSelect || isMultiFormSelect) {
+      const value = props.value;
+      if (Array.isArray(value)) {
+        return value.length > 0 ? value : null;
+      }
+      return value || null;
     }
     return props.value as LetterReference | null;
   };
