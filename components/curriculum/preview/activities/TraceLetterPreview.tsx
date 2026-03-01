@@ -8,13 +8,19 @@ import type { PreviewProps } from '../PreviewProps';
 import { PreviewContainer } from '../shared/PreviewContainer';
 import { InstructionDisplay } from '../shared/InstructionDisplay';
 import { getConfigValue, ARABIC_DEFAULTS } from '../shared/previewUtils';
+import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 
 export function TraceLetterPreview({ instruction, config }: PreviewProps) {
-  const letter = getConfigValue(
+  const { resolveWithForm } = useLetterResolver();
+
+  const letterValue = getConfigValue(
     config,
     'letter',
-    getConfigValue(config, 'letterForm', ARABIC_DEFAULTS.letter)
+    getConfigValue(config, 'letterForm', null)
   );
+
+  // Resolve letter reference to display character
+  const letter = resolveWithForm(letterValue, ARABIC_DEFAULTS.letter);
 
   return (
     <PreviewContainer variant="centered">

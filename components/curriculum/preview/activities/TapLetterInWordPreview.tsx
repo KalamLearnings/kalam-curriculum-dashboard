@@ -8,10 +8,13 @@ import type { PreviewProps } from '../PreviewProps';
 import { PreviewContainer } from '../shared/PreviewContainer';
 import { ArabicWordDisplay } from '../shared/ArabicWordDisplay';
 import { getConfigValue, ARABIC_DEFAULTS } from '../shared/previewUtils';
+import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 
 export function TapLetterInWordPreview({ instruction, config }: PreviewProps) {
+  const { resolveToChar } = useLetterResolver();
   const targetWord = getConfigValue(config, 'targetWord', ARABIC_DEFAULTS.targetWord);
-  const targetLetter = getConfigValue(config, 'targetLetter', ARABIC_DEFAULTS.targetLetter);
+  const rawTargetLetter = getConfigValue(config, 'targetLetter', null);
+  const targetLetter = resolveToChar(rawTargetLetter, ARABIC_DEFAULTS.targetLetter) || ARABIC_DEFAULTS.targetLetter;
 
   return (
     <PreviewContainer variant="centered">

@@ -9,12 +9,15 @@ import { PreviewContainer } from '../shared/PreviewContainer';
 import { InstructionDisplay } from '../shared/InstructionDisplay';
 import { LetterBalloon } from '../shared/LetterComponents';
 import { getConfigValue, ARABIC_DEFAULTS } from '../shared/previewUtils';
+import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 
 const BALLOON_COLORS = ['#FF6B9D', '#FEC84B', '#60D394', '#5F9FFF'];
 
 export function PopBalloonsPreview({ instruction, config }: PreviewProps) {
+  const { resolveToChar } = useLetterResolver();
   const balloonCount = getConfigValue(config, 'balloonCount', 3);
-  const targetLetter = getConfigValue(config, 'targetLetter', ARABIC_DEFAULTS.targetLetter);
+  const rawTargetLetter = getConfigValue(config, 'targetLetter', null);
+  const targetLetter = resolveToChar(rawTargetLetter, ARABIC_DEFAULTS.targetLetter) || ARABIC_DEFAULTS.targetLetter;
 
   return (
     <PreviewContainer>
