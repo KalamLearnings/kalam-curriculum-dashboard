@@ -85,8 +85,10 @@ const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActiv
     targetCountHint: "Number of snowflakes to catch",
   },
   bear_honey: {
-    targetLetterHint: "The letter on honey jars to drag",
+    targetLetterHint: "The letters on honey jars to drag",
     targetCountHint: "Number of honey jars to feed",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   fly_on_flowers: {
     targetLetterHint: "The letter on flowers to land on",
