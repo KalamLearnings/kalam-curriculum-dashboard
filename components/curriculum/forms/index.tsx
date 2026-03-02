@@ -33,12 +33,16 @@ interface TargetLetterActivityConfig {
 
 const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActivityConfig>> = {
   pop_balloons_with_letter: {
-    targetLetterHint: "The target letter to find on balloons",
+    targetLetterHint: "The letters to find on balloons",
     targetCountHint: "Number of balloons to pop",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   letter_rain: {
-    targetLetterHint: "The letter to catch",
+    targetLetterHint: "The letters to catch",
     targetCountHint: "Number of letters to catch",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   audio_letter_match: {
     targetLetterHint: "The letter matching the audio",
@@ -49,40 +53,58 @@ const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActiv
     targetCountHint: "Number of correct identifications",
   },
   grid_tap: {
-    targetLetterHint: "The letter on cells to tap",
+    targetLetterHint: "The letters on cells to tap",
     targetCountHint: "Number of cells to tap",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   pick_from_tree: {
-    targetLetterHint: "The letter on fruits to pick",
+    targetLetterHint: "The letters on fruits to pick",
     targetCountHint: "Number of fruits to pick",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   pick_flowers: {
-    targetLetterHint: "The letter on flowers to pick",
+    targetLetterHint: "The letters on flowers to pick",
     targetCountHint: "Number of flowers to pick",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   tap_crescent_moons: {
-    targetLetterHint: "The letter on moons to tap",
+    targetLetterHint: "The letters on moons to tap",
     targetCountHint: "Number of moons to tap",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   drag_to_animal_mouth: {
-    targetLetterHint: "The letter on food items to drag",
+    targetLetterHint: "The letters on food items to drag",
     targetCountHint: "Number of items to feed",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   feed_rabbit: {
-    targetLetterHint: "The letter on carrots to drag",
+    targetLetterHint: "The letters on carrots to drag",
     targetCountHint: "Number of carrots to feed",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   feed_baby: {
-    targetLetterHint: "The letter on bottles to drag",
+    targetLetterHint: "The letters on bottles to drag",
     targetCountHint: "Number of bottles to feed",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   piggy_bank: {
-    targetLetterHint: "The letter on coins to collect",
+    targetLetterHint: "The letters on coins to collect",
     targetCountHint: "Number of coins to collect",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   snowflakes: {
-    targetLetterHint: "The letter on snowflakes to catch",
+    targetLetterHint: "The letters on snowflakes to catch",
     targetCountHint: "Number of snowflakes to catch",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   bear_honey: {
     targetLetterHint: "The letters on honey jars to drag",
@@ -91,30 +113,40 @@ const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActiv
     showLetterPositions: false,
   },
   fly_on_flowers: {
-    targetLetterHint: "The letter on flowers to land on",
+    targetLetterHint: "The letters on flowers to land on",
     targetCountHint: "Number of flowers to land on",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   deliver_envelope: {
-    targetLetterHint: "The letter on houses to deliver to",
+    targetLetterHint: "The letters on houses to deliver to",
     targetCountHint: "Number of envelopes to deliver",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   plant_seeds: {
-    targetLetterHint: "The letter on seeds to plant",
+    targetLetterHint: "The letters on seeds to plant",
     targetCountHint: "Number of seeds to plant",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   balance_scale: {
-    targetLetterHint: "The letter on items to balance",
+    targetLetterHint: "The letters on items to balance",
     targetCountHint: "Number of items to balance",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   ice_cream_stacking: {
     targetLetterHint: "The letters on scoops to stack",
     targetCountHint: "Number of scoops to stack",
-    showLetterPositions: false,
     targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
   slingshot: {
-    targetLetterHint: "The letter on targets to hit",
+    targetLetterHint: "The letters on targets to hit",
     targetCountHint: "Number of targets to hit",
+    targetLetterMultiSelect: true,
+    showLetterPositions: false,
   },
 };
 
