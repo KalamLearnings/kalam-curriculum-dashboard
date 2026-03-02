@@ -24,6 +24,8 @@ interface TargetLetterWithDistractorsFormProps extends BaseActivityFormProps {
   targetLetterField?: string;
   /** Whether to show letter positions selector (for themed activities) */
   showLetterPositions?: boolean;
+  /** Whether target letter supports multi-select (multiple letters + multiple forms) */
+  targetLetterMultiSelect?: boolean;
 }
 
 export function TargetLetterWithDistractorsForm({
@@ -33,12 +35,13 @@ export function TargetLetterWithDistractorsForm({
   labels,
   targetLetterField = 'targetLetter',
   showLetterPositions = true,
+  targetLetterMultiSelect = false,
 }: TargetLetterWithDistractorsFormProps) {
   // Note: config type from @kalam/curriculum-schemas still expects old format
   // We're migrating to LetterReference format
   const typedConfig = config as any;
-  // Target letter is now a LetterReference object
-  const targetLetter: LetterReference | null = typedConfig?.[targetLetterField] || null;
+  // Target letter can be a single reference or array (when multiSelect is enabled)
+  const targetLetter: LetterReference | LetterReference[] | null = typedConfig?.[targetLetterField] || null;
   // Distractor letters is now an array of LetterReference objects
   const distractorLetters: LetterReference[] = typedConfig?.distractorLetters || [];
   const targetCount = typedConfig?.targetCount ?? '';
@@ -66,13 +69,22 @@ export function TargetLetterWithDistractorsForm({
         hint={labels.targetLetterHint || "Select the target letter and form"}
         required
       >
-        <LetterSelector
-          value={targetLetter}
-          onChange={(value) => updateConfig({ [targetLetterField]: value })}
-          topic={topic}
-          showFormSelector={true}
-          multiFormSelect
-        />
+        {targetLetterMultiSelect ? (
+          <LetterSelector
+            value={Array.isArray(targetLetter) ? targetLetter : (targetLetter ? [targetLetter] : [])}
+            onChange={(value) => updateConfig({ [targetLetterField]: value })}
+            multiSelect
+            multiFormSelect
+          />
+        ) : (
+          <LetterSelector
+            value={targetLetter}
+            onChange={(value) => updateConfig({ [targetLetterField]: value })}
+            topic={topic}
+            showFormSelector={true}
+            multiFormSelect
+          />
+        )}
       </FormField>
 
       <FormField label="Distractor Letters" hint="Select letters and their forms" required>

@@ -25,6 +25,10 @@ interface TargetLetterActivityConfig {
   targetLetterHint: string;
   targetCountLabel?: string;
   targetCountHint?: string;
+  /** Whether to show letter positions selector (default: true) */
+  showLetterPositions?: boolean;
+  /** Whether target letter supports multi-select (default: false) */
+  targetLetterMultiSelect?: boolean;
 }
 
 const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActivityConfig>> = {
@@ -101,8 +105,10 @@ const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActiv
     targetCountHint: "Number of items to balance",
   },
   ice_cream_stacking: {
-    targetLetterHint: "The letter on scoops to stack",
+    targetLetterHint: "The letters on scoops to stack",
     targetCountHint: "Number of scoops to stack",
+    showLetterPositions: false,
+    targetLetterMultiSelect: true,
   },
   slingshot: {
     targetLetterHint: "The letter on targets to hit",
@@ -121,11 +127,13 @@ function createTargetLetterForm(activityType: ArticleType): React.ComponentType<
         {...props}
         targetLetterField="targetLetter"
         labels={{
-          targetLetterLabel: "Target Letter",
+          targetLetterLabel: config.targetLetterMultiSelect ? "Target Letters" : "Target Letter",
           targetLetterHint: config.targetLetterHint,
           targetCountLabel: config.targetCountLabel,
           targetCountHint: config.targetCountHint,
         }}
+        showLetterPositions={config.showLetterPositions !== false}
+        targetLetterMultiSelect={config.targetLetterMultiSelect}
       />
     );
   };
