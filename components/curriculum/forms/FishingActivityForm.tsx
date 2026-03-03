@@ -9,10 +9,12 @@ export function FishingActivityForm({ config, onChange, topic }: BaseActivityFor
       onChange={onChange}
       topic={topic}
       labels={{
-        targetLetterLabel: "Target Letter",
-        targetLetterHint: "The target letter to catch",
-        countBasedDescription: "Game ends after catching X fish"
+        targetLetterLabel: "Target Letters",
+        targetLetterHint: "The letters to catch on fish",
+        targetCountHint: "Number of fish to catch",
       }}
+      targetLetterMultiSelect={true}
+      showLetterPositions={false}
     />
   );
 }
