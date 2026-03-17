@@ -92,6 +92,8 @@ export const ACTIVITY_TYPE_CATEGORIES: Record<ArticleType, ActivityCategory> = {
   break_time_minigame: 'misc',
   activity_request: 'misc',
   slingshot: 'misc',
+  i_spy: 'tap',
+  sound_blend: 'learning',
 };
 
 /**
@@ -155,6 +157,8 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'content_with_cards', label: 'Content with Cards' },
   { value: 'drag_hamza_to_letter', label: 'Drag Hamza to Letter' },
   { value: 'slingshot', label: 'Slingshot Game' },
+  { value: 'i_spy', label: 'I Spy (Find Letters)' },
+  { value: 'sound_blend', label: 'Sound Blending' },
 ];
 
 /**
@@ -199,6 +203,8 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   content_with_cards: '🃏',
   drag_hamza_to_letter: 'ء',
   slingshot: '🎯',
+  i_spy: '👁️',
+  sound_blend: '🐢',
 };
 
 /**

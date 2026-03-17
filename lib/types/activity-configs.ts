@@ -14,6 +14,8 @@ export type BreakVariant = 'tracing_lines' | 'dot_tapping' | 'coloring' | 'memor
 export type WritingMode = 'guided' | 'freehand';
 export type HamzaPosition = 'above' | 'below' | 'on_line';
 export type ShapeType = 'circle' | 'square' | 'triangle' | 'star' | 'rectangle' | 'diamond' | 'oval' | 'heart';
+export type SoundDuration = 1 | 2 | 3;
+export type BlendSpeed = 'slow' | 'fast';
 
 /**
  * Show Letter or Word Activity Config
@@ -241,6 +243,56 @@ export interface SlingshotConfig {
 }
 
 /**
+ * I Spy Activity Config
+ *
+ * Find and tap target letters scattered among distractor letters on screen.
+ */
+export interface ISpyConfig {
+  /** Target letter(s) to find */
+  targetLetter: string | string[];
+  /** Specific letter forms to use for targets */
+  targetLetterForms?: string[];
+  /** Letter position form */
+  letterPosition?: LetterPosition;
+  /** Distractor letters (if not provided, random letters are used) */
+  distractorLetters?: string[];
+  /** How many target letters to find */
+  targetCount?: number;
+  /** Total letters on screen */
+  totalLetters?: number;
+  /** Size of displayed letters */
+  letterSize?: 'small' | 'medium' | 'large';
+}
+
+/**
+ * Sound Blend Activity Config
+ *
+ * Drag slider across Arabic word to blend sounds together.
+ * Duration: 1=stop (dot), 2=short (bar), 3=long/madd (big bar)
+ */
+export interface SoundSegment {
+  /** The sound unit (letter + haraka, e.g., "جَ") */
+  sound: string;
+  /** Duration: 1=stop, 2=short, 3=long */
+  duration: SoundDuration;
+}
+
+export interface SoundBlendConfig {
+  /** The full Arabic word (connected form) */
+  word: string;
+  /** Sound segments with duration for each letter */
+  segments: SoundSegment[];
+  /** Reading speed mode */
+  speed?: BlendSpeed;
+  /** Number of slides required to complete */
+  requiredSlides?: number;
+  /** Optional transliteration (e.g., "jamal") */
+  transliteration?: string;
+  /** Optional English meaning (e.g., "camel") */
+  meaning?: string;
+}
+
+/**
  * Content With Cards Activity Config
  *
  * Displays content (letter, word, or image) at the top with 1-4 cards at the bottom.
@@ -293,7 +345,9 @@ export type ActivityConfig =
   | LetterDiscriminationConfig
   | ContentWithCardsConfig
   | DragHamzaToLetterConfig
-  | SlingshotConfig;
+  | SlingshotConfig
+  | ISpyConfig
+  | SoundBlendConfig;
 
 /**
  * Mapped type for activity configs by type
@@ -317,6 +371,8 @@ export type ActivityConfigMap = {
   content_with_cards: ContentWithCardsConfig;
   drag_hamza_to_letter: DragHamzaToLetterConfig;
   slingshot: SlingshotConfig;
+  i_spy: ISpyConfig;
+  sound_blend: SoundBlendConfig;
 };
 
 /**

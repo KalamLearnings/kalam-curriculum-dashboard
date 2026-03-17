@@ -17,6 +17,8 @@ import { ActivityRequestForm } from './ActivityRequestForm';
 import { SpeechPracticeActivityForm } from './SpeechPracticeActivityForm';
 import { ContentWithCardsActivityForm } from './ContentWithCardsActivityForm';
 import { DragHamzaToLetterForm } from './DragHamzaToLetterForm';
+import { ISpyActivityForm } from './ISpyActivityForm';
+import { SoundBlendActivityForm } from './SoundBlendActivityForm';
 import { TargetLetterWithDistractorsForm } from './shared/TargetLetterWithDistractorsForm';
 import type { ArticleType } from '@/lib/schemas/curriculum';
 
@@ -193,6 +195,8 @@ export const activityFormComponents: Record<ArticleType, React.ComponentType<any
   speech_practice: SpeechPracticeActivityForm,
   content_with_cards: ContentWithCardsActivityForm,
   drag_hamza_to_letter: DragHamzaToLetterForm,
+  i_spy: ISpyActivityForm,
+  sound_blend: SoundBlendActivityForm,
 
   // Target letter + distractor activities (using shared form)
   pop_balloons_with_letter: createTargetLetterForm('pop_balloons_with_letter'),
