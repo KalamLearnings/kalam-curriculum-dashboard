@@ -111,6 +111,7 @@ export function isValidActivityType(type: string): type is ActivityType {
     'tap_dot_position',
     'activity_request',
     'content_with_cards',
+    'i_spy',
   ];
 
   return validTypes.includes(type as ActivityType);
@@ -142,6 +143,8 @@ export function getActivityCategory(type: ActivityType): string {
     letter_discrimination: 'Recognition',
     activity_request: 'Other',
     content_with_cards: 'Interactive',
+    i_spy: 'Recognition',
+    sound_blend: 'Phonics',
   };
 
   return categories[type];
@@ -173,6 +176,8 @@ export function getEstimatedDuration(type: ActivityType): number {
     letter_discrimination: 45,
     activity_request: 0,
     content_with_cards: 30,
+    i_spy: 45,
+    sound_blend: 45,
   };
 
   return durations[type];
@@ -351,6 +356,22 @@ export function createDefaultConfig(type: ActivityType): Record<string, any> {
       ],
       cardMode: 'text',
       interactive: true,
+    },
+    i_spy: {
+      targetLetter: 'ب',
+      targetCount: 5,
+      totalLetters: 12,
+      letterSize: 'medium',
+    },
+    sound_blend: {
+      word: 'جَمَل',
+      segments: [
+        { sound: 'جَ', duration: 1 },
+        { sound: 'مَ', duration: 2 },
+        { sound: 'ل', duration: 1 },
+      ],
+      speed: 'slow',
+      requiredSlides: 2,
     },
   };
 

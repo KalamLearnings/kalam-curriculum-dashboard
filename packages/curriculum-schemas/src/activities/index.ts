@@ -44,6 +44,8 @@ export {
 
 export * from './activity_request';
 export * from './content_with_cards';
+export * from './i_spy';
+export * from './sound_blend';
 
 // Import schemas for discriminated union
 import { ShowLetterOrWordActivitySchema } from './show_letter_or_word';
@@ -65,6 +67,8 @@ import { DragDotsToLetterActivitySchema } from './drag_dots_to_letter';
 import { TapDotPositionActivitySchema } from './tap_dot_position';
 import { ActivityRequestActivitySchema } from './activity_request';
 import { ContentWithCardsActivitySchema } from './content_with_cards';
+import { ISpyActivitySchema } from './i_spy';
+import { SoundBlendActivitySchema } from './sound_blend';
 
 // Import config schemas for helper function
 import { ShowLetterOrWordConfigSchema } from './show_letter_or_word';
@@ -86,6 +90,8 @@ import { DragDotsToLetterConfigSchema } from './drag_dots_to_letter';
 import { TapDotPositionConfigSchema } from './tap_dot_position';
 import { ActivityRequestConfigSchema } from './activity_request';
 import { ContentWithCardsConfigSchema } from './content_with_cards';
+import { ISpyConfigSchema } from './i_spy';
+import { SoundBlendConfigSchema } from './sound_blend';
 
 import type { ActivityType } from '../base';
 
@@ -123,6 +129,8 @@ export const ActivitySchema = z.discriminatedUnion('type', [
   ColorLetterActivitySchema,
   LetterDiscriminationActivitySchema,
   ContentWithCardsActivitySchema,
+  ISpyActivitySchema,
+  SoundBlendActivitySchema,
 ]);
 
 export type Activity = z.infer<typeof ActivitySchema>;
@@ -150,6 +158,8 @@ const ACTIVITY_CONFIG_SCHEMAS = {
   color_letter: ColorLetterConfigSchema,
   letter_discrimination: LetterDiscriminationConfigSchema,
   content_with_cards: ContentWithCardsConfigSchema,
+  i_spy: ISpyConfigSchema,
+  sound_blend: SoundBlendConfigSchema,
 } as const;
 
 /**

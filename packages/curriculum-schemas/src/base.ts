@@ -290,6 +290,8 @@ export const ActivityTypeSchema = z.enum([
   'tap_dot_position',
   'activity_request',
   'content_with_cards',
+  'i_spy',
+  'sound_blend',
 ]);
 
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;
@@ -318,6 +320,8 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   tap_dot_position: 'Tap Correct Dot Position',
   activity_request: 'Activity Request (Not Implemented)',
   content_with_cards: 'Content with Cards',
+  i_spy: 'I Spy (Find Letters)',
+  sound_blend: 'Sound Blending',
 };
 
 // ============================================================================
