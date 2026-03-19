@@ -1,8 +1,11 @@
 import React, { useEffect, useCallback } from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField, TextInput } from './FormField';
+import { LetterSelector } from './shared/LetterSelector';
 import { cn } from '@/lib/utils';
-import type { SoundBlendConfig, SoundSegment, SoundDuration, BlendSpeed } from '@/lib/types/activity-configs';
+import { useLetters } from '@/lib/hooks/useLetters';
+import type { SoundBlendConfig, SoundSegment, SoundDuration, BlendSpeed, BlendContentType } from '@/lib/types/activity-configs';
+import type { LetterReference } from './ArabicLetterGrid';
 
 // Arabic diacritics (harakat)
 const HARAKAT = new Set([
@@ -193,11 +196,14 @@ const DURATION_LABELS: Record<SoundDuration, { label: string; icon: string; colo
   3: { label: 'Long', icon: '▬▬', color: 'bg-purple-100 text-purple-700 border-purple-300' },
 };
 
-export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormProps<SoundBlendConfig>) {
+export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivityFormProps<SoundBlendConfig>) {
   const typedConfig = config as SoundBlendConfig;
+  const { letters } = useLetters();
+
+  const contentType: BlendContentType = typedConfig?.contentType || 'word';
   const word = typedConfig?.word || '';
   const segments = typedConfig?.segments || [];
-  const speed: BlendSpeed = typedConfig?.speed || 'slow';
+  const speed: BlendSpeed = typedConfig?.speed || (contentType === 'letter' ? 'none' : 'slow');
   const requiredSlides = typedConfig?.requiredSlides || 2;
   const transliteration = typedConfig?.transliteration || '';
   const meaning = typedConfig?.meaning || '';
@@ -208,7 +214,7 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
 
   // Auto-detect segments when word changes
   useEffect(() => {
-    if (word && segments.length === 0) {
+    if (word && segments.length === 0 && contentType === 'word') {
       const useIsolated = speed === 'slow';
       const detected = autoDetectSegments(word, useIsolated);
       if (detected.length > 0) {
@@ -217,19 +223,60 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
     }
   }, [word]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-detect segments when speed changes
+  // Re-detect segments when speed changes (only for words)
   useEffect(() => {
-    if (word && segments.length > 0) {
+    if (word && segments.length > 0 && contentType === 'word' && speed !== 'none') {
       const useIsolated = speed === 'slow';
       const detected = autoDetectSegments(word, useIsolated);
       updateConfig({ segments: detected });
     }
   }, [speed]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleContentTypeChange = (newContentType: BlendContentType) => {
+    if (newContentType === 'letter') {
+      // Switch to letter mode: clear word, set speed to 'none'
+      updateConfig({
+        contentType: newContentType,
+        word: '',
+        segments: [],
+        speed: 'none',
+      });
+    } else {
+      // Switch to word mode: set speed to 'slow' by default
+      updateConfig({
+        contentType: newContentType,
+        word: '',
+        segments: [],
+        speed: 'slow',
+      });
+    }
+  };
+
   const handleWordChange = (newWord: string) => {
     const useIsolated = speed === 'slow';
     const detected = autoDetectSegments(newWord, useIsolated);
     updateConfig({ word: newWord, segments: detected });
+  };
+
+  const handleLetterSelect = (ref: LetterReference | LetterReference[] | null) => {
+    if (!ref || Array.isArray(ref)) return;
+
+    const letterData = letters.find(l => l.id === ref.letterId);
+    if (!letterData) return;
+
+    // Get the letter form
+    const letterChar = letterData.forms?.[ref.form] || letterData.letter;
+
+    // For letters, create a single segment with short duration
+    const segment: SoundSegment = {
+      sound: letterChar,
+      duration: 2, // Default to short for letters
+    };
+
+    updateConfig({
+      word: letterChar,
+      segments: [segment],
+    });
   };
 
   const handleSegmentDurationChange = (index: number, duration: SoundDuration) => {
@@ -244,22 +291,94 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
     updateConfig({ segments: detected });
   };
 
+  // Determine if speed buttons should be disabled
+  const isSpeedDisabled = contentType === 'letter';
+
+  // Get speed hint text
+  const getSpeedHint = () => {
+    if (contentType === 'letter') {
+      return 'Speed options are not available for single letters';
+    }
+    switch (speed) {
+      case 'slow':
+        return 'Slow: Letters shown in isolated forms (ﺏ ﻡ ﻝ) for beginners';
+      case 'fast':
+        return 'Fast: Letters shown in word forms (بـمـل) for advanced readers';
+      default:
+        return 'Select a speed mode for word blending';
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Word Input */}
+      {/* Content Type Selector */}
       <FormField
-        label="Arabic Word"
-        hint="Enter the word to blend (with diacritics for best results)"
+        label="Content Type"
+        hint="Choose whether to blend a single letter or a full word"
         required
       >
-        <TextInput
-          value={word}
-          onChange={handleWordChange}
-          placeholder="e.g., جَمَل"
-          className="font-arabic text-2xl text-right"
-          dir="rtl"
-        />
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => handleContentTypeChange('letter')}
+            className={cn(
+              'flex flex-col items-center gap-1 px-6 py-3 rounded-lg border-2 transition-all min-w-[120px]',
+              contentType === 'letter'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-blue-300'
+            )}
+          >
+            <span className="text-2xl font-arabic">ب</span>
+            <span className="font-medium">Letter</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleContentTypeChange('word')}
+            className={cn(
+              'flex flex-col items-center gap-1 px-6 py-3 rounded-lg border-2 transition-all min-w-[120px]',
+              contentType === 'word'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-blue-300'
+            )}
+          >
+            <span className="text-2xl font-arabic">كلمة</span>
+            <span className="font-medium">Word</span>
+          </button>
+        </div>
       </FormField>
+
+      {/* Letter Selector (when contentType is letter) */}
+      {contentType === 'letter' && (
+        <FormField
+          label="Select Letter"
+          hint="Choose the letter to blend"
+          required
+        >
+          <LetterSelector
+            topic={topic}
+            showFormSelector={true}
+            value={null}
+            onChange={handleLetterSelect}
+          />
+        </FormField>
+      )}
+
+      {/* Word Input (when contentType is word) */}
+      {contentType === 'word' && (
+        <FormField
+          label="Arabic Word"
+          hint="Enter the word to blend (with diacritics for best results)"
+          required
+        >
+          <TextInput
+            value={word}
+            onChange={handleWordChange}
+            placeholder="e.g., جَمَل"
+            className="font-arabic text-2xl text-right"
+            dir="rtl"
+          />
+        </FormField>
+      )}
 
       {/* Segments Editor */}
       {segments.length > 0 && (
@@ -301,17 +420,19 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
               ))}
             </div>
 
-            {/* Re-detect button */}
-            <button
-              type="button"
-              onClick={handleRedetect}
-              className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Re-detect durations
-            </button>
+            {/* Re-detect button (only for words) */}
+            {contentType === 'word' && (
+              <button
+                type="button"
+                onClick={handleRedetect}
+                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Re-detect durations
+              </button>
+            )}
 
             {/* Legend */}
             <div className="flex gap-4 text-xs text-gray-600 border-t pt-3">
@@ -332,20 +453,39 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
       {/* Speed Selector */}
       <FormField
         label="Reading Speed"
-        hint={speed === 'slow'
-          ? 'Slow: Letters shown in isolated forms (ﺏ ﻡ ﻝ) for beginners'
-          : 'Fast: Letters shown in word forms (بـمـل) for advanced readers'
-        }
+        hint={getSpeedHint()}
       >
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => updateConfig({ speed: 'slow' })}
+            onClick={() => !isSpeedDisabled && updateConfig({ speed: 'none' })}
+            disabled={isSpeedDisabled && speed !== 'none'}
+            className={cn(
+              'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
+              speed === 'none'
+                ? 'border-blue-500 bg-blue-50'
+                : isSpeedDisabled
+                  ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
+                  : 'border-gray-200 hover:border-blue-300'
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span>—</span>
+              <span className="font-medium">None</span>
+            </div>
+            <span className="text-xs text-gray-500">Single letter</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => !isSpeedDisabled && updateConfig({ speed: 'slow' })}
+            disabled={isSpeedDisabled}
             className={cn(
               'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
               speed === 'slow'
                 ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-blue-300'
+                : isSpeedDisabled
+                  ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
+                  : 'border-gray-200 hover:border-blue-300'
             )}
           >
             <div className="flex items-center gap-2">
@@ -356,12 +496,15 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
           </button>
           <button
             type="button"
-            onClick={() => updateConfig({ speed: 'fast' })}
+            onClick={() => !isSpeedDisabled && updateConfig({ speed: 'fast' })}
+            disabled={isSpeedDisabled}
             className={cn(
               'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
               speed === 'fast'
                 ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-blue-300'
+                : isSpeedDisabled
+                  ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
+                  : 'border-gray-200 hover:border-blue-300'
             )}
           >
             <div className="flex items-center gap-2">

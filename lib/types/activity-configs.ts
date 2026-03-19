@@ -15,7 +15,8 @@ export type WritingMode = 'guided' | 'freehand';
 export type HamzaPosition = 'above' | 'below' | 'on_line';
 export type ShapeType = 'circle' | 'square' | 'triangle' | 'star' | 'rectangle' | 'diamond' | 'oval' | 'heart';
 export type SoundDuration = 1 | 2 | 3;
-export type BlendSpeed = 'slow' | 'fast';
+export type BlendContentType = 'letter' | 'word';
+export type BlendSpeed = 'none' | 'slow' | 'fast';
 
 /**
  * Show Letter or Word Activity Config
@@ -278,11 +279,13 @@ export interface SoundSegment {
 }
 
 export interface SoundBlendConfig {
+  /** Content type: letter or word */
+  contentType?: BlendContentType;
   /** The full Arabic word (connected form) */
   word: string;
   /** Sound segments with duration for each letter */
   segments: SoundSegment[];
-  /** Reading speed mode */
+  /** Reading speed mode: none for letters, slow/fast for words */
   speed?: BlendSpeed;
   /** Number of slides required to complete */
   requiredSlides?: number;
