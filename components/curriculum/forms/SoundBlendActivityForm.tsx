@@ -32,6 +32,56 @@ const WAW = 'و';
 const YA = 'ي';
 
 /**
+ * Map base Arabic letters to their isolated presentation forms
+ * Uses Unicode Arabic Presentation Forms-B (U+FE70-U+FEFF)
+ */
+const ISOLATED_FORMS: Record<string, string> = {
+  'ا': 'ﺍ', // Alef
+  'أ': 'ﺃ', // Alef with Hamza Above
+  'إ': 'ﺇ', // Alef with Hamza Below
+  'آ': 'ﺁ', // Alef with Madda
+  'ب': 'ﺏ', // Ba
+  'ت': 'ﺕ', // Ta
+  'ث': 'ﺙ', // Tha
+  'ج': 'ﺝ', // Jeem
+  'ح': 'ﺡ', // Ha
+  'خ': 'ﺥ', // Kha
+  'د': 'ﺩ', // Dal
+  'ذ': 'ﺫ', // Thal
+  'ر': 'ﺭ', // Ra
+  'ز': 'ﺯ', // Zay
+  'س': 'ﺱ', // Seen
+  'ش': 'ﺵ', // Sheen
+  'ص': 'ﺹ', // Sad
+  'ض': 'ﺽ', // Dad
+  'ط': 'ﻁ', // Ta
+  'ظ': 'ﻅ', // Dha
+  'ع': 'ﻉ', // Ain
+  'غ': 'ﻍ', // Ghain
+  'ف': 'ﻑ', // Fa
+  'ق': 'ﻕ', // Qaf
+  'ك': 'ﻙ', // Kaf
+  'ل': 'ﻝ', // Lam
+  'م': 'ﻡ', // Meem
+  'ن': 'ﻥ', // Noon
+  'ه': 'ﻩ', // Ha
+  'و': 'ﻭ', // Waw
+  'ي': 'ﻱ', // Ya
+  'ى': 'ﻯ', // Alef Maksura
+  'ة': 'ﺓ', // Ta Marbuta
+  'ء': 'ء', // Hamza (no change)
+  'ئ': 'ﺉ', // Ya with Hamza
+  'ؤ': 'ﺅ', // Waw with Hamza
+};
+
+/**
+ * Convert a letter to its isolated form
+ */
+function toIsolatedForm(letter: string): string {
+  return ISOLATED_FORMS[letter] || letter;
+}
+
+/**
  * Parse Arabic word into segments (letter + diacritics)
  */
 function parseWordIntoSegments(word: string): { baseLetter: string; harakat: string }[] {
@@ -108,8 +158,10 @@ function detectDuration(
 
 /**
  * Auto-detect segments from Arabic word
+ * @param word - The Arabic word to parse
+ * @param useIsolated - If true, convert letters to isolated forms (for slow mode)
  */
-function autoDetectSegments(word: string): SoundSegment[] {
+function autoDetectSegments(word: string, useIsolated: boolean = false): SoundSegment[] {
   if (!word) return [];
 
   const parsed = parseWordIntoSegments(word);
@@ -121,7 +173,10 @@ function autoDetectSegments(word: string): SoundSegment[] {
     const nextSegment = i < parsed.length - 1 ? parsed[i + 1] : undefined;
 
     const duration = detectDuration(segment, isLast, nextSegment);
-    const sound = segment.baseLetter + segment.harakat;
+
+    // For slow mode, use isolated letter forms; for fast mode, keep original
+    const letter = useIsolated ? toIsolatedForm(segment.baseLetter) : segment.baseLetter;
+    const sound = letter + segment.harakat;
 
     segments.push({ sound, duration });
   }
@@ -154,15 +209,26 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
   // Auto-detect segments when word changes
   useEffect(() => {
     if (word && segments.length === 0) {
-      const detected = autoDetectSegments(word);
+      const useIsolated = speed === 'slow';
+      const detected = autoDetectSegments(word, useIsolated);
       if (detected.length > 0) {
         updateConfig({ segments: detected });
       }
     }
   }, [word]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Re-detect segments when speed changes
+  useEffect(() => {
+    if (word && segments.length > 0) {
+      const useIsolated = speed === 'slow';
+      const detected = autoDetectSegments(word, useIsolated);
+      updateConfig({ segments: detected });
+    }
+  }, [speed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleWordChange = (newWord: string) => {
-    const detected = autoDetectSegments(newWord);
+    const useIsolated = speed === 'slow';
+    const detected = autoDetectSegments(newWord, useIsolated);
     updateConfig({ word: newWord, segments: detected });
   };
 
@@ -173,7 +239,8 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
   };
 
   const handleRedetect = () => {
-    const detected = autoDetectSegments(word);
+    const useIsolated = speed === 'slow';
+    const detected = autoDetectSegments(word, useIsolated);
     updateConfig({ segments: detected });
   };
 
@@ -263,33 +330,45 @@ export function SoundBlendActivityForm({ config, onChange }: BaseActivityFormPro
       )}
 
       {/* Speed Selector */}
-      <FormField label="Reading Speed" hint="Speed mode for the activity">
+      <FormField
+        label="Reading Speed"
+        hint={speed === 'slow'
+          ? 'Slow: Letters shown in isolated forms (ﺏ ﻡ ﻝ) for beginners'
+          : 'Fast: Letters shown in word forms (بـمـل) for advanced readers'
+        }
+      >
         <div className="flex gap-3">
           <button
             type="button"
             onClick={() => updateConfig({ speed: 'slow' })}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all',
+              'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
               speed === 'slow'
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:border-blue-300'
             )}
           >
-            <span>🐢</span>
-            <span className="font-medium">Slow</span>
+            <div className="flex items-center gap-2">
+              <span>🐢</span>
+              <span className="font-medium">Slow</span>
+            </div>
+            <span className="text-xs text-gray-500">Isolated letters</span>
           </button>
           <button
             type="button"
             onClick={() => updateConfig({ speed: 'fast' })}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all',
+              'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
               speed === 'fast'
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:border-blue-300'
             )}
           >
-            <span>🐇</span>
-            <span className="font-medium">Fast</span>
+            <div className="flex items-center gap-2">
+              <span>🐇</span>
+              <span className="font-medium">Fast</span>
+            </div>
+            <span className="text-xs text-gray-500">Word forms</span>
           </button>
         </div>
       </FormField>
