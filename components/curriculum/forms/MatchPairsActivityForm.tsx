@@ -13,7 +13,7 @@ import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField, Checkbox } from './FormField';
 import { LetterSelector } from './shared/LetterSelector';
 import { WordSelector } from '../WordSelector';
-import { ImageUploader } from './ImageUploader';
+import { ImageLibraryModal } from './ImageLibraryModal';
 import { useLetters } from '@/lib/hooks/useLetters';
 import type {
   MatchPairsConfig,
@@ -49,6 +49,7 @@ interface MatchItemEditorProps {
 
 function MatchItemEditor({ item, onChange, side, pairIndex }: MatchItemEditorProps) {
   const { letters } = useLetters();
+  const [showImageLibrary, setShowImageLibrary] = useState(false);
 
   const handleTypeChange = (type: MatchItemType) => {
     onChange({
@@ -82,8 +83,9 @@ function MatchItemEditor({ item, onChange, side, pairIndex }: MatchItemEditorPro
     onChange({ ...item, value: word });
   };
 
-  const handleImageChange = (url: string) => {
+  const handleImageSelect = (url: string) => {
     onChange({ ...item, value: url });
+    setShowImageLibrary(false);
   };
 
   // Convert item to LetterReference for LetterSelector
@@ -134,11 +136,49 @@ function MatchItemEditor({ item, onChange, side, pairIndex }: MatchItemEditorPro
       )}
 
       {item.type === 'image' && (
-        <ImageUploader
-          value={item.value}
-          onChange={handleImageChange}
-          folder="match-pairs"
-        />
+        <>
+          {item.value ? (
+            <div className="relative inline-block">
+              <img
+                src={item.value}
+                alt="Selected"
+                className="max-w-full max-h-24 rounded-lg border border-gray-200"
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowImageLibrary(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700"
+                >
+                  Change
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...item, value: '' })}
+                  className="text-xs text-red-600 hover:text-red-700"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowImageLibrary(true)}
+              className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors"
+            >
+              <div className="text-2xl mb-1">🖼️</div>
+              <p className="text-xs text-gray-600">Select image</p>
+            </button>
+          )}
+
+          <ImageLibraryModal
+            isOpen={showImageLibrary}
+            onClose={() => setShowImageLibrary(false)}
+            onSelectImage={handleImageSelect}
+            currentImage={item.value}
+          />
+        </>
       )}
 
       {/* Optional label */}
