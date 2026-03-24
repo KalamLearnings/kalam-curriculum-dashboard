@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, LayoutList, Network } from 'lucide-react';
 import { useCurriculum } from '@/lib/hooks/useCurriculum';
 import { useTopics, useDeleteTopic } from '@/lib/hooks/useTopics';
 import { useAllNodes, useDeleteNode } from '@/lib/hooks/useNodes';
@@ -32,6 +32,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { getActivityLabel } from '@/lib/constants/curriculum';
 import { CurriculumTree } from '@/components/curriculum/builder/CurriculumTree';
+import { ActivitiesByTypeView } from '@/components/curriculum/builder/ActivitiesByTypeView';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
@@ -104,6 +105,9 @@ export default function CurriculumBuilderPage() {
   const queryClient = useQueryClient();
   const [topicToDuplicate, setTopicToDuplicate] = useState<string | null>(null);
   const [isDuplicating, setIsDuplicating] = useState(false);
+
+  // View mode toggle: 'tree' (by lesson) or 'type' (by activity type)
+  const [viewMode, setViewMode] = useState<'tree' | 'type'>('tree');
 
   // Voice selection for TTS (shared across both English and Arabic)
   const [selectedVoiceId, setSelectedVoiceId] = useState(DEFAULT_VOICE.id);
@@ -277,6 +281,23 @@ export default function CurriculumBuilderPage() {
   // Handle activity selection - now uses store action
   const handleActivitySelect = (activity: Article, nodeId: string, topicId: string) => {
     selectActivity(activity.id, nodeId, topicId);
+  };
+
+  // Handle activity selection from the "by type" view
+  // The ActivityByType type from the API has a different shape than Article
+  const handleActivitySelectByType = (
+    activity: { id: string; node_id: string; instruction: { en: string; ar?: string; audio_url?: string }; type: string; config: Record<string, unknown> },
+    nodeId: string,
+    topicId: string
+  ) => {
+    selectActivity(activity.id, nodeId, topicId);
+    // Expand the topic and node in the tree view so user can switch back
+    if (!expandedTopics.has(topicId)) {
+      toggleTopic(topicId);
+    }
+    if (!expandedNodes.has(nodeId)) {
+      toggleNode(nodeId);
+    }
   };
 
   // Handle new activity type selection - now uses store action
@@ -465,57 +486,102 @@ export default function CurriculumBuilderPage() {
       >
         {/* 3-Panel Layout */}
         <div className="flex flex-1 overflow-hidden">
-          {/* LEFT: Navigation Tree */}
-          <CurriculumTree
-          curriculumId={curriculumId}
-          topics={topics}
-          nodes={nodes}
-          activities={allActivities}
-          selectedTopicId={selectedTopicId}
-          selectedNodeId={selectedNodeId}
-          selectedActivityId={selectedActivityId}
-          expandedTopics={expandedTopics}
-          expandedNodes={expandedNodes}
-          onTopicSelect={setSelectedTopicId}
-          onNodeSelect={setSelectedNodeId}
-          onActivitySelect={handleActivitySelect}
-          onToggleTopic={toggleTopic}
-          onToggleNode={toggleNode}
-          onAddTopic={() => setTopicModalOpen(true)}
-          onAddNode={(topicId) => {
-            setSelectedTopicId(topicId);
-            setNodeModalOpen(true);
-          }}
-          onAddActivity={(nodeId) => {
-            // Find the topic that contains this node
-            const node = nodes?.find(n => n.id === nodeId);
-            if (node) {
-              addActivityToNode(nodeId, node.topic_id);
-            }
-          }}
-          onDeleteTopic={(topicId) => {
-            deleteTopic({ curriculumId, topicId });
-            if (selectedTopicId === topicId) {
-              setSelectedTopicId(null);
-              setSelectedNodeId(null);
-              setSelectedActivityId(null);
-            }
-          }}
-          onDeleteNode={(topicId, nodeId) => {
-            deleteNode({ curriculumId, topicId, nodeId });
-            if (selectedNodeId === nodeId) {
-              setSelectedNodeId(null);
-              setSelectedActivityId(null);
-            }
-          }}
-          onDeleteActivity={(nodeId, activityId) => {
-            deleteActivity({ curriculumId, nodeId, activityId });
-            if (selectedActivityId === activityId) {
-              setSelectedActivityId(null);
-            }
-          }}
-          onDuplicateTopic={handleDuplicateTopic}
-        />
+          {/* LEFT: Navigation Panel with View Toggle */}
+          <div className="w-[360px] border-r bg-gray-50 flex flex-col">
+            {/* View Toggle Header */}
+            <div className="flex items-center justify-between px-4 py-2 border-b bg-white">
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('tree')}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors",
+                    viewMode === 'tree'
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  )}
+                  title="View by Lesson"
+                >
+                  <Network className="w-3.5 h-3.5" />
+                  By Lesson
+                </button>
+                <button
+                  onClick={() => setViewMode('type')}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors",
+                    viewMode === 'type'
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  )}
+                  title="View by Activity Type"
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                  By Type
+                </button>
+              </div>
+            </div>
+
+            {/* Content based on view mode */}
+            <div className="flex-1 overflow-y-auto">
+              {viewMode === 'tree' ? (
+                <CurriculumTree
+                  curriculumId={curriculumId}
+                  topics={topics}
+                  nodes={nodes}
+                  activities={allActivities}
+                  selectedTopicId={selectedTopicId}
+                  selectedNodeId={selectedNodeId}
+                  selectedActivityId={selectedActivityId}
+                  expandedTopics={expandedTopics}
+                  expandedNodes={expandedNodes}
+                  onTopicSelect={setSelectedTopicId}
+                  onNodeSelect={setSelectedNodeId}
+                  onActivitySelect={handleActivitySelect}
+                  onToggleTopic={toggleTopic}
+                  onToggleNode={toggleNode}
+                  onAddTopic={() => setTopicModalOpen(true)}
+                  onAddNode={(topicId) => {
+                    setSelectedTopicId(topicId);
+                    setNodeModalOpen(true);
+                  }}
+                  onAddActivity={(nodeId) => {
+                    // Find the topic that contains this node
+                    const node = nodes?.find(n => n.id === nodeId);
+                    if (node) {
+                      addActivityToNode(nodeId, node.topic_id);
+                    }
+                  }}
+                  onDeleteTopic={(topicId) => {
+                    deleteTopic({ curriculumId, topicId });
+                    if (selectedTopicId === topicId) {
+                      setSelectedTopicId(null);
+                      setSelectedNodeId(null);
+                      setSelectedActivityId(null);
+                    }
+                  }}
+                  onDeleteNode={(topicId, nodeId) => {
+                    deleteNode({ curriculumId, topicId, nodeId });
+                    if (selectedNodeId === nodeId) {
+                      setSelectedNodeId(null);
+                      setSelectedActivityId(null);
+                    }
+                  }}
+                  onDeleteActivity={(nodeId, activityId) => {
+                    deleteActivity({ curriculumId, nodeId, activityId });
+                    if (selectedActivityId === activityId) {
+                      setSelectedActivityId(null);
+                    }
+                  }}
+                  onDuplicateTopic={handleDuplicateTopic}
+                />
+              ) : (
+                <ActivitiesByTypeView
+                  curriculumId={curriculumId}
+                  selectedActivityId={selectedActivityId}
+                  onActivitySelect={handleActivitySelectByType}
+                />
+              )}
+            </div>
+          </div>
 
         {/* CENTER: Form */}
         <main className="flex-1 overflow-y-auto p-6">

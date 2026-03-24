@@ -235,21 +235,20 @@ export function CurriculumTree({
   };
 
   return (
-    <aside className="w-[360px] border-r bg-gray-50 overflow-y-auto">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase">
-            Structure
-          </h2>
-          <button
-            onClick={onAddTopic}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            title="Add Topic"
-          >
-            <Plus className="w-3 h-3" />
-            Topic
-          </button>
-        </div>
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase">
+          Structure
+        </h2>
+        <button
+          onClick={onAddTopic}
+          className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          title="Add Topic"
+        >
+          <Plus className="w-3 h-3" />
+          Topic
+        </button>
+      </div>
 
         {topics?.map(topic => {
           const isTopicExpanded = expandedTopics.has(topic.id);
@@ -370,13 +369,12 @@ export function CurriculumTree({
           );
         })}
 
-        {/* Empty state for curriculum */}
-        {(!topics || topics.length === 0) && (
-          <div className="text-center py-8">
-            <p className="text-xs text-gray-400">No topics yet</p>
-          </div>
-        )}
-      </div>
+      {/* Empty state for curriculum */}
+      {(!topics || topics.length === 0) && (
+        <div className="text-center py-8">
+          <p className="text-xs text-gray-400">No topics yet</p>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
@@ -387,6 +385,6 @@ export function CurriculumTree({
         message={`Are you sure you want to delete "${deleteConfirm?.title}"? This action cannot be undone.`}
         confirmText="Delete"
       />
-    </aside>
+    </div>
   );
 }

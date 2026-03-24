@@ -9,8 +9,10 @@ import {
   updateArticle,
   deleteArticle,
   reorderArticles,
+  listActivitiesByType,
 } from '@/lib/api/curricula';
 import type { Article, CreateArticle, UpdateArticle, BatchReorder } from '@/lib/schemas/curriculum';
+import type { ActivityTypeGroup } from '@/lib/api/curricula';
 import { toast } from 'sonner';
 import { sortBySequence } from '@/lib/utils/reorder';
 
@@ -49,6 +51,19 @@ export function useAllActivities(curriculumId: string, nodeIds: string[]) {
     enabled: nodeIds.length > 0,
     staleTime: 2 * 60 * 1000, // 2 minutes
     select: (data) => sortBySequence(data), // Always return sorted
+  });
+}
+
+/**
+ * Fetch all activities grouped by type
+ * Used for "view by type" feature in builder
+ */
+export function useActivitiesByType(curriculumId: string | null) {
+  return useQuery<ActivityTypeGroup[]>({
+    queryKey: ['activities-by-type', curriculumId],
+    queryFn: () => listActivitiesByType(curriculumId!),
+    enabled: !!curriculumId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 

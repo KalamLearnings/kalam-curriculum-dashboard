@@ -439,6 +439,41 @@ export async function instantiateTemplate(
 }
 
 // ============================================================================
+// ACTIVITIES BY TYPE (for CMS "view by type" feature)
+// ============================================================================
+
+export interface ActivityByType {
+  id: string;
+  node_id: string;
+  sequence_number: number;
+  type: string;
+  instruction: { en: string; ar?: string; audio_url?: string };
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  topic: { id: string; title: { en: string; ar?: string }; sequence_number: number };
+  node: { id: string; title: { en: string; ar?: string }; sequence_number: number };
+}
+
+export interface ActivityTypeGroup {
+  type: string;
+  count: number;
+  activities: ActivityByType[];
+}
+
+/**
+ * List all activities in a curriculum grouped by type
+ * Used for the CMS "view by type" feature
+ */
+export async function listActivitiesByType(
+  curriculumId: string
+): Promise<ActivityTypeGroup[]> {
+  return fetchWithAuth<ActivityTypeGroup[]>(
+    `/curriculum/${curriculumId}/activities/by-type`
+  );
+}
+
+// ============================================================================
 // AI GENERATION
 // ============================================================================
 
