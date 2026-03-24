@@ -296,6 +296,41 @@ export interface SoundBlendConfig {
 }
 
 /**
+ * Match Pairs Activity Config
+ *
+ * Draw lines to match items on the left to items on the right.
+ * Supports letters, words, and images in any combination.
+ */
+export type MatchItemType = 'letter' | 'word' | 'image';
+
+export interface MatchItem {
+  /** Type of content: letter, word, or image */
+  type: MatchItemType;
+  /** The content: letter char, word text, or image URL */
+  value: string;
+  /** Letter identifier (e.g., "ba", "alif") - for letters */
+  letterId?: string;
+  /** Letter form - for letters */
+  form?: LetterPosition;
+  /** Optional display label or alt text */
+  label?: string;
+}
+
+export interface MatchPair {
+  /** Item displayed on the left side */
+  left: MatchItem;
+  /** Item displayed on the right side */
+  right: MatchItem;
+}
+
+export interface MatchPairsConfig {
+  /** The pairs to match (2-4 pairs) */
+  pairs: MatchPair[];
+  /** Whether to shuffle the right side items */
+  shuffleItems?: boolean;
+}
+
+/**
  * Content With Cards Activity Config
  *
  * Displays content (letter, word, or image) at the top with 1-4 cards at the bottom.
@@ -350,7 +385,8 @@ export type ActivityConfig =
   | DragHamzaToLetterConfig
   | SlingshotConfig
   | ISpyConfig
-  | SoundBlendConfig;
+  | SoundBlendConfig
+  | MatchPairsConfig;
 
 /**
  * Mapped type for activity configs by type
@@ -376,6 +412,7 @@ export type ActivityConfigMap = {
   slingshot: SlingshotConfig;
   i_spy: ISpyConfig;
   sound_blend: SoundBlendConfig;
+  match_pairs: MatchPairsConfig;
 };
 
 /**

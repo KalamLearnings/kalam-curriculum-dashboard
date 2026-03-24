@@ -91,6 +91,7 @@ const IMPLEMENTED_ACTIVITIES: ArticleType[] = [
   'slingshot',
   'i_spy',
   'sound_blend',
+  'match_pairs',
 ];
 
 export function ActivityTypeSelectorModal({

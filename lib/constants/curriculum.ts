@@ -94,6 +94,7 @@ export const ACTIVITY_TYPE_CATEGORIES: Record<ArticleType, ActivityCategory> = {
   slingshot: 'misc',
   i_spy: 'tap',
   sound_blend: 'learning',
+  match_pairs: 'drag',
 };
 
 /**
@@ -159,6 +160,7 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'slingshot', label: 'Slingshot Game' },
   { value: 'i_spy', label: 'I Spy (Find Letters)' },
   { value: 'sound_blend', label: 'Sound Blending' },
+  { value: 'match_pairs', label: 'Match Pairs (Draw Lines)' },
 ];
 
 /**
@@ -205,6 +207,7 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   slingshot: '🎯',
   i_spy: '👁️',
   sound_blend: '🐢',
+  match_pairs: '🔗',
 };
 
 /**
