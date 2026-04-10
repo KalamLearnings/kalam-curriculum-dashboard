@@ -186,8 +186,15 @@ export interface AudioLetterMatchConfig {
 /**
  * Memory Card Match Activity Config
  */
+export interface MemoryCardLetter {
+  letterId: string;
+  form: LetterPosition;
+  /** Optional: form for the matching card (enables cross-form matching) */
+  matchingForm?: LetterPosition;
+}
+
 export interface MemoryCardMatchConfig {
-  letters: string[];
+  letters: MemoryCardLetter[];
   cardCount?: number;
   matchType?: 'letter_to_letter' | 'letter_to_sound' | 'form_to_form';
   timeLimit?: number;
