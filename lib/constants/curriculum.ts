@@ -60,6 +60,7 @@ export const ACTIVITY_TYPE_CATEGORIES: Record<ArticleType, ActivityCategory> = {
   drag_to_animal_mouth: 'drag',
   balance_scale: 'drag',
   drag_hamza_to_letter: 'drag',
+  drag_haraka_to_letter: 'drag',
   drag_dots_to_letter: 'drag',
 
   // Catch & Collect
@@ -157,6 +158,7 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'ice_cream_stacking', label: 'Ice Cream Stacking' },
   { value: 'content_with_cards', label: 'Content with Cards' },
   { value: 'drag_hamza_to_letter', label: 'Drag Hamza to Letter' },
+  { value: 'drag_haraka_to_letter', label: 'Drag Haraka to Letter' },
   { value: 'slingshot', label: 'Slingshot Game' },
   { value: 'i_spy', label: 'I Spy (Find Letters)' },
   { value: 'sound_blend', label: 'Sound Blending' },
@@ -204,6 +206,7 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   ice_cream_stacking: '🍦',
   content_with_cards: '🃏',
   drag_hamza_to_letter: 'ء',
+  drag_haraka_to_letter: 'فَ',
   slingshot: '🎯',
   i_spy: '👁️',
   sound_blend: '🐢',

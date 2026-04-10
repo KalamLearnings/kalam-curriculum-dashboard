@@ -13,6 +13,7 @@ export type LetterPosition = 'isolated' | 'initial' | 'medial' | 'final';
 export type BreakVariant = 'tracing_lines' | 'dot_tapping' | 'coloring' | 'memory_game' | 'tap_shapes';
 export type WritingMode = 'guided' | 'freehand';
 export type HamzaPosition = 'above' | 'below' | 'on_line';
+export type HarakaType = 'fatha' | 'damma' | 'kasra' | 'sukoon' | 'shadda';
 export type ShapeType = 'circle' | 'square' | 'triangle' | 'star' | 'rectangle' | 'diamond' | 'oval' | 'heart';
 export type SoundDuration = 1 | 2 | 3;
 export type BlendContentType = 'letter' | 'word';
@@ -234,6 +235,25 @@ export interface DragHamzaToLetterConfig {
 }
 
 /**
+ * Drag Haraka to Letter Activity Config
+ *
+ * Students learn Arabic diacritics (harakat) by dragging them onto letters.
+ * Two modes:
+ * - Single letter: Drag haraka to a specific letter
+ * - Multi-letter: Choose the correct letter from scattered options
+ */
+export interface DragHarakaToLetterConfig {
+  /** The diacritic mark to drag (fatha, damma, kasra, sukoon, shadda) */
+  harakaType: HarakaType;
+  /** The correct letter to place the haraka on */
+  targetLetter: string;
+  /** Wrong letters to include (enables multi-letter mode when provided) */
+  distractorLetters?: string[];
+  /** Audio URL to play when haraka is correctly placed */
+  correctSoundUrl?: string;
+}
+
+/**
  * Slingshot Activity Config
  */
 export interface SlingshotConfig {
@@ -289,6 +309,8 @@ export interface SoundBlendConfig {
   speed?: BlendSpeed;
   /** Number of slides required to complete */
   requiredSlides?: number;
+  /** Show both slow (isolated) and fast (connected) sliders side by side */
+  showBothSpeeds?: boolean;
   /** Optional transliteration (e.g., "jamal") */
   transliteration?: string;
   /** Optional English meaning (e.g., "camel") */
@@ -331,6 +353,14 @@ export interface MatchPairsConfig {
 }
 
 /**
+ * Letter Reference for selecting letters with forms
+ */
+export interface LetterReference {
+  letterId: string;
+  form: LetterPosition;
+}
+
+/**
  * Content With Cards Activity Config
  *
  * Displays content (letter, word, or image) at the top with 1-4 cards at the bottom.
@@ -338,7 +368,11 @@ export interface MatchPairsConfig {
  */
 export interface ContentWithCardsOption {
   id: string;
+  /** Text content (used for word mode or legacy text) */
   text?: string;
+  /** Letter reference with letterId and form (used for letter mode) */
+  letter?: LetterReference;
+  /** Image URL (used for image mode) */
   image?: string;
   isCorrect?: boolean;
 }
@@ -352,10 +386,12 @@ export interface ContentWithCardsConfig {
   };
   /** Content type for display */
   contentType?: 'letter' | 'word' | 'image';
+  /** Target letter reference (letterId + form) - used when contentType is 'letter' */
+  targetLetter?: LetterReference | null;
   /** Array of 1-4 card options */
   cards: ContentWithCardsOption[];
-  /** Display mode for cards: text or image */
-  cardMode?: 'text' | 'image';
+  /** Display mode for cards: letter, word, or image */
+  cardMode?: 'letter' | 'word' | 'image';
   /** Whether cards are tappable (interactive) or display-only (informational) */
   interactive?: boolean;
   /** Randomize card order */
@@ -383,6 +419,7 @@ export type ActivityConfig =
   | LetterDiscriminationConfig
   | ContentWithCardsConfig
   | DragHamzaToLetterConfig
+  | DragHarakaToLetterConfig
   | SlingshotConfig
   | ISpyConfig
   | SoundBlendConfig
@@ -409,6 +446,7 @@ export type ActivityConfigMap = {
   letter_discrimination: LetterDiscriminationConfig;
   content_with_cards: ContentWithCardsConfig;
   drag_hamza_to_letter: DragHamzaToLetterConfig;
+  drag_haraka_to_letter: DragHarakaToLetterConfig;
   slingshot: SlingshotConfig;
   i_spy: ISpyConfig;
   sound_blend: SoundBlendConfig;

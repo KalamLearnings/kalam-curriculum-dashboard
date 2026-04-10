@@ -17,6 +17,7 @@ import { ActivityRequestForm } from './ActivityRequestForm';
 import { SpeechPracticeActivityForm } from './SpeechPracticeActivityForm';
 import { ContentWithCardsActivityForm } from './ContentWithCardsActivityForm';
 import { DragHamzaToLetterForm } from './DragHamzaToLetterForm';
+import { DragHarakaToLetterForm } from './DragHarakaToLetterForm';
 import { ISpyActivityForm } from './ISpyActivityForm';
 import { SoundBlendActivityForm } from './SoundBlendActivityForm';
 import { MatchPairsActivityForm } from './MatchPairsActivityForm';
@@ -196,6 +197,7 @@ export const activityFormComponents: Record<ArticleType, React.ComponentType<any
   speech_practice: SpeechPracticeActivityForm,
   content_with_cards: ContentWithCardsActivityForm,
   drag_hamza_to_letter: DragHamzaToLetterForm,
+  drag_haraka_to_letter: DragHarakaToLetterForm,
   i_spy: ISpyActivityForm,
   sound_blend: SoundBlendActivityForm,
   match_pairs: MatchPairsActivityForm,

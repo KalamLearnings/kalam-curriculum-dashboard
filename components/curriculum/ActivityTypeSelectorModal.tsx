@@ -88,6 +88,7 @@ const IMPLEMENTED_ACTIVITIES: ArticleType[] = [
   'ice_cream_stacking',
   'content_with_cards',
   'drag_hamza_to_letter',
+  'drag_haraka_to_letter',
   'slingshot',
   'i_spy',
   'sound_blend',
