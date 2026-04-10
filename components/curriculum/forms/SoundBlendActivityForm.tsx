@@ -205,6 +205,7 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
   const segments = typedConfig?.segments || [];
   const speed: BlendSpeed = typedConfig?.speed || (contentType === 'letter' ? 'none' : 'slow');
   const requiredSlides = typedConfig?.requiredSlides || 2;
+  const showBothSpeeds = typedConfig?.showBothSpeeds || false;
   const transliteration = typedConfig?.transliteration || '';
   const meaning = typedConfig?.meaning || '';
 
@@ -533,6 +534,47 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
           <span className="w-8 text-center font-medium">{requiredSlides}</span>
         </div>
       </FormField>
+
+      {/* Show Both Speeds Toggle (only for words) */}
+      {contentType === 'word' && (
+        <FormField
+          label="Display Mode"
+          hint="Show both isolated letters (slow) and connected word (fast) side by side"
+        >
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showBothSpeeds}
+              onChange={(e) => updateConfig({ showBothSpeeds: e.target.checked })}
+              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div className="flex flex-col">
+              <span className="font-medium">Show both speeds side by side</span>
+              <span className="text-sm text-gray-500">
+                Displays turtle (slow) and rabbit (fast) sliders together
+              </span>
+            </div>
+          </label>
+          {showBothSpeeds && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Preview:</strong> Both sliders will be shown - on tablets they appear side by side,
+                on phones they stack vertically. Moving one slider controls both.
+              </p>
+              <div className="flex gap-4 mt-2 justify-center">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-2xl">🐢</span>
+                  <span className="text-xs">Isolated</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-2xl">🐇</span>
+                  <span className="text-xs">Connected</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </FormField>
+      )}
 
       {/* Optional Fields */}
       <div className="border-t pt-4 space-y-4">
