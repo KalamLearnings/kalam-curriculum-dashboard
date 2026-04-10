@@ -13,6 +13,8 @@ interface LetterSelectorModalProps {
   selectedValue?: LetterReference | LetterReference[] | null;
   /** Whether to show form selector */
   showFormSelector?: boolean;
+  /** Whether to show haraka (diacritic) selector */
+  showHarakaSelector?: boolean;
   /** Whether to allow multiple letter selection */
   multiSelect?: boolean;
   /** Whether to allow multiple forms per letter (requires multiSelect) */
@@ -31,6 +33,7 @@ export function LetterSelectorModal({
   onSelect,
   selectedValue,
   showFormSelector = true,
+  showHarakaSelector = false,
   multiSelect = false,
   multiFormSelect = false,
   disabledLetterIds = [],
@@ -97,6 +100,7 @@ export function LetterSelectorModal({
             multiSelect={multiSelect}
             multiFormSelect={multiFormSelect}
             showFormSelector={showFormSelector}
+            showHarakaSelector={showHarakaSelector}
             disabledLetterIds={disabledLetterIds}
             disabledTooltip={disabledTooltip}
             letterFilter={letterFilter}

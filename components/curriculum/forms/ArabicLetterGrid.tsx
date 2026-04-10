@@ -3,8 +3,9 @@ import { cn } from '@/lib/utils';
 import { useLetters, type Letter } from '@/lib/hooks/useLetters';
 
 // Re-export types from central utilities for backward compatibility
-export type { LetterForm, LetterReference } from '@/lib/utils/letterReference';
-import type { LetterForm, LetterReference } from '@/lib/utils/letterReference';
+export type { LetterForm, LetterReference, HarakaType } from '@/lib/utils/letterReference';
+import type { LetterForm, LetterReference, HarakaType } from '@/lib/utils/letterReference';
+import { HARAKA_CHARS, HARAKA_LABELS, applyHaraka } from '@/lib/utils/letterReference';
 
 // For multi-form selection: a letter with multiple forms selected
 export interface LetterWithForms {
@@ -48,6 +49,8 @@ interface ArabicLetterGridProps {
   loading?: boolean;
   /** Show form selector when a letter is selected */
   showFormSelector?: boolean;
+  /** Show haraka (diacritic) selector when a letter is selected */
+  showHarakaSelector?: boolean;
   /** Filter function to show only specific letters */
   letterFilter?: LetterFilterFn;
 }
@@ -68,6 +71,7 @@ export function ArabicLetterGrid({
   disabledTooltip = 'This letter is not available',
   loading,
   showFormSelector = false,
+  showHarakaSelector = false,
   letterFilter,
 }: ArabicLetterGridProps) {
   const { letters: allLetters, loading: lettersLoading } = useLetters();
@@ -252,6 +256,44 @@ export function ArabicLetterGrid({
     return form === 'isolated';
   };
 
+  // Get haraka for a specific letter reference
+  const getHarakaForLetter = (letterId: string): HarakaType | undefined => {
+    const ref = getSelectedRefs().find(r => r.letterId === letterId);
+    return ref?.haraka;
+  };
+
+  // Handle haraka selection
+  const handleHarakaChange = (haraka: HarakaType) => {
+    if (multiSelect && lastClickedLetterId) {
+      // Multi-select mode - update haraka for last clicked letter
+      const currentRefs = getSelectedRefs();
+      const newRefs = currentRefs.map(ref =>
+        ref.letterId === lastClickedLetterId
+          ? { ...ref, haraka: haraka === 'none' ? undefined : haraka }
+          : ref
+      );
+      onChange(newRefs);
+    } else if (!multiSelect && value && !Array.isArray(value)) {
+      // Single select mode - update haraka for selected letter
+      onChange({
+        ...value,
+        haraka: haraka === 'none' ? undefined : haraka
+      });
+    }
+  };
+
+  // Check if a haraka is selected
+  const isHarakaSelected = (haraka: HarakaType): boolean => {
+    if (multiSelect && lastClickedLetterId) {
+      const currentHaraka = getHarakaForLetter(lastClickedLetterId);
+      return haraka === 'none' ? !currentHaraka : currentHaraka === haraka;
+    }
+    if (!multiSelect && value && !Array.isArray(value)) {
+      return haraka === 'none' ? !value.haraka : value.haraka === haraka;
+    }
+    return haraka === 'none';
+  };
+
   // Get selected letter data for form selector display
   // Use allLetters to find letter data, since selected letter might not be in filtered list
   const getSelectedLetterData = (): Letter | null => {
@@ -357,6 +399,66 @@ export function ArabicLetterGrid({
                 : 'Select a letter first to choose its forms'
               : `Selected form: ${formLabels[isFormSelected('isolated') ? 'isolated' : isFormSelected('initial') ? 'initial' : isFormSelected('medial') ? 'medial' : 'final']}`}
           </p>
+        </div>
+      )}
+
+      {/* Haraka (Diacritic) Selector */}
+      {showHarakaSelector && selectedLetterData && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Select Diacritic (optional)
+          </label>
+          <div className="grid grid-cols-6 gap-2">
+            {(['none', 'fatha', 'damma', 'kasra', 'sukoon', 'shadda'] as HarakaType[]).map((haraka) => {
+              const harakaSelected = isHarakaSelected(haraka);
+              // Get the letter character based on selected form
+              const letterChar = selectedLetterData?.forms?.[
+                isFormSelected('isolated') ? 'isolated' :
+                isFormSelected('initial') ? 'initial' :
+                isFormSelected('medial') ? 'medial' : 'final'
+              ] || selectedLetterData?.letter || '';
+              // Show letter with haraka for preview, or null symbol for 'none'
+              const displayChar = haraka === 'none'
+                ? '\u2205' // ∅ null symbol
+                : applyHaraka(letterChar || '\u0640', haraka); // Use tatweel if no letter
+
+              return (
+                <button
+                  key={haraka}
+                  type="button"
+                  onClick={() => handleHarakaChange(haraka)}
+                  className={cn(
+                    'px-3 py-3 rounded-lg border-2 transition-all',
+                    'flex flex-col items-center justify-center',
+                    'hover:border-blue-400 hover:bg-blue-50',
+                    harakaSelected
+                      ? 'border-blue-600 bg-blue-100 ring-2 ring-blue-600 ring-offset-2'
+                      : 'border-gray-300 bg-white'
+                  )}
+                >
+                  <div className="text-2xl font-arabic mb-1">{displayChar}</div>
+                  <div className="text-xs text-gray-600">{HARAKA_LABELS[haraka]}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Preview with haraka */}
+          {selectedLetterData && !isHarakaSelected('none') && (
+            <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+              <span className="text-sm text-gray-600">Preview: </span>
+              <span className="text-4xl font-arabic">
+                {applyHaraka(
+                  selectedLetterData?.forms?.[
+                    isFormSelected('isolated') ? 'isolated' :
+                    isFormSelected('initial') ? 'initial' :
+                    isFormSelected('medial') ? 'medial' : 'final'
+                  ] || selectedLetterData?.letter || '',
+                  getHarakaForLetter(selectedLetterData.id) || getSelectedRefs()[0]?.haraka
+                )}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>

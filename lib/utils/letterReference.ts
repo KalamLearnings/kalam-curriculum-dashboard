@@ -10,11 +10,53 @@ import type { Letter } from '@/lib/hooks/useLetters';
 export type LetterForm = 'isolated' | 'initial' | 'medial' | 'final';
 
 /**
+ * Arabic diacritical marks (harakat)
+ */
+export type HarakaType = 'none' | 'fatha' | 'damma' | 'kasra' | 'sukoon' | 'shadda';
+
+/**
+ * Unicode characters for harakat
+ */
+export const HARAKA_CHARS: Record<HarakaType, string> = {
+  none: '',
+  fatha: '\u064E',   // فَتْحَة - short 'a' sound
+  damma: '\u064F',   // ضَمَّة - short 'u' sound
+  kasra: '\u0650',   // كَسْرَة - short 'i' sound
+  sukoon: '\u0652',  // سُكُون - no vowel
+  shadda: '\u0651',  // شَدَّة - doubled consonant
+};
+
+/**
+ * Human-readable labels for harakat
+ */
+export const HARAKA_LABELS: Record<HarakaType, string> = {
+  none: 'None',
+  fatha: 'Fatha',
+  damma: 'Damma',
+  kasra: 'Kasra',
+  sukoon: 'Sukoon',
+  shadda: 'Shadda',
+};
+
+/**
+ * Arabic names for harakat
+ */
+export const HARAKA_ARABIC_NAMES: Record<HarakaType, string> = {
+  none: '',
+  fatha: 'فَتْحَة',
+  damma: 'ضَمَّة',
+  kasra: 'كَسْرَة',
+  sukoon: 'سُكُون',
+  shadda: 'شَدَّة',
+};
+
+/**
  * Standardized letter reference format - used across the app
  */
 export interface LetterReference {
   letterId: string;  // e.g., 'ba', 'alif', 'jeem'
   form: LetterForm;
+  haraka?: HarakaType;  // Optional diacritic
 }
 
 /**
@@ -161,9 +203,45 @@ export function getLetterData(
  */
 export function createLetterReference(
   letterId: string,
-  form: LetterForm = 'isolated'
+  form: LetterForm = 'isolated',
+  haraka?: HarakaType
 ): LetterReference {
-  return { letterId, form };
+  return haraka ? { letterId, form, haraka } : { letterId, form };
+}
+
+/**
+ * Apply a haraka diacritic to a letter character
+ *
+ * @param letter - The base Arabic letter character
+ * @param haraka - The haraka type to apply
+ * @returns The letter with haraka applied (e.g., 'ب' + 'fatha' → 'بَ')
+ */
+export function applyHaraka(letter: string, haraka?: HarakaType): string {
+  if (!haraka || haraka === 'none') return letter;
+  return letter + HARAKA_CHARS[haraka];
+}
+
+/**
+ * Resolve a LetterReference to character with haraka applied
+ *
+ * @param value - LetterReference object
+ * @param letters - Array of Letter objects from useLetters hook
+ * @param defaultValue - Value to return if resolution fails
+ * @returns The resolved letter character with haraka applied
+ */
+export function resolveLetterWithHaraka(
+  value: unknown,
+  letters: Letter[],
+  defaultValue: string | null = null
+): string | null {
+  const char = resolveLetterWithForm(value, letters, defaultValue);
+  if (!char) return defaultValue;
+
+  if (isLetterReference(value) && value.haraka) {
+    return applyHaraka(char, value.haraka);
+  }
+
+  return char;
 }
 
 /**
