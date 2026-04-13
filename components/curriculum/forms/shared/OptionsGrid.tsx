@@ -2,17 +2,21 @@
  * OptionsGrid Component
  *
  * A reusable grid container for displaying 1-4 option squares.
- * Handles dynamic layout based on option count and manages image modal state.
+ * Handles dynamic layout based on option count and manages image/letter modal state.
  * Used by MultipleChoiceActivityForm, ContentWithCardsActivityForm, etc.
  */
 
 import React, { useState } from 'react';
-import { OptionSquare, OptionSquareData } from './OptionSquare';
+import { OptionSquare, OptionSquareData, LetterRef } from './OptionSquare';
 import { ImageLibraryModal } from '../ImageLibraryModal';
+import { LetterSelectorModal } from '../../LetterSelectorModal';
+import type { LetterReference } from '../ArabicLetterGrid';
 
 export interface OptionData extends OptionSquareData {
   id: string;
   text?: string;
+  letter?: LetterRef;
+  letterDisplay?: string;
   image?: string;
   isCorrect?: boolean;
 }
@@ -20,10 +24,10 @@ export interface OptionData extends OptionSquareData {
 interface OptionsGridProps {
   /** Array of options to display (1-4 items) */
   options: OptionData[];
-  /** Display mode for all options */
-  mode: 'text' | 'image';
+  /** Display mode for all options: letter, word, or image */
+  mode: 'letter' | 'word' | 'image' | 'text';
   /** Called when an option is updated */
-  onUpdateOption: (index: number, field: 'text' | 'image' | 'isCorrect', value: any) => void;
+  onUpdateOption: (index: number, field: 'text' | 'image' | 'isCorrect' | 'letter', value: any) => void;
   /** Title displayed above the grid */
   title?: string;
   /** Whether to show correct answer checkboxes */
@@ -56,6 +60,7 @@ export function OptionsGrid({
   maxOptions = 4,
 }: OptionsGridProps) {
   const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [letterModalOpen, setLetterModalOpen] = useState(false);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
 
   const openImagePicker = (index: number) => {
@@ -63,11 +68,24 @@ export function OptionsGrid({
     setImageModalOpen(true);
   };
 
+  const openLetterPicker = (index: number) => {
+    setSelectedOptionIndex(index);
+    setLetterModalOpen(true);
+  };
+
   const handleImageSelect = (url: string) => {
     if (selectedOptionIndex !== null) {
       onUpdateOption(selectedOptionIndex, 'image', url);
     }
     setImageModalOpen(false);
+  };
+
+  const handleLetterSelect = (selected: LetterReference | LetterReference[]) => {
+    if (selectedOptionIndex !== null) {
+      const letterRef = Array.isArray(selected) ? selected[0] : selected;
+      onUpdateOption(selectedOptionIndex, 'letter', letterRef);
+    }
+    setLetterModalOpen(false);
   };
 
   const getGridCols = () => {
@@ -111,8 +129,10 @@ export function OptionsGrid({
               showCorrectCheckbox={showCorrectCheckbox}
               onToggleCorrect={(checked) => onUpdateOption(index, 'isCorrect', checked)}
               onUpdateText={(value) => onUpdateOption(index, 'text', value)}
+              onOpenLetterPicker={() => openLetterPicker(index)}
               onOpenImagePicker={() => openImagePicker(index)}
               onClearImage={() => onUpdateOption(index, 'image', '')}
+              onClearLetter={() => onUpdateOption(index, 'letter', null)}
             />
             {canRemove && (
               <button
@@ -134,6 +154,15 @@ export function OptionsGrid({
         onClose={() => setImageModalOpen(false)}
         onSelectImage={handleImageSelect}
         currentImage={selectedOptionIndex !== null ? options[selectedOptionIndex]?.image : undefined}
+      />
+
+      {/* Letter Selector Modal */}
+      <LetterSelectorModal
+        isOpen={letterModalOpen}
+        onClose={() => setLetterModalOpen(false)}
+        onSelect={handleLetterSelect}
+        selectedValue={selectedOptionIndex !== null ? options[selectedOptionIndex]?.letter as LetterReference | null : null}
+        showFormSelector={true}
       />
     </div>
   );

@@ -19,17 +19,13 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
     onChange({ ...config, ...updates });
   };
 
-  // Extract unique letters from the target word
-  const uniqueLetters = useMemo(() => {
+  // Extract all letters from the target word (including duplicates)
+  const letters = useMemo(() => {
     if (!targetWord) return [];
-    // Split word into characters and get unique ones, preserving order
-    const chars = targetWord.split('');
-    const seen = new Set<string>();
-    return chars.filter(char => {
+    // Split word into characters, filtering out non-letter characters
+    return targetWord.split('').filter(char => {
       // Skip non-letter characters (spaces, diacritics, etc.)
       if (char.trim() === '' || /[\u064B-\u065F]/.test(char)) return false;
-      if (seen.has(char)) return false;
-      seen.add(char);
       return true;
     });
   }, [targetWord]);
@@ -59,10 +55,10 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
       return;
     }
 
-    if (initialLoadComplete && targetLetter && uniqueLetters.length > 0 && !uniqueLetters.includes(targetLetter)) {
+    if (initialLoadComplete && targetLetter && letters.length > 0 && !letters.includes(targetLetter)) {
       updateConfig({ targetLetter: '' });
     }
-  }, [uniqueLetters, targetLetter, initialLoadComplete, targetWord]);
+  }, [letters, targetLetter, initialLoadComplete, targetWord]);
 
   return (
     <div className="space-y-4">
@@ -84,11 +80,11 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
       )}
 
       <FormField label="Target Letter" hint="Select the letter to find in the word" required>
-        {uniqueLetters.length > 0 ? (
+        {letters.length > 0 ? (
           <div className="grid grid-cols-6 gap-2">
-            {[...uniqueLetters].reverse().map((letter) => (
+            {[...letters].reverse().map((letter, index) => (
               <button
-                key={letter}
+                key={`${letter}-${index}`}
                 type="button"
                 onClick={() => updateConfig({ targetLetter: letter })}
                 className={cn(

@@ -1,18 +1,26 @@
 /**
  * OptionSquare Component
  *
- * A reusable card/tile component for displaying an option (text or image).
- * Supports correct answer marking, inline editing, and image selection.
+ * A reusable card/tile component for displaying an option (letter, word, or image).
+ * Supports correct answer marking, inline editing, and image/letter selection.
  * Used by MultipleChoiceActivityForm, ContentWithCardsActivityForm, etc.
  */
 
 import React, { useState } from 'react';
 
+export interface LetterRef {
+  letterId: string;
+  form: 'isolated' | 'initial' | 'medial' | 'final';
+}
+
 export interface OptionSquareData {
   id: string;
   text?: string;
+  letter?: LetterRef;
   image?: string;
   isCorrect?: boolean;
+  /** Display character for letter (resolved from letterId) */
+  letterDisplay?: string;
 }
 
 interface OptionSquareProps {
@@ -20,16 +28,20 @@ interface OptionSquareProps {
   option: OptionSquareData;
   /** Index for display (1-based) */
   index: number;
-  /** Display mode: text or image */
-  mode: 'text' | 'image';
+  /** Display mode: letter, word, or image */
+  mode: 'letter' | 'word' | 'image' | 'text';
   /** Called when correct checkbox is toggled */
   onToggleCorrect?: (checked: boolean) => void;
-  /** Called when text is updated */
+  /** Called when text is updated (for word mode) */
   onUpdateText?: (value: string) => void;
+  /** Called when letter picker should open */
+  onOpenLetterPicker?: () => void;
   /** Called when image picker should open */
   onOpenImagePicker?: () => void;
   /** Called when image should be cleared */
   onClearImage?: () => void;
+  /** Called when letter should be cleared */
+  onClearLetter?: () => void;
   /** Whether to show the correct checkbox */
   showCorrectCheckbox?: boolean;
   /** Placeholder text for empty state */
@@ -42,13 +54,30 @@ export function OptionSquare({
   mode,
   onToggleCorrect,
   onUpdateText,
+  onOpenLetterPicker,
   onOpenImagePicker,
   onClearImage,
+  onClearLetter,
   showCorrectCheckbox = true,
-  placeholder = 'كلمة',
+  placeholder,
 }: OptionSquareProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [textValue, setTextValue] = useState(option.text || '');
+
+  // Determine if this is a word/text mode (inline editing)
+  const isWordMode = mode === 'word' || mode === 'text';
+
+  // Get appropriate placeholder based on mode
+  const getPlaceholder = () => {
+    if (placeholder) return placeholder;
+    switch (mode) {
+      case 'letter': return 'أ';
+      case 'word':
+      case 'text':
+        return 'كلمة';
+      default: return '';
+    }
+  };
 
   const handleSaveText = () => {
     onUpdateText?.(textValue);
@@ -65,7 +94,9 @@ export function OptionSquare({
   };
 
   const handleClick = () => {
-    if (mode === 'text') {
+    if (mode === 'letter') {
+      onOpenLetterPicker?.();
+    } else if (isWordMode) {
       setIsEditing(true);
     } else {
       onOpenImagePicker?.();
@@ -100,7 +131,32 @@ export function OptionSquare({
         `}
         onClick={handleClick}
       >
-        {mode === 'text' ? (
+        {/* Letter Mode */}
+        {mode === 'letter' ? (
+          option.letter || option.letterDisplay ? (
+            <div className="relative w-full h-full group flex items-center justify-center">
+              <div className="text-4xl font-arabic font-semibold text-gray-800" dir="rtl">
+                {option.letterDisplay || '?'}
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClearLetter?.();
+                }}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden group-hover:flex text-xs"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="text-gray-400 text-xs text-center px-2">
+              <div className="text-2xl mb-1 font-arabic">أ</div>
+              Click to select
+            </div>
+          )
+        ) : isWordMode ? (
+          /* Word/Text Mode */
           isEditing ? (
             <input
               type="text"
@@ -111,10 +167,10 @@ export function OptionSquare({
               dir="rtl"
               autoFocus
               className="w-full h-full text-center text-2xl font-semibold bg-white border-2 border-blue-500 outline-none px-1"
-              placeholder={placeholder}
+              placeholder={getPlaceholder()}
             />
           ) : option.text ? (
-            <div className="text-2xl font-semibold text-gray-800 p-1 text-center" dir="rtl">
+            <div className="font-semibold text-gray-800 p-1 text-center text-2xl" dir="rtl">
               {option.text}
             </div>
           ) : (
@@ -122,7 +178,8 @@ export function OptionSquare({
               Click to add
             </div>
           )
-        ) : option.image ? (
+        ) : /* Image Mode */
+        option.image ? (
           <div className="relative w-full h-full group">
             <img
               src={option.image}

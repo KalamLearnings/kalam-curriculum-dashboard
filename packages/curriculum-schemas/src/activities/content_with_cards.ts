@@ -42,10 +42,10 @@ export const ContentWithCardsConfigSchema = z.object({
     .max(4)
     .describe('Array of 1-4 card options'),
 
-  cardMode: z.enum(['text', 'image'])
+  cardMode: z.enum(['letter', 'word', 'image'])
     .optional()
-    .default('text')
-    .describe('Display mode for cards'),
+    .default('letter')
+    .describe('Display mode for cards: letter, word, or image'),
 
   interactive: z.boolean()
     .optional()
