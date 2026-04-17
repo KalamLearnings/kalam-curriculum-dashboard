@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, Plus, Trash2, Copy, GripVertical } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Trash2, Copy, GripVertical, Eye, EyeOff } from 'lucide-react';
 import type { Article, Topic, Node } from '@/lib/schemas/curriculum';
 import { cn } from '@/lib/utils';
 import { getActivityIcon } from '@/lib/constants/curriculum';
@@ -17,6 +17,36 @@ import { useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+// Publish Toggle Component
+function PublishToggle({
+  isPublished,
+  onToggle,
+  size = 'sm',
+}: {
+  isPublished: boolean;
+  onToggle: () => void;
+  size?: 'sm' | 'md';
+}) {
+  const iconSize = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      className={cn(
+        "p-1 rounded transition-all",
+        isPublished
+          ? "text-green-600 hover:bg-green-100"
+          : "text-gray-400 hover:bg-gray-100"
+      )}
+      title={isPublished ? 'Published - click to unpublish' : 'Unpublished - click to publish'}
+    >
+      {isPublished ? <Eye className={iconSize} /> : <EyeOff className={iconSize} />}
+    </button>
+  );
+}
 
 interface CurriculumTreeProps {
   curriculumId: string;
@@ -40,6 +70,10 @@ interface CurriculumTreeProps {
   onDeleteNode: (topicId: string, nodeId: string) => void;
   onDeleteActivity: (nodeId: string, activityId: string) => void;
   onDuplicateTopic: (topicId: string) => void;
+  // Publish toggle handlers
+  onToggleTopicPublish?: (topicId: string, isPublished: boolean) => void;
+  onToggleNodePublish?: (nodeId: string, isPublished: boolean) => void;
+  onToggleActivityPublish?: (activityId: string, isPublished: boolean) => void;
 }
 
 // Draggable Activity Component
@@ -49,12 +83,14 @@ function DraggableActivity({
   isSelected,
   onSelect,
   onDelete,
+  onTogglePublish,
 }: {
   activity: Article;
   nodeId: string;
   isSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onTogglePublish?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: activity.id,
@@ -90,13 +126,21 @@ function DraggableActivity({
       </button>
       <button onClick={onSelect} className="flex items-center gap-2 flex-1 text-left">
         <span className="text-xs opacity-70">{getActivityIcon(activity.type)}</span>
-        <span className="truncate text-xs">
+        <span className={cn("truncate text-xs", activity.is_published === false && "opacity-50")}>
           {activity.type
             .split('_')
             .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ')}
         </span>
       </button>
+      {onTogglePublish && (
+        <div className="opacity-0 group-hover:opacity-100">
+          <PublishToggle
+            isPublished={activity.is_published !== false}
+            onToggle={onTogglePublish}
+          />
+        </div>
+      )}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -126,6 +170,7 @@ function DroppableNode({
   onToggle,
   onAddActivity,
   onDeleteNode,
+  onTogglePublish,
   children,
 }: {
   node: Node;
@@ -133,6 +178,7 @@ function DroppableNode({
   onToggle: () => void;
   onAddActivity: () => void;
   onDeleteNode: () => void;
+  onTogglePublish?: () => void;
   children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -155,8 +201,18 @@ function DroppableNode({
           ) : (
             <ChevronRight className="w-4 h-4 flex-shrink-0" />
           )}
-          <span className="truncate">{node.title?.en || `Node ${node.sequence_number}`}</span>
+          <span className={cn("truncate", node.is_published === false && "opacity-50")}>
+            {node.title?.en || `Node ${node.sequence_number}`}
+          </span>
         </button>
+        {onTogglePublish && (
+          <div className="opacity-0 group-hover:opacity-100">
+            <PublishToggle
+              isPublished={node.is_published !== false}
+              onToggle={onTogglePublish}
+            />
+          </div>
+        )}
         <button
           onClick={onAddActivity}
           className="opacity-0 group-hover:opacity-100 p-1 hover:bg-blue-100 rounded transition-all"
@@ -171,6 +227,106 @@ function DroppableNode({
           }}
           className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
           title="Delete Node"
+        >
+          <Trash2 className="w-3 h-3 text-red-600" />
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// Draggable Topic Component
+function DraggableTopic({
+  topic,
+  isExpanded,
+  onToggle,
+  onAddNode,
+  onDuplicate,
+  onDelete,
+  onTogglePublish,
+  children,
+}: {
+  topic: Topic;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onAddNode: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onTogglePublish?: () => void;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: topic.id,
+    data: {
+      type: 'topic',
+      topic,
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="mb-2">
+      {/* Topic Header */}
+      <div className="flex items-center gap-1 group">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 p-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="w-3 h-3" />
+        </button>
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-2 flex-1 px-2 py-1.5 hover:bg-gray-100 rounded text-sm font-medium transition-colors"
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4 flex-shrink-0" />
+          ) : (
+            <ChevronRight className="w-4 h-4 flex-shrink-0" />
+          )}
+          <span className={cn("truncate", topic.is_published === false && "opacity-50")}>
+            {topic.title?.en || 'Topic'}
+          </span>
+        </button>
+        {onTogglePublish && (
+          <div className="opacity-0 group-hover:opacity-100">
+            <PublishToggle
+              isPublished={topic.is_published !== false}
+              onToggle={onTogglePublish}
+            />
+          </div>
+        )}
+        <button
+          onClick={onAddNode}
+          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-blue-100 rounded transition-all"
+          title="Add Node"
+        >
+          <Plus className="w-3 h-3 text-blue-600" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDuplicate();
+          }}
+          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-green-100 rounded transition-all"
+          title="Duplicate Topic"
+        >
+          <Copy className="w-3 h-3 text-green-600" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
+          title="Delete Topic"
         >
           <Trash2 className="w-3 h-3 text-red-600" />
         </button>
@@ -202,6 +358,9 @@ export function CurriculumTree({
   onDeleteNode,
   onDeleteActivity,
   onDuplicateTopic,
+  onToggleTopicPublish,
+  onToggleNodePublish,
+  onToggleActivityPublish,
 }: CurriculumTreeProps) {
   // Confirmation modal state
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -250,60 +409,34 @@ export function CurriculumTree({
         </button>
       </div>
 
+      <SortableContext
+        items={topics?.map(t => t.id) || []}
+        strategy={verticalListSortingStrategy}
+      >
         {topics?.map(topic => {
           const isTopicExpanded = expandedTopics.has(topic.id);
           const topicNodes = nodes?.filter(n => n.topic_id === topic.id) || [];
 
           return (
-            <div key={topic.id} className="mb-2">
-              {/* Topic Header */}
-              <div className="flex items-center gap-1 group">
-                <button
-                  onClick={() => {
-                    onToggleTopic(topic.id);
-                    onTopicSelect(topic.id);
-                  }}
-                  className="flex items-center gap-2 flex-1 px-2 py-1.5 hover:bg-gray-100 rounded text-sm font-medium transition-colors"
-                >
-                  {isTopicExpanded ? (
-                    <ChevronDown className="w-4 h-4 flex-shrink-0" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 flex-shrink-0" />
-                  )}
-                  <span className="truncate">{topic.title?.en || 'Topic'}</span>
-                </button>
-                <button
-                  onClick={() => onAddNode(topic.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-blue-100 rounded transition-all"
-                  title="Add Node"
-                >
-                  <Plus className="w-3 h-3 text-blue-600" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDuplicateTopic(topic.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-green-100 rounded transition-all"
-                  title="Duplicate Topic"
-                >
-                  <Copy className="w-3 h-3 text-green-600" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteConfirm({
-                      type: 'topic',
-                      id: topic.id,
-                      title: topic.title?.en || 'Topic',
-                    });
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
-                  title="Delete Topic"
-                >
-                  <Trash2 className="w-3 h-3 text-red-600" />
-                </button>
-              </div>
+            <DraggableTopic
+              key={topic.id}
+              topic={topic}
+              isExpanded={isTopicExpanded}
+              onToggle={() => {
+                onToggleTopic(topic.id);
+                onTopicSelect(topic.id);
+              }}
+              onAddNode={() => onAddNode(topic.id)}
+              onDuplicate={() => onDuplicateTopic(topic.id)}
+              onDelete={() => {
+                setDeleteConfirm({
+                  type: 'topic',
+                  id: topic.id,
+                  title: topic.title?.en || 'Topic',
+                });
+              }}
+              onTogglePublish={onToggleTopicPublish ? () => onToggleTopicPublish(topic.id, !(topic.is_published !== false)) : undefined}
+            >
 
               {/* Nodes */}
               {isTopicExpanded &&
@@ -329,6 +462,7 @@ export function CurriculumTree({
                           title: node.title?.en || `Node ${node.sequence_number}`,
                         });
                       }}
+                      onTogglePublish={onToggleNodePublish ? () => onToggleNodePublish(node.id, !(node.is_published !== false)) : undefined}
                     >
                       {/* Activities */}
                       {isNodeExpanded && nodeActivities.length > 0 && (
@@ -351,6 +485,7 @@ export function CurriculumTree({
                                   title: activity.instruction.en || activity.type,
                                 });
                               }}
+                              onTogglePublish={onToggleActivityPublish ? () => onToggleActivityPublish(activity.id, !(activity.is_published !== false)) : undefined}
                             />
                           ))}
                         </SortableContext>
@@ -365,9 +500,10 @@ export function CurriculumTree({
                     </DroppableNode>
                   );
                 })}
-            </div>
+            </DraggableTopic>
           );
         })}
+      </SortableContext>
 
       {/* Empty state for curriculum */}
       {(!topics || topics.length === 0) && (

@@ -282,6 +282,22 @@ export async function deleteNode(
 }
 
 /**
+ * Batch reorder topics within a curriculum
+ */
+export async function reorderTopics(
+  curriculumId: string,
+  data: BatchReorder
+): Promise<void> {
+  return fetchWithAuth<void>(
+    `/curriculum/${curriculumId}/topics/reorder`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+/**
  * Batch reorder nodes within a topic
  */
 export async function reorderNodes(

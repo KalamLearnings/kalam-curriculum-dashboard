@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Sparkles, LayoutList, Network } from 'lucide-react';
 import { useCurriculum } from '@/lib/hooks/useCurriculum';
-import { useTopics, useDeleteTopic } from '@/lib/hooks/useTopics';
-import { useAllNodes, useDeleteNode } from '@/lib/hooks/useNodes';
+import { useTopics, useDeleteTopic, useUpdateTopic, useReorderTopics } from '@/lib/hooks/useTopics';
+import { useAllNodes, useDeleteNode, useUpdateNode } from '@/lib/hooks/useNodes';
 import { useActivities, useAllActivities, useUpdateActivity, useCreateActivity, useDeleteActivity, useMoveActivity, useReorderActivities } from '@/lib/hooks/useActivities';
 import { useAudioGeneration } from '@/lib/hooks/useAudioGeneration';
 import { DEFAULT_VOICE } from '@/lib/constants/voices';
@@ -96,6 +96,9 @@ export default function CurriculumBuilderPage() {
   const { mutate: deleteTopic } = useDeleteTopic();
   const { mutate: deleteNode } = useDeleteNode();
   const { mutate: deleteActivity } = useDeleteActivity();
+  const { mutate: updateTopic } = useUpdateTopic();
+  const { mutate: updateNode } = useUpdateNode();
+  const { mutate: reorderTopics } = useReorderTopics();
 
   // Drag and drop hooks
   const { mutate: moveActivity } = useMoveActivity();
@@ -192,6 +195,8 @@ export default function CurriculumBuilderPage() {
     const isActivityDrag = activeData?.type === 'activity';
     const isActivityDrop = overData?.type === 'activity';
     const isNodeDrop = overData?.type === 'node';
+    const isTopicDrag = activeData?.type === 'topic';
+    const isTopicDrop = overData?.type === 'topic';
 
     // Scenario 1: Dropping activity onto a node (cross-node move)
     if (isActivityDrag && isNodeDrop && activeData) {
@@ -227,6 +232,15 @@ export default function CurriculumBuilderPage() {
           overId: over.id as string,
         });
       }
+    }
+
+    // Scenario 3: Reordering topics
+    if (isTopicDrag && isTopicDrop && active.id !== over.id) {
+      reorderTopics({
+        curriculumId,
+        activeId: active.id as string,
+        overId: over.id as string,
+      });
     }
   }
 
@@ -572,6 +586,35 @@ export default function CurriculumBuilderPage() {
                     }
                   }}
                   onDuplicateTopic={handleDuplicateTopic}
+                  onToggleTopicPublish={(topicId, isPublished) => {
+                    updateTopic({
+                      curriculumId,
+                      topicId,
+                      data: { is_published: isPublished },
+                    });
+                  }}
+                  onToggleNodePublish={(nodeId, isPublished) => {
+                    const node = nodes?.find(n => n.id === nodeId);
+                    if (node) {
+                      updateNode({
+                        curriculumId,
+                        topicId: node.topic_id,
+                        nodeId,
+                        data: { is_published: isPublished },
+                      });
+                    }
+                  }}
+                  onToggleActivityPublish={(activityId, isPublished) => {
+                    const activity = allActivities?.find(a => a.id === activityId);
+                    if (activity) {
+                      updateActivity({
+                        curriculumId,
+                        nodeId: activity.node_id,
+                        activityId,
+                        data: { is_published: isPublished },
+                      });
+                    }
+                  }}
                 />
               ) : (
                 <ActivitiesByTypeView

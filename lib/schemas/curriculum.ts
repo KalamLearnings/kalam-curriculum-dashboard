@@ -66,6 +66,7 @@ export const TopicSchema = z.object({
   sequence_number: z.number().int().positive(),
   title: LocalizedTextSchema,
   description: LocalizedTextSchema.optional(),
+  is_published: z.boolean().default(true),
   metadata: z.record(z.any()).optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
@@ -84,7 +85,9 @@ export const CreateTopicSchema = z.object({
   type: TopicTypeSchema.optional().default('lesson'),
 });
 
-export const UpdateTopicSchema = CreateTopicSchema.partial();
+export const UpdateTopicSchema = CreateTopicSchema.extend({
+  is_published: z.boolean().optional(),
+}).partial();
 
 // ============================================================================
 // NODE (formerly "Node" - keeping backend naming)
@@ -97,6 +100,7 @@ export const NodeSchema = z.object({
   type: z.enum(['lesson', 'assessment', 'intro']).default('lesson'),
   title: LocalizedTextSchema,
   description: LocalizedTextSchema.optional(),
+  is_published: z.boolean().default(true),
   position: z.object({
     x: z.number().min(0).max(1),
     y: z.number().min(0).max(1),
@@ -116,7 +120,9 @@ export const CreateNodeSchema = z.object({
   }).optional(),
 });
 
-export const UpdateNodeSchema = CreateNodeSchema.partial();
+export const UpdateNodeSchema = CreateNodeSchema.extend({
+  is_published: z.boolean().optional(),
+}).partial();
 
 // ============================================================================
 // ACTIVITY TEMPLATE
@@ -187,6 +193,7 @@ export const ArticleSchema = z.object({
   type: ArticleTypeSchema,
   instruction: LocalizedTextSchema,
   config: ArticleConfigSchema,
+  is_published: z.boolean().default(true),
   template_id: z.string().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
@@ -200,7 +207,9 @@ export const CreateArticleSchema = z.object({
   sequence_number: z.number().int().positive().optional(),
 });
 
-export const UpdateArticleSchema = CreateArticleSchema.partial();
+export const UpdateArticleSchema = CreateArticleSchema.extend({
+  is_published: z.boolean().optional(),
+}).partial();
 
 // ============================================================================
 // REORDER SCHEMAS

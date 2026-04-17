@@ -9,6 +9,7 @@ import {
   createTopic,
   updateTopic,
   deleteTopic,
+  reorderTopics,
 } from '@/lib/api/curricula';
 import type { Topic, CreateTopic, UpdateTopic } from '@/lib/schemas/curriculum';
 import { toast } from 'sonner';
@@ -120,6 +121,53 @@ export function useDeleteTopic() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete topic');
+    },
+  });
+}
+
+/**
+ * Reorder topics within a curriculum (for drag-and-drop)
+ */
+export function useReorderTopics() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      curriculumId,
+      activeId,
+      overId,
+    }: {
+      curriculumId: string;
+      activeId: string;
+      overId: string;
+    }) => {
+      const topics = queryClient.getQueryData<Topic[]>(['topics', curriculumId]);
+      if (!topics) throw new Error('Topics not found');
+
+      const oldIndex = topics.findIndex((t) => t.id === activeId);
+      const newIndex = topics.findIndex((t) => t.id === overId);
+
+      const reordered = [...topics];
+      const [moved] = reordered.splice(oldIndex, 1);
+      reordered.splice(newIndex, 0, moved);
+
+      const changes = reordered
+        .map((topic, index) => ({
+          id: topic.id,
+          sequence_number: index + 1,
+        }))
+        .filter((item, index) => topics[index].id !== item.id);
+
+      if (changes.length === 0) return Promise.resolve();
+
+      return reorderTopics(curriculumId, { items: changes });
+    },
+    onSuccess: (_, { curriculumId }) => {
+      queryClient.invalidateQueries({ queryKey: ['topics', curriculumId] });
+      toast.success('Topics reordered successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to reorder topics');
     },
   });
 }
