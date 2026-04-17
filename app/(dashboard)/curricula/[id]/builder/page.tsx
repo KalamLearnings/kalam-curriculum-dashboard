@@ -112,9 +112,20 @@ export default function CurriculumBuilderPage() {
   // View mode toggle: 'tree' (by lesson) or 'type' (by activity type)
   const [viewMode, setViewMode] = useState<'tree' | 'type'>('tree');
 
-  // Resizable left panel
+  // Resizable left panel with localStorage persistence
   const [leftPanelWidth, setLeftPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
+
+  // Load saved width from localStorage on mount
+  useEffect(() => {
+    const savedWidth = localStorage.getItem('builder-left-panel-width');
+    if (savedWidth) {
+      const width = parseInt(savedWidth, 10);
+      if (width >= 280 && width <= 600) {
+        setLeftPanelWidth(width);
+      }
+    }
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -130,6 +141,8 @@ export default function CurriculumBuilderPage() {
 
     const handleMouseUp = () => {
       setIsResizing(false);
+      // Save to localStorage when done resizing
+      localStorage.setItem('builder-left-panel-width', leftPanelWidth.toString());
     };
 
     if (isResizing) {
@@ -141,7 +154,7 @@ export default function CurriculumBuilderPage() {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isResizing]);
+  }, [isResizing, leftPanelWidth]);
 
   // Voice selection for TTS (shared across both English and Arabic)
   const [selectedVoiceId, setSelectedVoiceId] = useState(DEFAULT_VOICE.id);
