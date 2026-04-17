@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, Plus, Trash2, Copy, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Trash2, Copy, GripVertical } from 'lucide-react';
 import type { Article, Topic, Node } from '@/lib/schemas/curriculum';
 import { cn } from '@/lib/utils';
 import { getActivityIcon } from '@/lib/constants/curriculum';
@@ -18,17 +18,14 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// Publish Toggle Component
+// Publish Toggle Component - Mini toggle switch
 function PublishToggle({
   isPublished,
   onToggle,
-  size = 'sm',
 }: {
   isPublished: boolean;
   onToggle: () => void;
-  size?: 'sm' | 'md';
 }) {
-  const iconSize = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
   return (
     <button
       onClick={(e) => {
@@ -36,14 +33,17 @@ function PublishToggle({
         onToggle();
       }}
       className={cn(
-        "p-1 rounded transition-all",
-        isPublished
-          ? "text-green-600 hover:bg-green-100"
-          : "text-gray-400 hover:bg-gray-100"
+        "relative inline-flex h-4 w-7 items-center rounded-full transition-colors",
+        isPublished ? "bg-green-500" : "bg-gray-300"
       )}
-      title={isPublished ? 'Published - click to unpublish' : 'Unpublished - click to publish'}
+      title={isPublished ? 'Published - click to unpublish' : 'Draft - click to publish'}
     >
-      {isPublished ? <Eye className={iconSize} /> : <EyeOff className={iconSize} />}
+      <span
+        className={cn(
+          "inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform",
+          isPublished ? "translate-x-3.5" : "translate-x-0.5"
+        )}
+      />
     </button>
   );
 }
