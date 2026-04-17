@@ -112,6 +112,37 @@ export default function CurriculumBuilderPage() {
   // View mode toggle: 'tree' (by lesson) or 'type' (by activity type)
   const [viewMode, setViewMode] = useState<'tree' | 'type'>('tree');
 
+  // Resizable left panel
+  const [leftPanelWidth, setLeftPanelWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = Math.min(Math.max(280, e.clientX), 600);
+      setLeftPanelWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   // Voice selection for TTS (shared across both English and Arabic)
   const [selectedVoiceId, setSelectedVoiceId] = useState(DEFAULT_VOICE.id);
 
@@ -501,7 +532,18 @@ export default function CurriculumBuilderPage() {
         {/* 3-Panel Layout */}
         <div className="flex flex-1 overflow-hidden">
           {/* LEFT: Navigation Panel with View Toggle */}
-          <div className="w-[360px] border-r bg-gray-50 flex flex-col">
+          <div
+            className="border-r bg-gray-50 flex flex-col relative"
+            style={{ width: leftPanelWidth, minWidth: 280, maxWidth: 600 }}
+          >
+            {/* Resize Handle */}
+            <div
+              onMouseDown={handleMouseDown}
+              className={cn(
+                "absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 transition-colors z-10",
+                isResizing && "bg-blue-500"
+              )}
+            />
             {/* View Toggle Header */}
             <div className="flex items-center justify-between px-4 py-2 border-b bg-white">
               <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
