@@ -231,6 +231,7 @@ export default function DashboardLayout({
 
   const navLinks = [
     { href: '/curricula', label: 'Curricula', icon: '📚' },
+    { href: '/books', label: 'Books', icon: '📖' },
     { href: '/templates', label: 'Templates', icon: '📋' },
     { href: '/assets', label: 'Assets', icon: '🖼️' },
     { href: '/words', label: 'Words', icon: '📝' },
