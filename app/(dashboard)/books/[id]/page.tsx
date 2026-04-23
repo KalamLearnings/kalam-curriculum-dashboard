@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useBook,
+  useCreateBook,
   useUpdateBook,
   useBookPages,
   useCreatePage,
@@ -19,6 +20,7 @@ import type {
   Book,
   BookPage,
   BookAvailability,
+  CreateBookRequest,
   CreatePageRequest,
   UpdatePageRequest,
   AvailabilityType,
@@ -55,6 +57,7 @@ export default function BookEditorPage() {
   const { data: availability } = useBookAvailability(isNew ? null : bookId);
 
   // Mutations
+  const { mutate: createBookMutation, isPending: isCreating } = useCreateBook();
   const { mutate: updateBook, isPending: isUpdating } = useUpdateBook();
   const { mutate: createPage } = useCreatePage();
   const { mutate: updatePage } = useUpdatePage();
@@ -103,6 +106,30 @@ export default function BookEditorPage() {
 
   // Target letters input
   const [targetLetterInput, setTargetLetterInput] = useState('');
+
+  // Create form state (for new books)
+  const [createFormData, setCreateFormData] = useState<{
+    title: string;
+    title_ar: string;
+    synopsis: string;
+    synopsis_ar: string;
+    cover_image_url: string;
+    difficulty_level: 1 | 2 | 3;
+    target_letters: string[];
+    price: number;
+    is_premium: boolean;
+  }>({
+    title: '',
+    title_ar: '',
+    synopsis: '',
+    synopsis_ar: '',
+    cover_image_url: '',
+    difficulty_level: 1,
+    target_letters: [],
+    price: 0,
+    is_premium: false,
+  });
+  const [createTargetLetterInput, setCreateTargetLetterInput] = useState('');
 
   // Load book data into form
   useEffect(() => {
@@ -247,17 +274,279 @@ export default function BookEditorPage() {
     );
   };
 
+  // Create form handlers
+  const handleCreateAddTargetLetter = () => {
+    const letter = createTargetLetterInput.trim();
+    if (letter && !createFormData.target_letters.includes(letter)) {
+      setCreateFormData((prev) => ({
+        ...prev,
+        target_letters: [...prev.target_letters, letter],
+      }));
+      setCreateTargetLetterInput('');
+    }
+  };
+
+  const handleCreateRemoveTargetLetter = (letter: string) => {
+    setCreateFormData((prev) => ({
+      ...prev,
+      target_letters: prev.target_letters.filter((l) => l !== letter),
+    }));
+  };
+
+  const handleCreateBook = () => {
+    // Validate required fields
+    if (!createFormData.title.trim()) {
+      toast.error('Title (English) is required');
+      return;
+    }
+    if (!createFormData.title_ar.trim()) {
+      toast.error('Title (Arabic) is required');
+      return;
+    }
+    if (!createFormData.cover_image_url.trim()) {
+      toast.error('Cover image URL is required');
+      return;
+    }
+
+    const requestData: CreateBookRequest = {
+      title: createFormData.title.trim(),
+      title_ar: createFormData.title_ar.trim(),
+      cover_image_url: createFormData.cover_image_url.trim(),
+      difficulty_level: createFormData.difficulty_level,
+    };
+
+    // Add optional fields if provided
+    if (createFormData.synopsis.trim()) {
+      requestData.synopsis = createFormData.synopsis.trim();
+    }
+    if (createFormData.synopsis_ar.trim()) {
+      requestData.synopsis_ar = createFormData.synopsis_ar.trim();
+    }
+    if (createFormData.target_letters.length > 0) {
+      requestData.target_letters = createFormData.target_letters;
+    }
+    if (createFormData.price > 0) {
+      requestData.price = createFormData.price;
+    }
+    if (createFormData.is_premium) {
+      requestData.is_premium = createFormData.is_premium;
+    }
+
+    createBookMutation(requestData, {
+      onSuccess: (newBook) => {
+        router.push(`/books/${newBook.id}`);
+      },
+    });
+  };
+
   if (isNew) {
-    // TODO: Create new book flow
     return (
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <p className="text-gray-600">Create new book form - Coming soon</p>
-        <button
-          onClick={() => router.back()}
-          className="mt-4 text-blue-600 hover:text-blue-700"
-        >
-          Go Back
-        </button>
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={() => router.push('/books')}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            &larr; Back
+          </button>
+          <h1 className="text-2xl font-bold">Create New Book</h1>
+        </div>
+
+        {/* Create Form */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title (English) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={createFormData.title}
+                onChange={(e) =>
+                  setCreateFormData((p) => ({ ...p, title: e.target.value }))
+                }
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="Enter book title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title (Arabic) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={createFormData.title_ar}
+                onChange={(e) =>
+                  setCreateFormData((p) => ({ ...p, title_ar: e.target.value }))
+                }
+                className="w-full px-3 py-2 border rounded-md"
+                dir="rtl"
+                placeholder="ادخل عنوان الكتاب"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Synopsis (English)
+              </label>
+              <textarea
+                value={createFormData.synopsis}
+                onChange={(e) =>
+                  setCreateFormData((p) => ({ ...p, synopsis: e.target.value }))
+                }
+                className="w-full px-3 py-2 border rounded-md"
+                rows={3}
+                placeholder="Brief description of the book"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Synopsis (Arabic)
+              </label>
+              <textarea
+                value={createFormData.synopsis_ar}
+                onChange={(e) =>
+                  setCreateFormData((p) => ({ ...p, synopsis_ar: e.target.value }))
+                }
+                className="w-full px-3 py-2 border rounded-md"
+                rows={3}
+                dir="rtl"
+                placeholder="وصف مختصر للكتاب"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cover Image URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={createFormData.cover_image_url}
+                onChange={(e) =>
+                  setCreateFormData((p) => ({ ...p, cover_image_url: e.target.value }))
+                }
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="https://..."
+              />
+              {createFormData.cover_image_url && (
+                <img
+                  src={createFormData.cover_image_url}
+                  alt="Cover preview"
+                  className="mt-2 w-32 h-40 object-cover rounded border"
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Difficulty Level <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={createFormData.difficulty_level}
+                onChange={(e) =>
+                  setCreateFormData((p) => ({
+                    ...p,
+                    difficulty_level: parseInt(e.target.value) as 1 | 2 | 3,
+                  }))
+                }
+                className="w-full px-3 py-2 border rounded-md"
+              >
+                {difficultyOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Price (coins)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={createFormData.price}
+                onChange={(e) =>
+                  setCreateFormData((p) => ({
+                    ...p,
+                    price: parseInt(e.target.value) || 0,
+                  }))
+                }
+                className="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div className="flex items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={createFormData.is_premium}
+                  onChange={(e) =>
+                    setCreateFormData((p) => ({ ...p, is_premium: e.target.checked }))
+                  }
+                />
+                <span className="text-sm">Premium Content</span>
+              </label>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Target Letters
+              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  value={createTargetLetterInput}
+                  onChange={(e) => setCreateTargetLetterInput(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === 'Enter' &&
+                    (e.preventDefault(), handleCreateAddTargetLetter())
+                  }
+                  className="px-3 py-2 border rounded-md"
+                  placeholder="Add letter"
+                  dir="rtl"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateAddTargetLetter}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                >
+                  Add
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {createFormData.target_letters.map((letter) => (
+                  <span
+                    key={letter}
+                    className="px-2 py-1 bg-blue-50 text-blue-700 rounded flex items-center gap-1"
+                    dir="rtl"
+                  >
+                    {letter}
+                    <button
+                      type="button"
+                      onClick={() => handleCreateRemoveTargetLetter(letter)}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              onClick={() => router.push('/books')}
+              className="px-4 py-2 text-gray-700 bg-white border rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateBook}
+              disabled={isCreating}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isCreating ? 'Creating...' : 'Create Book'}
+            </button>
+          </div>
+        </div>
       </main>
     );
   }
