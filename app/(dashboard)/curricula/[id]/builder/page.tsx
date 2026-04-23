@@ -832,6 +832,7 @@ export default function CurriculumBuilderPage() {
         isOpen={!!topicToDuplicate}
         onClose={() => setTopicToDuplicate(null)}
         onSelect={handleConfirmDuplicate}
+        showHarakaSelector={true}
       />
 
       {/* AI Topic Generation */}

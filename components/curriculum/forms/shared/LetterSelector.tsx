@@ -8,6 +8,8 @@ interface LetterSelectorPropsBase {
   topic?: Topic | null;
   /** Whether to show form selector in the modal */
   showFormSelector?: boolean;
+  /** Whether to show haraka (diacritic) selector in the modal */
+  showHarakaSelector?: boolean;
   /** Letter IDs to disable in the grid */
   disabledLetterIds?: string[];
   /** Tooltip for disabled letters */
@@ -52,6 +54,7 @@ export function LetterSelector(props: LetterSelectorProps) {
   const {
     topic,
     showFormSelector = true,
+    showHarakaSelector = true,
     disabledLetterIds = [],
     disabledTooltip,
     letterFilter,
@@ -261,6 +264,7 @@ export function LetterSelector(props: LetterSelectorProps) {
         onSelect={handleSelect}
         selectedValue={getModalValue()}
         showFormSelector={showFormSelector}
+        showHarakaSelector={showHarakaSelector}
         multiSelect={isMultiSelect}
         multiFormSelect={isMultiFormSelect}
         disabledLetterIds={disabledLetterIds}

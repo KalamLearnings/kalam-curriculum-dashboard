@@ -163,6 +163,7 @@ export function OptionsGrid({
         onSelect={handleLetterSelect}
         selectedValue={selectedOptionIndex !== null ? options[selectedOptionIndex]?.letter as LetterReference | null : null}
         showFormSelector={true}
+        showHarakaSelector={true}
       />
     </div>
   );

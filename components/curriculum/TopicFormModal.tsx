@@ -246,6 +246,7 @@ export function TopicFormModal({
                 onChange={handleGridChange}
                 loading={lettersLoading}
                 showFormSelector
+                showHarakaSelector
               />
 
               {!selectedLetter && (
