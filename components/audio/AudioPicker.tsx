@@ -13,12 +13,11 @@ import { AudioGrid } from './AudioGrid';
 import { AudioCategoryFilter } from './AudioCategoryFilter';
 import { AudioSearchBar } from './AudioSearchBar';
 import { useAudio } from '@/lib/hooks/useAudio';
-import type { AudioAsset, AudioCategory } from '@/lib/types/audio';
+import type { AudioAsset } from '@/lib/types/audio';
 
 interface AudioPickerProps {
   value?: string;
   onChange: (audioId: string | undefined, audio?: AudioAsset) => void;
-  category?: AudioCategory;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -26,7 +25,6 @@ interface AudioPickerProps {
 export function AudioPicker({
   value,
   onChange,
-  category: filterCategory,
   placeholder = 'Select audio...',
   disabled = false,
 }: AudioPickerProps) {
@@ -42,7 +40,6 @@ export function AudioPicker({
     setCategory,
     setSearchQuery,
   } = useAudio({
-    initialCategory: filterCategory,
     autoLoad: true,
   });
 
@@ -125,13 +122,11 @@ export function AudioPicker({
             onChange={setSearchQuery}
           />
 
-          {/* Category Filter (only show if no fixed category) */}
-          {!filterCategory && (
-            <AudioCategoryFilter
-              selectedCategory={selectedCategory}
-              onCategoryChange={setCategory}
-            />
-          )}
+          {/* Category Filter */}
+          <AudioCategoryFilter
+            selectedCategory={selectedCategory}
+            onCategoryChange={setCategory}
+          />
 
           {/* Audio Grid */}
           <div className="max-h-96 overflow-y-auto">

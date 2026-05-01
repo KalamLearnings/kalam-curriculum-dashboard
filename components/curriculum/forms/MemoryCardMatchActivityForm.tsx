@@ -5,11 +5,9 @@ import { OptionSelector } from './OptionSelector';
 import { LetterSelector } from './shared/LetterSelector';
 import type { LetterReference } from './ArabicLetterGrid';
 import { useLetters } from '@/lib/hooks/useLetters';
-import { useAudio } from '@/lib/hooks/useAudio';
 import { AudioPicker } from '@/components/audio/AudioPicker';
 import { cn } from '@/lib/utils';
 import type { MemoryCardLetter, LetterPosition } from '@/lib/types/activity-configs';
-import type { AudioAsset } from '@/lib/types/audio';
 
 const FORM_OPTIONS: { value: LetterPosition; label: string }[] = [
     { value: 'isolated', label: 'Isolated' },
@@ -20,7 +18,6 @@ const FORM_OPTIONS: { value: LetterPosition; label: string }[] = [
 
 export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
     const { letters: allLetters } = useLetters();
-    const { audioAssets } = useAudio({ initialCategory: 'letter_sounds', autoLoad: true });
     const typedConfig = config as any;
 
     // letters is now an array of MemoryCardLetter objects
@@ -80,10 +77,6 @@ export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseAct
         onChange({ ...config, matchType: value } as any);
     };
 
-    const getAudioForLetter = (audioId?: string): AudioAsset | undefined => {
-        if (!audioId) return undefined;
-        return audioAssets.find(a => a.id === audioId);
-    };
 
     const handleShowHintsChange = (value: boolean) => {
         onChange({ ...config, showHints: value } as any);
@@ -134,7 +127,6 @@ export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseAct
                 >
                     <div className="space-y-3">
                         {letters.map((letter) => {
-                            const audio = getAudioForLetter(letter.audioId);
                             const hasAudio = !!letter.audioId;
                             return (
                                 <div
@@ -159,7 +151,6 @@ export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseAct
                                             <AudioPicker
                                                 value={letter.audioId}
                                                 onChange={(audioId, audio) => handleAudioChange(letter.letterId, audioId, audio)}
-                                                category="letter_sounds"
                                                 placeholder="Select sound for this letter..."
                                             />
                                         </div>
