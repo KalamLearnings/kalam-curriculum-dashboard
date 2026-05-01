@@ -292,21 +292,17 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
     updateConfig({ segments: detected });
   };
 
-  // Determine if speed buttons should be disabled
-  const isSpeedDisabled = contentType === 'letter';
-
   // Get speed hint text
   const getSpeedHint = () => {
-    if (contentType === 'letter') {
-      return 'Speed options are not available for single letters';
-    }
     switch (speed) {
       case 'slow':
-        return 'Slow: Letters shown in isolated forms (ﺏ ﻡ ﻝ) for beginners';
+        return 'Slow: Turtle slider for beginners';
       case 'fast':
-        return 'Fast: Letters shown in word forms (بـمـل) for advanced readers';
+        return 'Fast: Rabbit slider for advanced readers';
+      case 'none':
+        return 'No speed indicator (square slider)';
       default:
-        return 'Select a speed mode for word blending';
+        return 'Select a speed mode';
     }
   };
 
@@ -459,60 +455,51 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => !isSpeedDisabled && updateConfig({ speed: 'none' })}
-            disabled={isSpeedDisabled && speed !== 'none'}
+            onClick={() => updateConfig({ speed: 'none' })}
             className={cn(
               'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
               speed === 'none'
                 ? 'border-blue-500 bg-blue-50'
-                : isSpeedDisabled
-                  ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
-                  : 'border-gray-200 hover:border-blue-300'
+                : 'border-gray-200 hover:border-blue-300'
             )}
           >
             <div className="flex items-center gap-2">
-              <span>—</span>
+              <span>⬜</span>
               <span className="font-medium">None</span>
             </div>
-            <span className="text-xs text-gray-500">Single letter</span>
+            <span className="text-xs text-gray-500">Square slider</span>
           </button>
           <button
             type="button"
-            onClick={() => !isSpeedDisabled && updateConfig({ speed: 'slow' })}
-            disabled={isSpeedDisabled}
+            onClick={() => updateConfig({ speed: 'slow' })}
             className={cn(
               'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
               speed === 'slow'
                 ? 'border-blue-500 bg-blue-50'
-                : isSpeedDisabled
-                  ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
-                  : 'border-gray-200 hover:border-blue-300'
+                : 'border-gray-200 hover:border-blue-300'
             )}
           >
             <div className="flex items-center gap-2">
               <span>🐢</span>
               <span className="font-medium">Slow</span>
             </div>
-            <span className="text-xs text-gray-500">Isolated letters</span>
+            <span className="text-xs text-gray-500">Turtle slider</span>
           </button>
           <button
             type="button"
-            onClick={() => !isSpeedDisabled && updateConfig({ speed: 'fast' })}
-            disabled={isSpeedDisabled}
+            onClick={() => updateConfig({ speed: 'fast' })}
             className={cn(
               'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
               speed === 'fast'
                 ? 'border-blue-500 bg-blue-50'
-                : isSpeedDisabled
-                  ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
-                  : 'border-gray-200 hover:border-blue-300'
+                : 'border-gray-200 hover:border-blue-300'
             )}
           >
             <div className="flex items-center gap-2">
               <span>🐇</span>
               <span className="font-medium">Fast</span>
             </div>
-            <span className="text-xs text-gray-500">Word forms</span>
+            <span className="text-xs text-gray-500">Rabbit slider</span>
           </button>
         </div>
       </FormField>
@@ -535,46 +522,44 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
         </div>
       </FormField>
 
-      {/* Show Both Speeds Toggle (only for words) */}
-      {contentType === 'word' && (
-        <FormField
-          label="Display Mode"
-          hint="Show both isolated letters (slow) and connected word (fast) side by side"
-        >
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showBothSpeeds}
-              onChange={(e) => updateConfig({ showBothSpeeds: e.target.checked })}
-              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <div className="flex flex-col">
-              <span className="font-medium">Show both speeds side by side</span>
-              <span className="text-sm text-gray-500">
-                Displays turtle (slow) and rabbit (fast) sliders together
-              </span>
-            </div>
-          </label>
-          {showBothSpeeds && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Preview:</strong> Both sliders will be shown - on tablets they appear side by side,
-                on phones they stack vertically. Moving one slider controls both.
-              </p>
-              <div className="flex gap-4 mt-2 justify-center">
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-2xl">🐢</span>
-                  <span className="text-xs">Isolated</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-2xl">🐇</span>
-                  <span className="text-xs">Connected</span>
-                </div>
+      {/* Show Both Speeds Toggle */}
+      <FormField
+        label="Display Mode"
+        hint="Show both turtle (slow) and rabbit (fast) sliders side by side"
+      >
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showBothSpeeds}
+            onChange={(e) => updateConfig({ showBothSpeeds: e.target.checked })}
+            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div className="flex flex-col">
+            <span className="font-medium">Show both speeds side by side</span>
+            <span className="text-sm text-gray-500">
+              Displays turtle (slow) and rabbit (fast) sliders together
+            </span>
+          </div>
+        </label>
+        {showBothSpeeds && (
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Preview:</strong> Both sliders will be shown - on tablets they appear side by side,
+              on phones they stack vertically.
+            </p>
+            <div className="flex gap-4 mt-2 justify-center">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-2xl">🐢</span>
+                <span className="text-xs">Slow</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-2xl">🐇</span>
+                <span className="text-xs">Fast</span>
               </div>
             </div>
-          )}
-        </FormField>
-      )}
+          </div>
+        )}
+      </FormField>
 
       {/* Optional Fields */}
       <div className="border-t pt-4 space-y-4">
