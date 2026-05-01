@@ -13,6 +13,8 @@ import type { AudioCategory, AudioUploadData } from '@/lib/types/audio';
 import { AUDIO_CATEGORIES, SUPPORTED_AUDIO_TYPES, MAX_AUDIO_FILE_SIZE } from '@/lib/types/audio';
 import { cn } from '@/lib/utils';
 import { VoiceTagsInput } from '@/components/ui/VoiceTagsInput';
+import { VoiceSelector } from '@/components/curriculum/shared/VoiceSelector';
+import { DEFAULT_VOICE } from '@/lib/constants/voices';
 
 type InputMode = 'upload' | 'tts';
 
@@ -40,6 +42,7 @@ export function AudioUploadForm({
 
   // TTS state
   const [ttsText, setTtsText] = useState('');
+  const [selectedVoice, setSelectedVoice] = useState(DEFAULT_VOICE.id);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBlob, setGeneratedBlob] = useState<{ blob: Blob; blobUrl: string } | null>(null);
 
@@ -169,6 +172,7 @@ export function AudioUploadForm({
         body: JSON.stringify({
           text: ttsText,
           language: 'ar',
+          voice_id: selectedVoice,
         }),
       });
 
@@ -284,7 +288,7 @@ export function AudioUploadForm({
   const hasAudio = mode === 'upload' ? !!file : !!generatedBlob;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <audio
         ref={audioRef}
         onEnded={() => setIsPlaying(false)}
@@ -398,14 +402,21 @@ export function AudioUploadForm({
         </div>
       ) : (
         /* TTS Generation Mode */
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* Text Input with Voice Tags */}
           <VoiceTagsInput
             value={ttsText}
             onChange={setTtsText}
             placeholder="Enter text to generate audio..."
             dir="ltr"
-            rows={4}
+            rows={3}
+          />
+
+          {/* Voice Selector */}
+          <VoiceSelector
+            value={selectedVoice}
+            onChange={setSelectedVoice}
+            label="Voice"
           />
 
           {/* Generate Button + Preview */}
@@ -463,21 +474,12 @@ export function AudioUploadForm({
               </button>
             )}
           </div>
-
-          {generatedBlob && (
-            <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
-              <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-sm text-green-700">Audio generated and ready to save</span>
-            </div>
-          )}
         </div>
       )}
 
       {/* Audio Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           Name <span className="text-red-500">*</span>
         </label>
         <input
@@ -485,24 +487,24 @@ export function AudioUploadForm({
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Enter a name for this audio"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           required
         />
       </div>
 
       {/* Category Selection */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           Category <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {Object.entries(AUDIO_CATEGORIES).map(([key, { label, description }]) => (
             <button
               key={key}
               type="button"
               onClick={() => setCategory(key as AudioCategory)}
               className={cn(
-                'px-3 py-2 rounded-md text-sm font-medium transition-all text-left',
+                'px-2 py-1.5 rounded text-xs font-medium transition-all text-center',
                 category === key
                   ? 'bg-purple-100 text-purple-700 border-2 border-purple-500'
                   : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
@@ -517,7 +519,7 @@ export function AudioUploadForm({
 
       {/* Tags Input */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           Tags (optional)
         </label>
         <div className="flex gap-2">
@@ -527,12 +529,12 @@ export function AudioUploadForm({
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={handleTagInputKeyDown}
             placeholder="Enter a tag"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <button
             type="button"
             onClick={handleAddTag}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200"
+            className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200"
           >
             Add
           </button>
@@ -561,7 +563,7 @@ export function AudioUploadForm({
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-2 py-1.5 rounded text-xs">
           {error}
         </div>
       )}
@@ -571,13 +573,13 @@ export function AudioUploadForm({
         type="submit"
         disabled={!hasAudio || uploading}
         className={cn(
-          'w-full py-2 px-4 rounded-md font-medium transition-colors',
+          'w-full py-1.5 px-4 rounded-md font-medium transition-colors text-sm',
           hasAudio && !uploading
             ? 'bg-purple-600 text-white hover:bg-purple-700'
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
         )}
       >
-        {uploading ? 'Saving...' : 'Save Audio'}
+        {uploading ? 'Saving...' : 'Add Audio'}
       </button>
     </form>
   );

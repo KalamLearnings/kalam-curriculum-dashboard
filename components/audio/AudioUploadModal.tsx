@@ -38,7 +38,7 @@ export function AudioUploadModal({
       onClose={onClose}
       title={initialFile ? 'Add Dropped Audio' : 'Add New Audio'}
     >
-      <div className="p-6">
+      <div className="p-4">
         <AudioUploadForm
           onUpload={handleUpload}
           defaultCategory={defaultCategory}
