@@ -156,7 +156,7 @@ export async function uploadAsset(data: AssetUploadData): Promise<Asset> {
   const { data: uploadData, error } = await supabase.storage
     .from(BUCKET_NAME)
     .upload(filePath, compressedFile, {
-      cacheControl: '3600',
+      cacheControl: '31536000',
       upsert: false,
     });
 

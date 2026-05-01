@@ -82,7 +82,7 @@ export function CustomRuleCard({
       .from('curriculum-audio')
       .upload(filePath, blob, {
         contentType: 'audio/mpeg',
-        cacheControl: '3600',
+        cacheControl: '31536000',
         upsert: true,
       });
 
