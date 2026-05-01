@@ -16,6 +16,8 @@ import {
 } from '@/lib/hooks/useBooks';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { AssetPicker } from '@/components/assets/AssetPicker';
+import type { Asset } from '@/lib/types/assets';
 import type {
   Book,
   BookPage,
@@ -130,6 +132,10 @@ export default function BookEditorPage() {
     is_premium: false,
   });
   const [createTargetLetterInput, setCreateTargetLetterInput] = useState('');
+
+  // Cover image picker modal state
+  const [coverPickerOpen, setCoverPickerOpen] = useState(false);
+  const [coverPickerTarget, setCoverPickerTarget] = useState<'create' | 'edit'>('create');
 
   // Load book data into form
   useEffect(() => {
@@ -299,10 +305,6 @@ export default function BookEditorPage() {
       toast.error('Title (English) is required');
       return;
     }
-    if (!createFormData.title_ar.trim()) {
-      toast.error('Title (Arabic) is required');
-      return;
-    }
     if (!createFormData.cover_image_url.trim()) {
       toast.error('Cover image URL is required');
       return;
@@ -310,7 +312,7 @@ export default function BookEditorPage() {
 
     const requestData: CreateBookRequest = {
       title: createFormData.title.trim(),
-      title_ar: createFormData.title_ar.trim(),
+      title_ar: createFormData.title_ar.trim() || createFormData.title.trim(),
       cover_image_url: createFormData.cover_image_url.trim(),
       difficulty_level: createFormData.difficulty_level,
     };
@@ -372,7 +374,7 @@ export default function BookEditorPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title (Arabic) <span className="text-red-500">*</span>
+                Title (Arabic)
               </label>
               <input
                 type="text"
@@ -416,23 +418,46 @@ export default function BookEditorPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cover Image URL <span className="text-red-500">*</span>
+                Cover Image <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={createFormData.cover_image_url}
-                onChange={(e) =>
-                  setCreateFormData((p) => ({ ...p, cover_image_url: e.target.value }))
-                }
-                className="w-full px-3 py-2 border rounded-md"
-                placeholder="https://..."
-              />
-              {createFormData.cover_image_url && (
-                <img
-                  src={createFormData.cover_image_url}
-                  alt="Cover preview"
-                  className="mt-2 w-32 h-40 object-cover rounded border"
-                />
+              {createFormData.cover_image_url ? (
+                <div className="flex items-start gap-3">
+                  <img
+                    src={createFormData.cover_image_url}
+                    alt="Cover preview"
+                    className="w-24 h-32 object-cover rounded border"
+                  />
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoverPickerTarget('create');
+                        setCoverPickerOpen(true);
+                      }}
+                      className="px-3 py-1.5 text-sm text-blue-600 border border-blue-300 rounded hover:bg-blue-50"
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCreateFormData((p) => ({ ...p, cover_image_url: '' }))}
+                      className="px-3 py-1.5 text-sm text-red-600 border border-red-300 rounded hover:bg-red-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoverPickerTarget('create');
+                    setCoverPickerOpen(true);
+                  }}
+                  className="w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                >
+                  Click to select cover image from assets
+                </button>
               )}
             </div>
             <div>
@@ -669,23 +694,46 @@ export default function BookEditorPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cover Image URL
+                Cover Image
               </label>
-              <input
-                type="text"
-                value={formData.cover_image_url}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, cover_image_url: e.target.value }))
-                }
-                className="w-full px-3 py-2 border rounded-md"
-                placeholder="https://..."
-              />
-              {formData.cover_image_url && (
-                <img
-                  src={formData.cover_image_url}
-                  alt="Cover preview"
-                  className="mt-2 w-32 h-40 object-cover rounded border"
-                />
+              {formData.cover_image_url ? (
+                <div className="flex items-start gap-3">
+                  <img
+                    src={formData.cover_image_url}
+                    alt="Cover preview"
+                    className="w-24 h-32 object-cover rounded border"
+                  />
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoverPickerTarget('edit');
+                        setCoverPickerOpen(true);
+                      }}
+                      className="px-3 py-1.5 text-sm text-blue-600 border border-blue-300 rounded hover:bg-blue-50"
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((p) => ({ ...p, cover_image_url: '' }))}
+                      className="px-3 py-1.5 text-sm text-red-600 border border-red-300 rounded hover:bg-red-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoverPickerTarget('edit');
+                    setCoverPickerOpen(true);
+                  }}
+                  className="w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                >
+                  Click to select cover image from assets
+                </button>
               )}
             </div>
             <div>
@@ -1176,6 +1224,29 @@ export default function BookEditorPage() {
         confirmText="Remove"
         confirmVariant="danger"
       />
+
+      {/* Cover Image Picker Modal */}
+      <Modal
+        isOpen={coverPickerOpen}
+        onClose={() => setCoverPickerOpen(false)}
+        title="Select Cover Image"
+        size="lg"
+      >
+        <div className="p-6">
+          <AssetPicker
+            onSelect={(asset: Asset) => {
+              if (coverPickerTarget === 'create') {
+                setCreateFormData((p) => ({ ...p, cover_image_url: asset.url }));
+              } else {
+                setFormData((p) => ({ ...p, cover_image_url: asset.url }));
+              }
+              setCoverPickerOpen(false);
+            }}
+            selectedAssetId={null}
+            emptyMessage="No images in asset library. Upload some first!"
+          />
+        </div>
+      </Modal>
     </main>
   );
 }
