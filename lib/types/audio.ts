@@ -6,6 +6,7 @@
 
 export type AudioCategory =
   | 'letter_sounds'
+  | 'letter_names'
   | 'word_pronunciations'
   | 'instructions'
   | 'introduction'
@@ -40,6 +41,10 @@ export const AUDIO_CATEGORIES: Record<AudioCategory, { label: string; descriptio
   letter_sounds: {
     label: 'Letter Sounds',
     description: 'Pronunciation of individual Arabic letters',
+  },
+  letter_names: {
+    label: 'Letter Names',
+    description: 'Names of Arabic letters (Alif, Ba, Ta, etc.)',
   },
   word_pronunciations: {
     label: 'Word Pronunciations',
