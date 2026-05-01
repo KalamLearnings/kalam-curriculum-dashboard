@@ -234,6 +234,7 @@ export default function DashboardLayout({
     { href: '/books', label: 'Books', icon: '📖' },
     { href: '/templates', label: 'Templates', icon: '📋' },
     { href: '/assets', label: 'Assets', icon: '🖼️' },
+    { href: '/audio', label: 'Audio', icon: '🔊' },
     { href: '/words', label: 'Words', icon: '📝' },
     { href: '/promo-codes', label: 'Promo Codes', icon: '🎟️' },
   ];

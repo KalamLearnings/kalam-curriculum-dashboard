@@ -5,8 +5,11 @@ import { OptionSelector } from './OptionSelector';
 import { LetterSelector } from './shared/LetterSelector';
 import type { LetterReference } from './ArabicLetterGrid';
 import { useLetters } from '@/lib/hooks/useLetters';
+import { useAudio } from '@/lib/hooks/useAudio';
+import { AudioPicker } from '@/components/audio/AudioPicker';
 import { cn } from '@/lib/utils';
 import type { MemoryCardLetter, LetterPosition } from '@/lib/types/activity-configs';
+import type { AudioAsset } from '@/lib/types/audio';
 
 const FORM_OPTIONS: { value: LetterPosition; label: string }[] = [
     { value: 'isolated', label: 'Isolated' },
@@ -17,6 +20,7 @@ const FORM_OPTIONS: { value: LetterPosition; label: string }[] = [
 
 export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseActivityFormProps) {
     const { letters: allLetters } = useLetters();
+    const { audioAssets } = useAudio({ initialCategory: 'letter_sounds', autoLoad: true });
     const typedConfig = config as any;
 
     // letters is now an array of MemoryCardLetter objects
@@ -36,13 +40,14 @@ export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseAct
     };
 
     const handleLettersChange = (value: LetterReference[]) => {
-        // Convert LetterReference[] to MemoryCardLetter[] preserving existing matchingForm
+        // Convert LetterReference[] to MemoryCardLetter[] preserving existing matchingForm and audioId
         const newLetters: MemoryCardLetter[] = value.map(ref => {
             const existing = letters.find(l => l.letterId === ref.letterId);
             return {
                 letterId: ref.letterId,
                 form: ref.form,
                 matchingForm: existing?.matchingForm,
+                audioId: existing?.audioId,
             };
         });
         onChange({ ...config, letters: newLetters } as any);
@@ -57,8 +62,27 @@ export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseAct
         onChange({ ...config, letters: newLetters } as any);
     };
 
+    const handleAudioChange = (letterId: string, audioId: string | undefined, audio?: AudioAsset) => {
+        const newLetters = letters.map(l =>
+            l.letterId === letterId
+                ? {
+                    ...l,
+                    audioId,
+                    // Store storage path for backend URL resolution
+                    audioPath: audio?.storagePath,
+                  }
+                : l
+        );
+        onChange({ ...config, letters: newLetters } as any);
+    };
+
     const handleMatchTypeChange = (value: string) => {
         onChange({ ...config, matchType: value } as any);
+    };
+
+    const getAudioForLetter = (audioId?: string): AudioAsset | undefined => {
+        if (!audioId) return undefined;
+        return audioAssets.find(a => a.id === audioId);
     };
 
     const handleShowHintsChange = (value: boolean) => {
@@ -101,6 +125,61 @@ export function MemoryCardMatchActivityForm({ config, onChange, topic }: BaseAct
                     onChange={handleMatchTypeChange}
                 />
             </FormField>
+
+            {/* Letter Sound Assignment (only for letter_to_sound) */}
+            {matchType === 'letter_to_sound' && letters.length > 0 && (
+                <FormField
+                    label="Letter Sounds"
+                    hint="Assign an audio file to each letter. Players will match letters to their sounds."
+                >
+                    <div className="space-y-3">
+                        {letters.map((letter) => {
+                            const audio = getAudioForLetter(letter.audioId);
+                            const hasAudio = !!letter.audioId;
+                            return (
+                                <div
+                                    key={letter.letterId}
+                                    className={cn(
+                                        'p-3 rounded-lg border-2 transition-all',
+                                        hasAudio
+                                            ? 'border-purple-400 bg-purple-50'
+                                            : 'border-orange-300 bg-orange-50'
+                                    )}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2 min-w-[80px]">
+                                            <span className="text-2xl font-arabic">
+                                                {getLetterDisplay(letter.letterId, letter.form)}
+                                            </span>
+                                            <span className="text-sm text-gray-500">
+                                                ({letter.form})
+                                            </span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <AudioPicker
+                                                value={letter.audioId}
+                                                onChange={(audioId, audio) => handleAudioChange(letter.letterId, audioId, audio)}
+                                                category="letter_sounds"
+                                                placeholder="Select sound for this letter..."
+                                            />
+                                        </div>
+                                    </div>
+                                    {!hasAudio && (
+                                        <p className="text-xs text-orange-600 mt-2">
+                                            Audio required for letter-to-sound matching
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {letters.some(l => !l.audioId) && (
+                        <p className="mt-3 text-sm text-orange-600">
+                            Please assign audio to all letters for the activity to work correctly.
+                        </p>
+                    )}
+                </FormField>
+            )}
 
             {/* Cross-Form Matching Setup (only for letter_to_letter) */}
             {matchType === 'letter_to_letter' && letters.length > 0 && (

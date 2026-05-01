@@ -191,6 +191,10 @@ export interface MemoryCardLetter {
   form: LetterPosition;
   /** Optional: form for the matching card (enables cross-form matching) */
   matchingForm?: LetterPosition;
+  /** Optional: audio asset ID for letter_to_sound matching mode */
+  audioId?: string;
+  /** Optional: audio storage path for backend URL resolution */
+  audioPath?: string;
 }
 
 export interface MemoryCardMatchConfig {
