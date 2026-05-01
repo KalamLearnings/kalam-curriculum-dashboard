@@ -169,7 +169,7 @@ export default function AudioPage() {
                 ? `No audio found matching "${searchQuery}"`
                 : selectedCategory
                 ? 'No audio in this category yet'
-                : 'No audio uploaded yet. Click "Upload Audio" to get started!'
+                : 'No audio yet. Click "Add Audio" to get started!'
             }
           />
         </div>

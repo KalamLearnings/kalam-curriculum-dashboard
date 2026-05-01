@@ -404,7 +404,7 @@ export function AudioUploadForm({
             value={ttsText}
             onChange={setTtsText}
             placeholder="Enter text to generate audio..."
-            dir="rtl"
+            dir="ltr"
             rows={4}
           />
 
