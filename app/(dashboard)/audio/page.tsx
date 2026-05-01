@@ -117,7 +117,7 @@ export default function AudioPage() {
               onClick={() => setUploadModalOpen(true)}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
             >
-              + Upload Audio
+              + Add Audio
             </button>
           </div>
 

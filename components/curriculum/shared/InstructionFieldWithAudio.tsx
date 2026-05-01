@@ -8,6 +8,7 @@
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { resolveTemplateText, hasTemplates } from '@/lib/utils/templateResolver';
+import { VOICE_TAGS } from '@/components/ui/VoiceTagsInput';
 
 interface Letter {
   id?: string;
@@ -41,28 +42,6 @@ interface InstructionFieldWithAudioProps {
   /** Letter data for template placeholders */
   letter?: Letter | null;
 }
-
-const VOICE_TAGS = [
-  // Emotions & Tones (for kids)
-  '[excited]',
-  '[happy]',
-  '[cheerful]',
-  '[encouraging]',
-  '[proud]',
-  '[calm]',
-  '[gentle]',
-  '[friendly]',
-  '[playful]',
-  '[curious]',
-  '[surprised]',
-  // Delivery styles
-  '[whispers]',
-  '[giggles]',
-  // Pauses
-  '[pause]',
-  '[short pause]',
-  '[long pause]',
-] as const;
 
 /**
  * Instruction text field with integrated audio controls

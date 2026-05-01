@@ -12,24 +12,25 @@ import { toast } from 'sonner';
 import type { AudioCategory, AudioUploadData } from '@/lib/types/audio';
 import { AUDIO_CATEGORIES, SUPPORTED_AUDIO_TYPES, MAX_AUDIO_FILE_SIZE } from '@/lib/types/audio';
 import { cn } from '@/lib/utils';
+import { VoiceTagsInput } from '@/components/ui/VoiceTagsInput';
 
 type InputMode = 'upload' | 'tts';
 
 interface AudioUploadFormProps {
   onUpload: (data: AudioUploadData) => Promise<void>;
-  defaultCategory?: AudioCategory;
+  defaultCategory?: AudioCategory | null;
   initialFile?: File | null;
 }
 
 export function AudioUploadForm({
   onUpload,
-  defaultCategory = 'effects',
+  defaultCategory,
   initialFile = null,
 }: AudioUploadFormProps) {
-  const [mode, setMode] = useState<InputMode>(initialFile ? 'upload' : 'upload');
+  const [mode, setMode] = useState<InputMode>(initialFile ? 'upload' : 'tts');
   const [file, setFile] = useState<File | null>(initialFile);
   const [displayName, setDisplayName] = useState('');
-  const [category, setCategory] = useState<AudioCategory>(defaultCategory);
+  const [category, setCategory] = useState<AudioCategory | null>(defaultCategory ?? null);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -39,7 +40,6 @@ export function AudioUploadForm({
 
   // TTS state
   const [ttsText, setTtsText] = useState('');
-  const [ttsLanguage, setTtsLanguage] = useState<'en' | 'ar'>('ar');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBlob, setGeneratedBlob] = useState<{ blob: Blob; blobUrl: string } | null>(null);
 
@@ -168,7 +168,7 @@ export function AudioUploadForm({
         },
         body: JSON.stringify({
           text: ttsText,
-          language: ttsLanguage,
+          language: 'ar',
         }),
       });
 
@@ -239,6 +239,11 @@ export function AudioUploadForm({
       return;
     }
 
+    if (!category) {
+      setError('Please select a category');
+      return;
+    }
+
     setUploading(true);
     setError(null);
 
@@ -246,7 +251,7 @@ export function AudioUploadForm({
       const uploadData: AudioUploadData = {
         displayName: displayName.trim(),
         file: uploadFile,
-        category,
+        category: category,
         tags,
       };
 
@@ -394,46 +399,13 @@ export function AudioUploadForm({
       ) : (
         /* TTS Generation Mode */
         <div className="space-y-3">
-          {/* Language Selector */}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setTtsLanguage('ar')}
-              className={cn(
-                'flex-1 py-2 px-3 text-sm font-medium rounded-md border-2 transition-all',
-                ttsLanguage === 'ar'
-                  ? 'border-purple-500 bg-purple-50 text-purple-700'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
-              )}
-            >
-              Arabic
-            </button>
-            <button
-              type="button"
-              onClick={() => setTtsLanguage('en')}
-              className={cn(
-                'flex-1 py-2 px-3 text-sm font-medium rounded-md border-2 transition-all',
-                ttsLanguage === 'en'
-                  ? 'border-purple-500 bg-purple-50 text-purple-700'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
-              )}
-            >
-              English
-            </button>
-          </div>
-
-          {/* Text Input */}
-          <textarea
+          {/* Text Input with Voice Tags */}
+          <VoiceTagsInput
             value={ttsText}
-            onChange={(e) => setTtsText(e.target.value)}
-            placeholder={ttsLanguage === 'ar' ? 'اكتب النص هنا...' : 'Enter text to convert to speech...'}
-            dir={ttsLanguage === 'ar' ? 'rtl' : 'ltr'}
+            onChange={setTtsText}
+            placeholder="Enter text to generate audio..."
+            dir="rtl"
             rows={4}
-            className={cn(
-              'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent',
-              ttsLanguage === 'ar' && 'font-arabic'
-            )}
           />
 
           {/* Generate Button + Preview */}
@@ -521,7 +493,7 @@ export function AudioUploadForm({
       {/* Category Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Category
+          Category <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-2 gap-2">
           {Object.entries(AUDIO_CATEGORIES).map(([key, { label, description }]) => (

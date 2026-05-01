@@ -36,7 +36,7 @@ export function AudioUploadModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={initialFile ? 'Upload Dropped Audio' : 'Upload New Audio'}
+      title={initialFile ? 'Add Dropped Audio' : 'Add New Audio'}
     >
       <div className="p-6">
         <AudioUploadForm
