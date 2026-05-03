@@ -93,6 +93,7 @@ const IMPLEMENTED_ACTIVITIES: ArticleType[] = [
   'i_spy',
   'sound_blend',
   'match_pairs',
+  'camel_narration',
 ];
 
 export function ActivityTypeSelectorModal({

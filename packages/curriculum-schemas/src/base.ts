@@ -292,6 +292,7 @@ export const ActivityTypeSchema = z.enum([
   'content_with_cards',
   'i_spy',
   'sound_blend',
+  'camel_narration',
 ]);
 
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;
@@ -322,6 +323,7 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   content_with_cards: 'Content with Cards',
   i_spy: 'I Spy (Find Letters)',
   sound_blend: 'Sound Blending',
+  camel_narration: 'Camel Mascot Narration',
 };
 
 // ============================================================================

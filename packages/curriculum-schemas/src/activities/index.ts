@@ -46,6 +46,7 @@ export * from './activity_request';
 export * from './content_with_cards';
 export * from './i_spy';
 export * from './sound_blend';
+export * from './camel_narration';
 
 // Import schemas for discriminated union
 import { ShowLetterOrWordActivitySchema } from './show_letter_or_word';
@@ -69,6 +70,7 @@ import { ActivityRequestActivitySchema } from './activity_request';
 import { ContentWithCardsActivitySchema } from './content_with_cards';
 import { ISpyActivitySchema } from './i_spy';
 import { SoundBlendActivitySchema } from './sound_blend';
+import { CamelNarrationActivitySchema } from './camel_narration';
 
 // Import config schemas for helper function
 import { ShowLetterOrWordConfigSchema } from './show_letter_or_word';
@@ -92,6 +94,7 @@ import { ActivityRequestConfigSchema } from './activity_request';
 import { ContentWithCardsConfigSchema } from './content_with_cards';
 import { ISpyConfigSchema } from './i_spy';
 import { SoundBlendConfigSchema } from './sound_blend';
+import { CamelNarrationConfigSchema } from './camel_narration';
 
 import type { ActivityType } from '../base';
 
@@ -131,6 +134,7 @@ export const ActivitySchema = z.discriminatedUnion('type', [
   ContentWithCardsActivitySchema,
   ISpyActivitySchema,
   SoundBlendActivitySchema,
+  CamelNarrationActivitySchema,
 ]);
 
 export type Activity = z.infer<typeof ActivitySchema>;
@@ -160,6 +164,7 @@ const ACTIVITY_CONFIG_SCHEMAS = {
   content_with_cards: ContentWithCardsConfigSchema,
   i_spy: ISpyConfigSchema,
   sound_blend: SoundBlendConfigSchema,
+  camel_narration: CamelNarrationConfigSchema,
 } as const;
 
 /**

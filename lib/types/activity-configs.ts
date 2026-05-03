@@ -410,6 +410,36 @@ export interface ContentWithCardsConfig {
 }
 
 /**
+ * Camel Narration Activity Config
+ *
+ * Camel mascot delivers spoken narration with pose changes.
+ * Used for introductions, overviews, and guided explanations.
+ */
+export type CamelPose = 'idle' | 'eating' | 'celebrating' | 'walkingLeft' | 'walkingRight' | 'clapping' | 'wave' | 'thinking' | 'bored' | 'cartwheel' | 'listening' | 'dancing' | 'confetti';
+
+export interface NarrationStep {
+  /** Audio asset ID from the audio library */
+  audioId: string;
+  /** Audio URL (resolved from audioId) */
+  audioUrl?: string;
+  /** Camel pose during this step */
+  pose?: CamelPose;
+  /** Optional subtitle text */
+  text?: string;
+}
+
+export interface CamelNarrationConfig {
+  /** Sequential narration steps */
+  narrationSteps: NarrationStep[];
+  /** Default pose when not speaking (default: 'idle') */
+  defaultPose?: CamelPose;
+  /** Show text subtitles (default: false) */
+  showSubtitles?: boolean;
+  /** Auto-advance through steps (default: true) */
+  autoAdvance?: boolean;
+}
+
+/**
  * Union type for all activity configs
  */
 export type ActivityConfig =
@@ -434,7 +464,8 @@ export type ActivityConfig =
   | SlingshotConfig
   | ISpyConfig
   | SoundBlendConfig
-  | MatchPairsConfig;
+  | MatchPairsConfig
+  | CamelNarrationConfig;
 
 /**
  * Mapped type for activity configs by type
@@ -462,6 +493,7 @@ export type ActivityConfigMap = {
   i_spy: ISpyConfig;
   sound_blend: SoundBlendConfig;
   match_pairs: MatchPairsConfig;
+  camel_narration: CamelNarrationConfig;
 };
 
 /**

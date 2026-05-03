@@ -21,6 +21,7 @@ import { DragHarakaToLetterForm } from './DragHarakaToLetterForm';
 import { ISpyActivityForm } from './ISpyActivityForm';
 import { SoundBlendActivityForm } from './SoundBlendActivityForm';
 import { MatchPairsActivityForm } from './MatchPairsActivityForm';
+import { CamelNarrationActivityForm } from './CamelNarrationActivityForm';
 import { TargetLetterWithDistractorsForm } from './shared/TargetLetterWithDistractorsForm';
 import type { ArticleType } from '@/lib/schemas/curriculum';
 
@@ -201,6 +202,7 @@ export const activityFormComponents: Record<ArticleType, React.ComponentType<any
   i_spy: ISpyActivityForm,
   sound_blend: SoundBlendActivityForm,
   match_pairs: MatchPairsActivityForm,
+  camel_narration: CamelNarrationActivityForm,
 
   // Target letter + distractor activities (using shared form)
   pop_balloons_with_letter: createTargetLetterForm('pop_balloons_with_letter'),

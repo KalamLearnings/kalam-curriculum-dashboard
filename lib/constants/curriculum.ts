@@ -43,6 +43,7 @@ export const ACTIVITY_TYPE_CATEGORIES: Record<ArticleType, ActivityCategory> = {
   // Introduction & Display
   show_letter_or_word: 'introduction',
   content_with_cards: 'introduction',
+  camel_narration: 'introduction',
 
   // Writing & Tracing
   trace_letter: 'writing',
@@ -163,6 +164,7 @@ export const ACTIVITY_TYPES: { value: ArticleType; label: string }[] = [
   { value: 'i_spy', label: 'I Spy (Find Letters)' },
   { value: 'sound_blend', label: 'Sound Blending' },
   { value: 'match_pairs', label: 'Match Pairs (Draw Lines)' },
+  { value: 'camel_narration', label: 'Camel Mascot Narration' },
 ];
 
 /**
@@ -211,6 +213,7 @@ export const ACTIVITY_ICONS: Record<ArticleType, string> = {
   i_spy: '👁️',
   sound_blend: '🐢',
   match_pairs: '🔗',
+  camel_narration: '🐪',
 };
 
 /**

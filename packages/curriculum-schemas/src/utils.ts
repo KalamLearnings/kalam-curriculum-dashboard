@@ -145,6 +145,7 @@ export function getActivityCategory(type: ActivityType): string {
     content_with_cards: 'Interactive',
     i_spy: 'Recognition',
     sound_blend: 'Phonics',
+    camel_narration: 'Introduction',
   };
 
   return categories[type];
@@ -178,6 +179,7 @@ export function getEstimatedDuration(type: ActivityType): number {
     content_with_cards: 30,
     i_spy: 45,
     sound_blend: 45,
+    camel_narration: 30,
   };
 
   return durations[type];
@@ -372,6 +374,12 @@ export function createDefaultConfig(type: ActivityType): Record<string, any> {
       ],
       speed: 'slow',
       requiredSlides: 2,
+    },
+    camel_narration: {
+      narrationSteps: [],
+      defaultPose: 'idle',
+      showSubtitles: false,
+      autoAdvance: true,
     },
   };
 
