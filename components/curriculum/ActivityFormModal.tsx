@@ -449,6 +449,7 @@ export function ActivityFormModal({
             </div>
 
             {!getActivityFormOptions(formData.type).hideInstruction && (
+            <>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Instruction (English) *
@@ -599,6 +600,7 @@ export function ActivityFormModal({
                 );
               })()}
             </div>
+            </>
             )}
 
             {/* Dynamic Activity Form based on type */}
