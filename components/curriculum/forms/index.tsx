@@ -254,6 +254,19 @@ function GenericActivityForm({ config, onChange }: BaseActivityFormProps) {
   );
 }
 
+// Activity form options - controls what fields are shown in ActivityFormModal
+export interface ActivityFormOptions {
+  hideInstruction?: boolean;
+}
+
+const activityFormOptions: Partial<Record<ArticleType, ActivityFormOptions>> = {
+  camel_narration: { hideInstruction: true },
+};
+
+export function getActivityFormOptions(type: ArticleType): ActivityFormOptions {
+  return activityFormOptions[type] || {};
+}
+
 export function getActivityFormComponent(type: ArticleType) {
   const component = activityFormComponents[type];
   console.log('Getting form component for type:', type, 'Found:', !!component);

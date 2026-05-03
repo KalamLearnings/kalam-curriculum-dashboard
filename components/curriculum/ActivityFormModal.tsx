@@ -7,7 +7,7 @@ import { ACTIVITY_TYPE_LABELS } from '@kalam/curriculum-schemas';
 import { useCreateActivity, useUpdateActivity } from '@/lib/hooks/useActivities';
 import { useActivityTemplates, useInstantiateTemplate } from '@/lib/hooks/useTemplates';
 import { useTopic } from '@/lib/hooks/useTopics';
-import { getActivityFormComponent } from './forms';
+import { getActivityFormComponent, getActivityFormOptions } from './forms';
 
 interface ActivityFormModalProps {
   isOpen: boolean;
@@ -448,6 +448,7 @@ export function ActivityFormModal({
               </select>
             </div>
 
+            {!getActivityFormOptions(formData.type).hideInstruction && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Instruction (English) *
@@ -598,6 +599,7 @@ export function ActivityFormModal({
                 );
               })()}
             </div>
+            )}
 
             {/* Dynamic Activity Form based on type */}
             {(() => {
