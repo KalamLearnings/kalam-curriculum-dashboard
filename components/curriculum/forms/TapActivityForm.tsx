@@ -4,7 +4,7 @@ import { FormField, NumberInput } from './FormField';
 import { WordSelector } from '../WordSelector';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
 import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
-import { cn } from '@/lib/utils';
+import { WordLetterPicker, extractLettersFromWord } from './shared';
 
 export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   const { resolveToChar } = useLetterResolver();
@@ -19,16 +19,8 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
     onChange({ ...config, ...updates });
   };
 
-  // Extract all letters from the target word (including duplicates)
-  const letters = useMemo(() => {
-    if (!targetWord) return [];
-    // Split word into characters, filtering out non-letter characters
-    return targetWord.split('').filter(char => {
-      // Skip non-letter characters (spaces, diacritics, etc.)
-      if (char.trim() === '' || /[\u064B-\u065F]/.test(char)) return false;
-      return true;
-    });
-  }, [targetWord]);
+  // Letters available to pick from (sourced from the target word).
+  const letters = useMemo(() => extractLettersFromWord(targetWord), [targetWord]);
 
   // Count occurrences of the selected letter in the word
   const letterOccurrences = useMemo(() => {
@@ -80,29 +72,12 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
       )}
 
       <FormField label="Target Letter" hint="Select the letter to find in the word" required>
-        {letters.length > 0 ? (
-          <div className="grid grid-cols-6 gap-2">
-            {[...letters].reverse().map((letter, index) => (
-              <button
-                key={`${letter}-${index}`}
-                type="button"
-                onClick={() => updateConfig({ targetLetter: letter })}
-                className={cn(
-                  'aspect-square flex items-center justify-center text-4xl font-arabic rounded-lg border-2 transition-all hover:scale-105',
-                  targetLetter === letter
-                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
-                )}
-              >
-                {letter}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center text-gray-500">
-            Enter a target word first to see available letters
-          </div>
-        )}
+        <WordLetterPicker
+          word={targetWord}
+          value={targetLetter}
+          onChange={(letter) => updateConfig({ targetLetter: letter })}
+          emptyMessage="Enter a target word first to see available letters"
+        />
       </FormField>
 
       <FormField label="Target Count" hint="How many instances to find (auto-calculated from word)" required>

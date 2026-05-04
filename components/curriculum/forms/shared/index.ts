@@ -23,5 +23,9 @@ export type { OptionData } from './OptionsGrid';
 // Letter selector
 export { LetterSelector } from './LetterSelector';
 
+// Word letter picker (pick a letter that exists in a chosen word)
+export { WordLetterPicker, extractLettersFromWord } from './WordLetterPicker';
+export type { WordLetterPickerProps } from './WordLetterPicker';
+
 // Target letter with distractors form
 export { TargetLetterWithDistractorsForm } from './TargetLetterWithDistractorsForm';
