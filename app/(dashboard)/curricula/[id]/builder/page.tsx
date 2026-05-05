@@ -383,12 +383,9 @@ export default function CurriculumBuilderPage() {
       throw new Error(`Failed to upload audio: ${error.message}`);
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('curriculum-audio')
-      .getPublicUrl(filePath);
-
-    return urlData.publicUrl;
+    // Return the relative file path (not full URL)
+    // The backend will construct the full URL based on its environment
+    return filePath;
   };
 
   // Save handler
