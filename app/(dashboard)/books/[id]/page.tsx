@@ -23,7 +23,9 @@ import { LetterSelectorModal } from '@/components/curriculum/LetterSelectorModal
 import { useLetters } from '@/lib/hooks/useLetters';
 import { VoiceTagsInput } from '@/components/ui/VoiceTagsInput';
 import { VoiceSelector } from '@/components/curriculum/shared/VoiceSelector';
+import { AudioPicker } from '@/components/audio/AudioPicker';
 import { DEFAULT_VOICE } from '@/lib/constants/voices';
+import type { AudioAsset } from '@/lib/types/audio';
 import type { LetterReference } from '@/components/curriculum/forms/ArabicLetterGrid';
 import type {
   Book,
@@ -1236,7 +1238,7 @@ export default function BookEditorPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Arabic Text
+              Text
             </label>
             <textarea
               value={pageFormData.text_ar}
@@ -1304,21 +1306,20 @@ export default function BookEditorPage() {
               </button>
             </div>
 
-            {/* Manual URL input (collapsed) */}
-            <details className="text-sm">
-              <summary className="cursor-pointer text-gray-500 hover:text-gray-700">
-                Or enter audio URL manually
-              </summary>
-              <input
-                type="text"
-                value={pageFormData.audio_url || ''}
-                onChange={(e) =>
-                  setPageFormData((p) => ({ ...p, audio_url: e.target.value }))
-                }
-                className="w-full px-3 py-2 border rounded-md mt-2"
-                placeholder="https://..."
+            {/* Select from audio library */}
+            <div className="border-t pt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Or select from Audio Library
+              </label>
+              <AudioPicker
+                onChange={(audioId, audio) => {
+                  if (audio?.url) {
+                    setPageFormData((p) => ({ ...p, audio_url: audio.url }));
+                  }
+                }}
+                placeholder="Select narration audio..."
               />
-            </details>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
