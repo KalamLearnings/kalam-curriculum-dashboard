@@ -273,7 +273,7 @@ export default function BookEditorPage() {
       // Upload to storage
       const fileName = `book-page-${Date.now()}.mp3`;
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('audio')
+        .from('curriculum-audio')
         .upload(`books/${fileName}`, blob, {
           contentType: 'audio/mpeg',
           upsert: false,
@@ -285,7 +285,7 @@ export default function BookEditorPage() {
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('audio')
+        .from('curriculum-audio')
         .getPublicUrl(uploadData.path);
 
       setPageFormData((p) => ({ ...p, audio_url: publicUrl }));
