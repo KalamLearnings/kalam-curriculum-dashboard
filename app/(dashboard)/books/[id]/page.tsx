@@ -248,8 +248,7 @@ export default function BookEditorPage() {
           ...getEdgeFunctionAuthHeaders(session.access_token),
         },
         body: JSON.stringify({
-          text: textToGenerate,
-          language: 'ar',
+          text_ar: textToGenerate,
           voice_id: pageAudioVoice,
         }),
       });
@@ -1245,7 +1244,6 @@ export default function BookEditorPage() {
               onChange={(e) => setPageFormData((p) => ({ ...p, text_ar: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md"
               rows={3}
-              dir="rtl"
             />
           </div>
 
