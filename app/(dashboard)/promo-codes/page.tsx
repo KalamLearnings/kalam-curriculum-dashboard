@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Trash2, Edit2, Users, Copy, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, Users, Copy, Check, Gift } from 'lucide-react';
 import {
   usePromoCodes,
   useDeletePromoCode,
   useUpdatePromoCode,
+  useApplyPromoCode,
 } from '@/lib/hooks/usePromoCodes';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { PromoCodeModal } from '@/components/promo-codes/PromoCodeModal';
@@ -17,6 +18,7 @@ export default function PromoCodesPage() {
   const { data: promoCodes, isLoading, error } = usePromoCodes();
   const { mutate: deletePromoCode, isPending: isDeleting } = useDeletePromoCode();
   const { mutate: updatePromoCode } = useUpdatePromoCode();
+  const { mutate: applyPromoCode, isPending: isApplying } = useApplyPromoCode();
 
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -29,6 +31,10 @@ export default function PromoCodesPage() {
 
   // Copied code tracking
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Apply promo form state
+  const [applyCode, setApplyCode] = useState('');
+  const [applyUserId, setApplyUserId] = useState('');
 
   const handleEdit = (code: PromoCode) => {
     setSelectedCode(code);
@@ -67,6 +73,24 @@ export default function PromoCodesPage() {
     setCopiedId(code.id);
     toast.success('Code copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleApplyPromo = () => {
+    if (!applyCode.trim() || !applyUserId.trim()) {
+      toast.error('Please enter both promo code and user ID');
+      return;
+    }
+    applyPromoCode(
+      { code: applyCode.trim(), userId: applyUserId.trim() },
+      {
+        onSuccess: (result) => {
+          if (result.success) {
+            setApplyCode('');
+            setApplyUserId('');
+          }
+        },
+      }
+    );
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -173,6 +197,49 @@ export default function PromoCodesPage() {
           <div className="text-2xl font-bold text-purple-600">
             {promoCodes?.filter((c) => c.plan_type === 'lifetime').length || 0}
           </div>
+        </div>
+      </div>
+
+      {/* Apply Promo to User */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+          <Gift className="w-4 h-4" />
+          Apply Promo Code to User
+        </h3>
+        <div className="flex gap-3 items-end">
+          <div className="flex-1">
+            <label htmlFor="applyCode" className="block text-xs text-gray-500 mb-1">
+              Promo Code
+            </label>
+            <input
+              id="applyCode"
+              type="text"
+              value={applyCode}
+              onChange={(e) => setApplyCode(e.target.value.toUpperCase())}
+              placeholder="e.g. FAMILYFRIENDS"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex-1">
+            <label htmlFor="applyUserId" className="block text-xs text-gray-500 mb-1">
+              User ID (UUID)
+            </label>
+            <input
+              id="applyUserId"
+              type="text"
+              value={applyUserId}
+              onChange={(e) => setApplyUserId(e.target.value)}
+              placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button
+            onClick={handleApplyPromo}
+            disabled={isApplying || !applyCode.trim() || !applyUserId.trim()}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          >
+            {isApplying ? 'Applying...' : 'Apply'}
+          </button>
         </div>
       </div>
 

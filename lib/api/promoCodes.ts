@@ -193,3 +193,22 @@ export async function getPromoCodeRedemptions(
     `/billing/promo/codes/${promoCodeId}/redemptions`
   );
 }
+
+/**
+ * Apply a promo code to a specific user (admin only)
+ */
+export interface ApplyPromoCodeResult {
+  success: boolean;
+  planType?: PromoPlanType;
+  error?: string;
+}
+
+export async function applyPromoCodeToUser(
+  code: string,
+  userId: string
+): Promise<ApplyPromoCodeResult> {
+  return fetchWithAuth<ApplyPromoCodeResult>('/billing/promo/apply', {
+    method: 'POST',
+    body: JSON.stringify({ code, user_id: userId }),
+  });
+}
