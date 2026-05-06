@@ -115,6 +115,8 @@ export default function BookEditorPage() {
     target_letters: string[];
     price: number;
     is_premium: boolean;
+    curriculum_id: string;
+    unlock_after_topic_id: string;
   }>({
     title: '',
     title_ar: '',
@@ -125,8 +127,13 @@ export default function BookEditorPage() {
     target_letters: [],
     price: 0,
     is_premium: false,
+    curriculum_id: '',
+    unlock_after_topic_id: '',
   });
   const [createTargetLetterInput, setCreateTargetLetterInput] = useState('');
+
+  // Topics for create form (based on selected curriculum)
+  const { data: createTopics } = useTopics(createFormData.curriculum_id || null);
 
   // Cover image picker modal state
   const [coverPickerOpen, setCoverPickerOpen] = useState(false);
@@ -323,7 +330,11 @@ export default function BookEditorPage() {
       return;
     }
     if (!createFormData.cover_image_url.trim()) {
-      toast.error('Cover image URL is required');
+      toast.error('Cover image is required');
+      return;
+    }
+    if (!createFormData.curriculum_id) {
+      toast.error('Curriculum is required');
       return;
     }
 
@@ -353,7 +364,29 @@ export default function BookEditorPage() {
 
     createBookMutation(requestData, {
       onSuccess: (newBook) => {
-        router.push(`/books/${newBook.id}`);
+        // Create availability rule for the selected curriculum
+        const availabilityType = createFormData.unlock_after_topic_id ? 'store_unlockable' : 'store_always';
+        createAvailability(
+          {
+            bookId: newBook.id,
+            data: {
+              availability_type: availabilityType,
+              curriculum_id: createFormData.curriculum_id,
+              prerequisite_type: createFormData.unlock_after_topic_id ? 'topic' : undefined,
+              prerequisite_topic_id: createFormData.unlock_after_topic_id || undefined,
+            },
+          },
+          {
+            onSuccess: () => {
+              router.push(`/books/${newBook.id}`);
+            },
+            onError: () => {
+              // Book created but availability failed - still redirect
+              toast.error('Book created but failed to set availability. Please add it manually.');
+              router.push(`/books/${newBook.id}`);
+            },
+          }
+        );
       },
     });
   };
@@ -571,6 +604,66 @@ export default function BookEditorPage() {
                 ))}
               </div>
             </div>
+
+            {/* Curriculum Access Section */}
+            <div className="col-span-2 border-t pt-4 mt-2">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Curriculum Access</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Curriculum <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={createFormData.curriculum_id}
+                    onChange={(e) => {
+                      setCreateFormData((p) => ({
+                        ...p,
+                        curriculum_id: e.target.value,
+                        unlock_after_topic_id: '', // Reset topic when curriculum changes
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="">Select curriculum...</option>
+                    {curricula?.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title?.en || c.id}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Only children in this curriculum will see the book
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Unlock after topic
+                  </label>
+                  <select
+                    value={createFormData.unlock_after_topic_id}
+                    onChange={(e) =>
+                      setCreateFormData((p) => ({ ...p, unlock_after_topic_id: e.target.value }))
+                    }
+                    className="w-full px-3 py-2 border rounded-md"
+                    disabled={!createFormData.curriculum_id}
+                  >
+                    <option value="">Available immediately</option>
+                    {createTopics
+                      ?.sort((a, b) => a.sequence_number - b.sequence_number)
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.sequence_number}. {t.title?.en || t.letter?.letter || t.id}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {createFormData.unlock_after_topic_id
+                      ? 'Must complete all topics up to selected'
+                      : 'Book available as soon as child enrolls'}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
@@ -589,6 +682,17 @@ export default function BookEditorPage() {
             </button>
           </div>
         </div>
+
+        {/* Cover Image Picker Modal for Create Form */}
+        <ImageLibraryModal
+          isOpen={coverPickerOpen}
+          onClose={() => setCoverPickerOpen(false)}
+          onSelectImage={(url) => {
+            setCreateFormData((p) => ({ ...p, cover_image_url: url }));
+            setCoverPickerOpen(false);
+          }}
+          currentImage={createFormData.cover_image_url}
+        />
       </main>
     );
   }
