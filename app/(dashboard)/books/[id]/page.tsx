@@ -21,6 +21,9 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { ImageLibraryModal } from '@/components/curriculum/forms/ImageLibraryModal';
 import { LetterSelectorModal } from '@/components/curriculum/LetterSelectorModal';
 import { useLetters } from '@/lib/hooks/useLetters';
+import { VoiceTagsInput } from '@/components/ui/VoiceTagsInput';
+import { VoiceSelector } from '@/components/curriculum/shared/VoiceSelector';
+import { DEFAULT_VOICE } from '@/lib/constants/voices';
 import type { LetterReference } from '@/components/curriculum/forms/ArabicLetterGrid';
 import type {
   Book,
@@ -99,6 +102,11 @@ export default function BookEditorPage() {
   // Delete page confirmation
   const [deletePageConfirmOpen, setDeletePageConfirmOpen] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<BookPage | null>(null);
+
+  // TTS generation state for page audio
+  const [pageAudioText, setPageAudioText] = useState('');
+  const [pageAudioVoice, setPageAudioVoice] = useState(DEFAULT_VOICE.id);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
 
   // Delete availability confirmation
   const [deleteAvailConfirmOpen, setDeleteAvailConfirmOpen] = useState(false);
@@ -194,6 +202,8 @@ export default function BookEditorPage() {
         text_ar: page.text_ar,
         audio_url: page.audio_url || '',
       });
+      // Pre-fill TTS text with page text
+      setPageAudioText(page.text_ar || '');
     } else {
       setEditingPage(null);
       setPageFormData({
@@ -203,8 +213,87 @@ export default function BookEditorPage() {
         text_ar: '',
         audio_url: '',
       });
+      setPageAudioText('');
     }
+    setPageAudioVoice(DEFAULT_VOICE.id);
     setPageModalOpen(true);
+  };
+
+  // Generate TTS audio for page
+  const handleGeneratePageAudio = async () => {
+    const textToGenerate = pageAudioText.trim() || pageFormData.text_ar.trim();
+    if (!textToGenerate) {
+      toast.error('Please enter text for audio generation');
+      return;
+    }
+
+    setIsGeneratingAudio(true);
+
+    try {
+      const { createClient, getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in.');
+      }
+
+      // Generate TTS
+      const ttsResponse = await fetch(`${getEnvironmentBaseUrl()}/functions/v1/tts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getEdgeFunctionAuthHeaders(session.access_token),
+        },
+        body: JSON.stringify({
+          text: textToGenerate,
+          language: 'ar',
+          voice_id: pageAudioVoice,
+        }),
+      });
+
+      if (!ttsResponse.ok) {
+        const errorData = await ttsResponse.json();
+        throw new Error(errorData.error || 'Failed to generate audio');
+      }
+
+      const ttsData = await ttsResponse.json();
+      const audioData = ttsData.data || ttsData;
+
+      // Convert base64 to blob
+      const binaryString = atob(audioData.audio_data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: audioData.content_type });
+
+      // Upload to storage
+      const fileName = `book-page-${Date.now()}.mp3`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('audio')
+        .upload(`books/${fileName}`, blob, {
+          contentType: 'audio/mpeg',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('audio')
+        .getPublicUrl(uploadData.path);
+
+      setPageFormData((p) => ({ ...p, audio_url: publicUrl }));
+      toast.success('Audio generated and uploaded!');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate audio';
+      toast.error(errorMessage);
+    } finally {
+      setIsGeneratingAudio(false);
+    }
   };
 
   const handleSavePage = () => {
@@ -1158,19 +1247,78 @@ export default function BookEditorPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Audio URL (optional)
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Page Audio (optional)
             </label>
-            <input
-              type="text"
-              value={pageFormData.audio_url || ''}
-              onChange={(e) =>
-                setPageFormData((p) => ({ ...p, audio_url: e.target.value }))
-              }
-              className="w-full px-3 py-2 border rounded-md"
-              placeholder="https://..."
-            />
+
+            {/* Current audio URL display */}
+            {pageFormData.audio_url && (
+              <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                <audio controls className="h-8 flex-1">
+                  <source src={pageFormData.audio_url} type="audio/mpeg" />
+                </audio>
+                <button
+                  type="button"
+                  onClick={() => setPageFormData((p) => ({ ...p, audio_url: '' }))}
+                  className="px-2 py-1 text-xs text-red-600 border border-red-300 rounded hover:bg-red-50"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            {/* TTS Generator */}
+            <div className="border rounded-md p-3 space-y-3 bg-gray-50">
+              <VoiceTagsInput
+                value={pageAudioText}
+                onChange={setPageAudioText}
+                placeholder="Enter text to generate audio (defaults to Arabic text above)..."
+                dir="rtl"
+                rows={2}
+              />
+
+              <VoiceSelector
+                value={pageAudioVoice}
+                onChange={setPageAudioVoice}
+                label="Voice"
+              />
+
+              <button
+                type="button"
+                onClick={handleGeneratePageAudio}
+                disabled={isGeneratingAudio}
+                className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isGeneratingAudio ? (
+                  <>
+                    <span className="animate-spin">&#9696;</span>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <span>&#128266;</span>
+                    Generate Audio
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Manual URL input (collapsed) */}
+            <details className="text-sm">
+              <summary className="cursor-pointer text-gray-500 hover:text-gray-700">
+                Or enter audio URL manually
+              </summary>
+              <input
+                type="text"
+                value={pageFormData.audio_url || ''}
+                onChange={(e) =>
+                  setPageFormData((p) => ({ ...p, audio_url: e.target.value }))
+                }
+                className="w-full px-3 py-2 border rounded-md mt-2"
+                placeholder="https://..."
+              />
+            </details>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
