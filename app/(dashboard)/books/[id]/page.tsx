@@ -16,8 +16,7 @@ import {
 } from '@/lib/hooks/useBooks';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
-import { AssetPicker } from '@/components/assets/AssetPicker';
-import type { Asset } from '@/lib/types/assets';
+import { ImageLibraryModal } from '@/components/curriculum/forms/ImageLibraryModal';
 import type {
   Book,
   BookPage,
@@ -136,6 +135,9 @@ export default function BookEditorPage() {
   // Cover image picker modal state
   const [coverPickerOpen, setCoverPickerOpen] = useState(false);
   const [coverPickerTarget, setCoverPickerTarget] = useState<'create' | 'edit'>('create');
+
+  // Page image picker modal state
+  const [pageImagePickerOpen, setPageImagePickerOpen] = useState(false);
 
   // Load book data into form
   useEffect(() => {
@@ -456,7 +458,7 @@ export default function BookEditorPage() {
                   }}
                   className="w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
                 >
-                  Click to select cover image from assets
+                  Click to select or upload cover image
                 </button>
               )}
             </div>
@@ -732,7 +734,7 @@ export default function BookEditorPage() {
                   }}
                   className="w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
                 >
-                  Click to select cover image from assets
+                  Click to select or upload cover image
                 </button>
               )}
             </div>
@@ -1019,23 +1021,40 @@ export default function BookEditorPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Background Image URL
+              Background Image <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              value={pageFormData.background_image_url}
-              onChange={(e) =>
-                setPageFormData((p) => ({ ...p, background_image_url: e.target.value }))
-              }
-              className="w-full px-3 py-2 border rounded-md"
-              placeholder="https://..."
-            />
-            {pageFormData.background_image_url && (
-              <img
-                src={pageFormData.background_image_url}
-                alt="Preview"
-                className="mt-2 max-w-xs rounded border"
-              />
+            {pageFormData.background_image_url ? (
+              <div className="flex items-start gap-3">
+                <img
+                  src={pageFormData.background_image_url}
+                  alt="Page preview"
+                  className="w-32 h-24 object-cover rounded border"
+                />
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPageImagePickerOpen(true)}
+                    className="px-3 py-1.5 text-sm text-blue-600 border border-blue-300 rounded hover:bg-blue-50"
+                  >
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPageFormData((p) => ({ ...p, background_image_url: '' }))}
+                    className="px-3 py-1.5 text-sm text-red-600 border border-red-300 rounded hover:bg-red-50"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPageImagePickerOpen(true)}
+                className="w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+              >
+                Click to select background image
+              </button>
             )}
           </div>
 
@@ -1226,27 +1245,30 @@ export default function BookEditorPage() {
       />
 
       {/* Cover Image Picker Modal */}
-      <Modal
+      <ImageLibraryModal
         isOpen={coverPickerOpen}
         onClose={() => setCoverPickerOpen(false)}
-        title="Select Cover Image"
-        size="lg"
-      >
-        <div className="p-6">
-          <AssetPicker
-            onSelect={(asset: Asset) => {
-              if (coverPickerTarget === 'create') {
-                setCreateFormData((p) => ({ ...p, cover_image_url: asset.url }));
-              } else {
-                setFormData((p) => ({ ...p, cover_image_url: asset.url }));
-              }
-              setCoverPickerOpen(false);
-            }}
-            selectedAssetId={null}
-            emptyMessage="No images in asset library. Upload some first!"
-          />
-        </div>
-      </Modal>
+        onSelectImage={(url) => {
+          if (coverPickerTarget === 'create') {
+            setCreateFormData((p) => ({ ...p, cover_image_url: url }));
+          } else {
+            setFormData((p) => ({ ...p, cover_image_url: url }));
+          }
+          setCoverPickerOpen(false);
+        }}
+        currentImage={coverPickerTarget === 'create' ? createFormData.cover_image_url : formData.cover_image_url}
+      />
+
+      {/* Page Background Image Picker Modal */}
+      <ImageLibraryModal
+        isOpen={pageImagePickerOpen}
+        onClose={() => setPageImagePickerOpen(false)}
+        onSelectImage={(url) => {
+          setPageFormData((p) => ({ ...p, background_image_url: url }));
+          setPageImagePickerOpen(false);
+        }}
+        currentImage={pageFormData.background_image_url}
+      />
     </main>
   );
 }
