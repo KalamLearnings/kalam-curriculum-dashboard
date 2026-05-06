@@ -961,33 +961,30 @@ export default function BookEditorPage() {
             </div>
           ) : (
             <div className="divide-y">
-              {availability.map((rule) => {
-                const curriculum = curricula?.find((c) => c.id === rule.curriculum_id);
-                return (
-                  <div key={rule.id} className="p-4 flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">
-                        {curriculum?.title?.en || rule.curriculum_id || 'All Curricula'}
-                      </div>
-                      {rule.prerequisite_topic_id ? (
-                        <div className="text-sm text-gray-500">
-                          Unlocks after completing topic: {rule.prerequisite_topic_id}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-green-600">
-                          Available immediately
-                        </div>
-                      )}
+              {availability.map((rule) => (
+                <div key={rule.id} className="p-4 flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">
+                      {rule.curriculum_name || rule.curriculum_id || 'All Curricula'}
                     </div>
-                    <button
-                      onClick={() => handleDeleteAvailClick(rule)}
-                      className="text-red-600 hover:text-red-700 text-sm"
-                    >
-                      Remove
-                    </button>
+                    {rule.prerequisite_topic_id ? (
+                      <div className="text-sm text-gray-500">
+                        Unlocks after completing: {rule.prerequisite_topic_name || rule.prerequisite_topic_id}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-green-600">
+                        Available immediately
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+                  <button
+                    onClick={() => handleDeleteAvailClick(rule)}
+                    className="text-red-600 hover:text-red-700 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>

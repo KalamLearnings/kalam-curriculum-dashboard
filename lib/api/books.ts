@@ -18,8 +18,10 @@ export interface BookAvailability {
   book_id: string;
   availability_type: AvailabilityType;
   curriculum_id: string | null;
+  curriculum_name: string | null;
   prerequisite_type: PrerequisiteType | null;
   prerequisite_topic_id: string | null;
+  prerequisite_topic_name: string | null;
   prerequisite_node_id: string | null;
   created_at: string;
 }
