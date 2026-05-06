@@ -58,7 +58,7 @@ export interface BookPage {
   page_number: number;
   layout: 'single' | 'split';
   background_image_url: string;
-  text_ar: string;
+  text: string;
   audio_url: string | null;
   word_timings: WordTiming[];
   interactive_elements: InteractiveElement[];
@@ -115,7 +115,7 @@ export interface CreatePageRequest {
   page_number: number;
   layout?: 'single' | 'split';
   background_image_url: string;
-  text_ar: string;
+  text: string;
   audio_url?: string;
   word_timings?: WordTiming[];
   interactive_elements?: InteractiveElement[];
@@ -126,7 +126,7 @@ export interface UpdatePageRequest {
   page_number?: number;
   layout?: 'single' | 'split';
   background_image_url?: string;
-  text_ar?: string;
+  text?: string;
   audio_url?: string | null;
   word_timings?: WordTiming[];
   interactive_elements?: InteractiveElement[];

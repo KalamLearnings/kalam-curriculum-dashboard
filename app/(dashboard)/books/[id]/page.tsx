@@ -97,7 +97,7 @@ export default function BookEditorPage() {
     page_number: 1,
     layout: 'single',
     background_image_url: '',
-    text_ar: '',
+    text: '',
     audio_url: '',
   });
 
@@ -201,18 +201,18 @@ export default function BookEditorPage() {
         page_number: page.page_number,
         layout: page.layout,
         background_image_url: page.background_image_url,
-        text_ar: page.text_ar,
+        text: page.text,
         audio_url: page.audio_url || '',
       });
       // Pre-fill TTS text with page text
-      setPageAudioText(page.text_ar || '');
+      setPageAudioText(page.text || '');
     } else {
       setEditingPage(null);
       setPageFormData({
         page_number: (pages?.length || 0) + 1,
         layout: 'single',
         background_image_url: '',
-        text_ar: '',
+        text: '',
         audio_url: '',
       });
       setPageAudioText('');
@@ -223,7 +223,7 @@ export default function BookEditorPage() {
 
   // Generate TTS audio for page
   const handleGeneratePageAudio = async () => {
-    const textToGenerate = pageAudioText.trim() || pageFormData.text_ar.trim();
+    const textToGenerate = pageAudioText.trim() || pageFormData.text.trim();
     if (!textToGenerate) {
       toast.error('Please enter text for audio generation');
       return;
@@ -248,7 +248,7 @@ export default function BookEditorPage() {
           ...getEdgeFunctionAuthHeaders(session.access_token),
         },
         body: JSON.stringify({
-          text_ar: textToGenerate,
+          text: textToGenerate,
           voice_id: pageAudioVoice,
         }),
       });
@@ -1069,7 +1069,7 @@ export default function BookEditorPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium">Page {page.page_number}</div>
                       <div className="text-sm text-gray-500 truncate" dir="rtl">
-                        {page.text_ar || '(No text)'}
+                        {page.text || '(No text)'}
                       </div>
                       <div className="text-xs text-gray-400 mt-1">
                         {page.layout} layout
@@ -1240,8 +1240,8 @@ export default function BookEditorPage() {
               Text
             </label>
             <textarea
-              value={pageFormData.text_ar}
-              onChange={(e) => setPageFormData((p) => ({ ...p, text_ar: e.target.value }))}
+              value={pageFormData.text}
+              onChange={(e) => setPageFormData((p) => ({ ...p, text: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md"
               rows={3}
             />
