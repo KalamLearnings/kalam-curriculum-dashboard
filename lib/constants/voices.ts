@@ -33,6 +33,10 @@ export const VOICES: Voice[] = [
     id: 'Nggzl2QAXh3OijoXD116',
     name: 'Candy',
   },
+  {
+    id: 'o8laf1qRpTOXOPNNZ59J',
+    name: 'Camel Mascot',
+  },
 ];
 
 // Default voice
