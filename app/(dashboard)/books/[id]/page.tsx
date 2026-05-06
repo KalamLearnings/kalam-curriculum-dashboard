@@ -19,6 +19,9 @@ import { useTopics } from '@/lib/hooks/useTopics';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { ImageLibraryModal } from '@/components/curriculum/forms/ImageLibraryModal';
+import { LetterSelectorModal } from '@/components/curriculum/LetterSelectorModal';
+import { useLetters } from '@/lib/hooks/useLetters';
+import type { LetterReference } from '@/components/curriculum/forms/ArabicLetterGrid';
 import type {
   Book,
   BookPage,
@@ -101,9 +104,6 @@ export default function BookEditorPage() {
   const [deleteAvailConfirmOpen, setDeleteAvailConfirmOpen] = useState(false);
   const [availToDelete, setAvailToDelete] = useState<BookAvailability | null>(null);
 
-  // Target letters input
-  const [targetLetterInput, setTargetLetterInput] = useState('');
-
   // Create form state (for new books)
   const [createFormData, setCreateFormData] = useState<{
     title: string;
@@ -126,12 +126,10 @@ export default function BookEditorPage() {
     difficulty_level: 1,
     target_letters: [],
     price: 0,
-    is_premium: false,
+    is_premium: true,
     curriculum_id: '',
     unlock_after_topic_id: '',
   });
-  const [createTargetLetterInput, setCreateTargetLetterInput] = useState('');
-
   // Topics for create form (based on selected curriculum)
   const { data: createTopics } = useTopics(createFormData.curriculum_id || null);
 
@@ -141,6 +139,11 @@ export default function BookEditorPage() {
 
   // Page image picker modal state
   const [pageImagePickerOpen, setPageImagePickerOpen] = useState(false);
+
+  // Letter selector modal state
+  const [letterSelectorOpen, setLetterSelectorOpen] = useState(false);
+  const [letterSelectorTarget, setLetterSelectorTarget] = useState<'create' | 'edit'>('create');
+  const { letters } = useLetters();
 
   // Load book data into form
   useEffect(() => {
@@ -178,24 +181,6 @@ export default function BookEditorPage() {
         is_active: formData.is_active,
       },
     });
-  };
-
-  const handleAddTargetLetter = () => {
-    const letter = targetLetterInput.trim();
-    if (letter && !formData.target_letters.includes(letter)) {
-      setFormData((prev) => ({
-        ...prev,
-        target_letters: [...prev.target_letters, letter],
-      }));
-      setTargetLetterInput('');
-    }
-  };
-
-  const handleRemoveTargetLetter = (letter: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      target_letters: prev.target_letters.filter((l) => l !== letter),
-    }));
   };
 
   // Page handlers
@@ -302,25 +287,6 @@ export default function BookEditorPage() {
         },
       }
     );
-  };
-
-  // Create form handlers
-  const handleCreateAddTargetLetter = () => {
-    const letter = createTargetLetterInput.trim();
-    if (letter && !createFormData.target_letters.includes(letter)) {
-      setCreateFormData((prev) => ({
-        ...prev,
-        target_letters: [...prev.target_letters, letter],
-      }));
-      setCreateTargetLetterInput('');
-    }
-  };
-
-  const handleCreateRemoveTargetLetter = (letter: string) => {
-    setCreateFormData((prev) => ({
-      ...prev,
-      target_letters: prev.target_letters.filter((l) => l !== letter),
-    }));
   };
 
   const handleCreateBook = () => {
@@ -564,45 +530,31 @@ export default function BookEditorPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Target Letters
               </label>
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  value={createTargetLetterInput}
-                  onChange={(e) => setCreateTargetLetterInput(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === 'Enter' &&
-                    (e.preventDefault(), handleCreateAddTargetLetter())
-                  }
-                  className="px-3 py-2 border rounded-md"
-                  placeholder="Add letter"
-                  dir="rtl"
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateAddTargetLetter}
-                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {createFormData.target_letters.map((letter) => (
-                  <span
-                    key={letter}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 rounded flex items-center gap-1"
-                    dir="rtl"
-                  >
-                    {letter}
-                    <button
-                      type="button"
-                      onClick={() => handleCreateRemoveTargetLetter(letter)}
-                      className="text-blue-500 hover:text-blue-700"
+              <button
+                type="button"
+                onClick={() => {
+                  setLetterSelectorTarget('create');
+                  setLetterSelectorOpen(true);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                {createFormData.target_letters.length > 0
+                  ? `${createFormData.target_letters.length} letter(s) selected`
+                  : 'Select letters...'}
+              </button>
+              {createFormData.target_letters.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {createFormData.target_letters.map((letter) => (
+                    <span
+                      key={letter}
+                      className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-lg"
+                      dir="rtl"
                     >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-              </div>
+                      {letter}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Curriculum Access Section */}
@@ -918,42 +870,31 @@ export default function BookEditorPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Target Letters
               </label>
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  value={targetLetterInput}
-                  onChange={(e) => setTargetLetterInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTargetLetter())}
-                  className="px-3 py-2 border rounded-md"
-                  placeholder="Add letter"
-                  dir="rtl"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddTargetLetter}
-                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.target_letters.map((letter) => (
-                  <span
-                    key={letter}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 rounded flex items-center gap-1"
-                    dir="rtl"
-                  >
-                    {letter}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTargetLetter(letter)}
-                      className="text-blue-500 hover:text-blue-700"
+              <button
+                type="button"
+                onClick={() => {
+                  setLetterSelectorTarget('edit');
+                  setLetterSelectorOpen(true);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                {formData.target_letters.length > 0
+                  ? `${formData.target_letters.length} letter(s) selected`
+                  : 'Select letters...'}
+              </button>
+              {formData.target_letters.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.target_letters.map((letter) => (
+                    <span
+                      key={letter}
+                      className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-lg"
+                      dir="rtl"
                     >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-              </div>
+                      {letter}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1355,6 +1296,39 @@ export default function BookEditorPage() {
           setPageImagePickerOpen(false);
         }}
         currentImage={pageFormData.background_image_url}
+      />
+
+      {/* Letter Selector Modal */}
+      <LetterSelectorModal
+        isOpen={letterSelectorOpen}
+        onClose={() => setLetterSelectorOpen(false)}
+        multiSelect={true}
+        showFormSelector={false}
+        selectedValue={(() => {
+          const targetLetters = letterSelectorTarget === 'create'
+            ? createFormData.target_letters
+            : formData.target_letters;
+          const refs: LetterReference[] = [];
+          for (const char of targetLetters) {
+            const letter = letters?.find((l) => l.letter === char);
+            if (letter) {
+              refs.push({ letterId: letter.id, form: 'isolated' });
+            }
+          }
+          return refs;
+        })()}
+        onSelect={(refs) => {
+          const letterRefs = Array.isArray(refs) ? refs : [refs];
+          const letterChars = letterRefs
+            .map((ref) => letters?.find((l) => l.id === ref.letterId)?.letter)
+            .filter((char): char is string => char !== undefined);
+
+          if (letterSelectorTarget === 'create') {
+            setCreateFormData((p) => ({ ...p, target_letters: letterChars }));
+          } else {
+            setFormData((p) => ({ ...p, target_letters: letterChars }));
+          }
+        }}
       />
     </main>
   );
