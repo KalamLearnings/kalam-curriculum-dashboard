@@ -645,6 +645,31 @@ export default function BookEditorPage() {
           }}
           currentImage={createFormData.cover_image_url}
         />
+
+        {/* Letter Selector Modal for Create Form */}
+        <LetterSelectorModal
+          isOpen={letterSelectorOpen}
+          onClose={() => setLetterSelectorOpen(false)}
+          multiSelect={true}
+          showFormSelector={false}
+          selectedValue={(() => {
+            const refs: LetterReference[] = [];
+            for (const char of createFormData.target_letters) {
+              const letter = letters?.find((l) => l.letter === char);
+              if (letter) {
+                refs.push({ letterId: letter.id, form: 'isolated' });
+              }
+            }
+            return refs;
+          })()}
+          onSelect={(refs) => {
+            const letterRefs = Array.isArray(refs) ? refs : [refs];
+            const letterChars = letterRefs
+              .map((ref) => letters?.find((l) => l.id === ref.letterId)?.letter)
+              .filter((char): char is string => char !== undefined);
+            setCreateFormData((p) => ({ ...p, target_letters: letterChars }));
+          }}
+        />
       </main>
     );
   }
