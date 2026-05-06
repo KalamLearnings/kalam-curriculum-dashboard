@@ -14,6 +14,8 @@ import {
   useCreateAvailability,
   useDeleteAvailability,
 } from '@/lib/hooks/useBooks';
+import { useCurricula } from '@/lib/hooks/useCurriculum';
+import { useTopics } from '@/lib/hooks/useTopics';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { ImageLibraryModal } from '@/components/curriculum/forms/ImageLibraryModal';
@@ -24,8 +26,6 @@ import type {
   CreateBookRequest,
   CreatePageRequest,
   UpdatePageRequest,
-  AvailabilityType,
-  CreateAvailabilityRequest,
 } from '@/lib/api/books';
 import { toast } from 'sonner';
 
@@ -36,13 +36,6 @@ const difficultyOptions = [
   { value: 2, label: 'Intermediate' },
   { value: 3, label: 'Advanced' },
 ];
-
-const availabilityTypeLabels: Record<AvailabilityType, string> = {
-  store_always: 'Store - Always Available',
-  store_unlockable: 'Store - Unlockable',
-  curriculum_reward: 'Curriculum Reward',
-  default: 'Default (Everyone)',
-};
 
 export default function BookEditorPage() {
   const params = useParams();
@@ -56,6 +49,15 @@ export default function BookEditorPage() {
   const { data: book, isLoading: bookLoading } = useBook(isNew ? null : bookId);
   const { data: pages, isLoading: pagesLoading } = useBookPages(isNew ? null : bookId);
   const { data: availability } = useBookAvailability(isNew ? null : bookId);
+
+  // Availability modal state (declared before useTopics which depends on selectedCurriculumId)
+  const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
+  const [selectedCurriculumId, setSelectedCurriculumId] = useState<string>('');
+  const [selectedTopicId, setSelectedTopicId] = useState<string>('');
+
+  // Curricula and topics for availability
+  const { data: curricula } = useCurricula();
+  const { data: topics } = useTopics(selectedCurriculumId || null);
 
   // Mutations
   const { mutate: createBookMutation, isPending: isCreating } = useCreateBook();
@@ -94,12 +96,6 @@ export default function BookEditorPage() {
   // Delete page confirmation
   const [deletePageConfirmOpen, setDeletePageConfirmOpen] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<BookPage | null>(null);
-
-  // Availability modal state
-  const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
-  const [availabilityFormData, setAvailabilityFormData] = useState<CreateAvailabilityRequest>({
-    availability_type: 'store_always',
-  });
 
   // Delete availability confirmation
   const [deleteAvailConfirmOpen, setDeleteAvailConfirmOpen] = useState(false);
@@ -253,12 +249,31 @@ export default function BookEditorPage() {
 
   // Availability handlers
   const handleSaveAvailability = () => {
+    if (!selectedCurriculumId) {
+      toast.error('Please select a curriculum');
+      return;
+    }
+
+    // Derive availability_type from selections:
+    // - Has topic prerequisite = store_unlockable (must complete topic to buy)
+    // - No prerequisite = store_always (available immediately in that curriculum)
+    const availabilityType = selectedTopicId ? 'store_unlockable' : 'store_always';
+
     createAvailability(
-      { bookId, data: availabilityFormData },
+      {
+        bookId,
+        data: {
+          availability_type: availabilityType,
+          curriculum_id: selectedCurriculumId,
+          prerequisite_type: selectedTopicId ? 'topic' : undefined,
+          prerequisite_topic_id: selectedTopicId || undefined,
+        },
+      },
       {
         onSuccess: () => {
           setAvailabilityModalOpen(false);
-          setAvailabilityFormData({ availability_type: 'store_always' });
+          setSelectedCurriculumId('');
+          setSelectedTopicId('');
         },
       }
     );
@@ -926,48 +941,53 @@ export default function BookEditorPage() {
       {activeTab === 'availability' && (
         <div className="bg-white rounded-lg shadow">
           <div className="p-4 border-b flex justify-between items-center">
-            <h3 className="font-medium">Availability Rules ({availability?.length || 0})</h3>
+            <h3 className="font-medium">Curriculum Access ({availability?.length || 0})</h3>
             <button
               onClick={() => setAvailabilityModalOpen(true)}
               className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
             >
-              + Add Rule
+              + Add Curriculum
             </button>
+          </div>
+
+          <div className="p-4 bg-gray-50 border-b text-sm text-gray-600">
+            Books are only visible to children enrolled in the curricula listed below.
+            Optionally require topic completion before the book can be purchased.
           </div>
 
           {!availability || availability.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              No availability rules. Add one to control how this book is accessed.
+              No curricula assigned. Add one to make this book available to children.
             </div>
           ) : (
             <div className="divide-y">
-              {availability.map((rule) => (
-                <div key={rule.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">
-                      {availabilityTypeLabels[rule.availability_type]}
+              {availability.map((rule) => {
+                const curriculum = curricula?.find((c) => c.id === rule.curriculum_id);
+                return (
+                  <div key={rule.id} className="p-4 flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">
+                        {curriculum?.title?.en || rule.curriculum_id || 'All Curricula'}
+                      </div>
+                      {rule.prerequisite_topic_id ? (
+                        <div className="text-sm text-gray-500">
+                          Unlocks after completing topic: {rule.prerequisite_topic_id}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-green-600">
+                          Available immediately
+                        </div>
+                      )}
                     </div>
-                    {rule.prerequisite_type && (
-                      <div className="text-sm text-gray-500">
-                        Prerequisite: Complete {rule.prerequisite_type}
-                        {rule.prerequisite_topic_id && ` (Topic: ${rule.prerequisite_topic_id})`}
-                        {rule.prerequisite_node_id && ` (Node: ${rule.prerequisite_node_id})`}
-                      </div>
-                    )}
-                    {rule.curriculum_id && (
-                      <div className="text-sm text-gray-500">
-                        Curriculum: {rule.curriculum_id}
-                      </div>
-                    )}
+                    <button
+                      onClick={() => handleDeleteAvailClick(rule)}
+                      className="text-red-600 hover:text-red-700 text-sm"
+                    >
+                      Remove
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDeleteAvailClick(rule)}
-                    className="text-red-600 hover:text-red-700 text-sm"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1106,96 +1126,62 @@ export default function BookEditorPage() {
       {/* Availability Modal */}
       <Modal
         isOpen={availabilityModalOpen}
-        onClose={() => setAvailabilityModalOpen(false)}
-        title="Add Availability Rule"
+        onClose={() => {
+          setAvailabilityModalOpen(false);
+          setSelectedCurriculumId('');
+          setSelectedTopicId('');
+        }}
+        title="Add Curriculum Access"
       >
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Availability Type
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Curriculum <span className="text-red-500">*</span>
             </label>
-            {Object.entries(availabilityTypeLabels).map(([value, label]) => (
-              <label key={value} className="flex items-center gap-2 mb-2">
-                <input
-                  type="radio"
-                  name="availability_type"
-                  value={value}
-                  checked={availabilityFormData.availability_type === value}
-                  onChange={(e) =>
-                    setAvailabilityFormData((p) => ({
-                      ...p,
-                      availability_type: e.target.value as AvailabilityType,
-                      prerequisite_type: undefined,
-                      prerequisite_topic_id: undefined,
-                      prerequisite_node_id: undefined,
-                    }))
-                  }
-                />
-                <span className="text-sm">{label}</span>
-              </label>
-            ))}
+            <select
+              value={selectedCurriculumId}
+              onChange={(e) => {
+                setSelectedCurriculumId(e.target.value);
+                setSelectedTopicId(''); // Reset topic when curriculum changes
+              }}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="">Select curriculum...</option>
+              {curricula?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title?.en || c.id}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Only children enrolled in this curriculum will see this book
+            </p>
           </div>
 
-          {(availabilityFormData.availability_type === 'store_unlockable' ||
-            availabilityFormData.availability_type === 'curriculum_reward') && (
-            <div className="border-t pt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Prerequisite Type
+          {selectedCurriculumId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Unlock after topic (optional)
               </label>
               <select
-                value={availabilityFormData.prerequisite_type || ''}
-                onChange={(e) =>
-                  setAvailabilityFormData((p) => ({
-                    ...p,
-                    prerequisite_type: e.target.value as 'topic' | 'node' | undefined,
-                  }))
-                }
+                value={selectedTopicId}
+                onChange={(e) => setSelectedTopicId(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
               >
-                <option value="">Select...</option>
-                <option value="topic">Complete Topic</option>
-                <option value="node">Complete Node</option>
+                <option value="">Available immediately</option>
+                {topics
+                  ?.sort((a, b) => a.sequence_number - b.sequence_number)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.sequence_number}. {t.title?.en || t.letter?.letter || t.id}
+                    </option>
+                  ))}
               </select>
-
-              {availabilityFormData.prerequisite_type && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Topic ID
-                  </label>
-                  <input
-                    type="text"
-                    value={availabilityFormData.prerequisite_topic_id || ''}
-                    onChange={(e) =>
-                      setAvailabilityFormData((p) => ({
-                        ...p,
-                        prerequisite_topic_id: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Enter topic ID"
-                  />
-                </div>
-              )}
-
-              {availabilityFormData.prerequisite_type === 'node' && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Node ID
-                  </label>
-                  <input
-                    type="text"
-                    value={availabilityFormData.prerequisite_node_id || ''}
-                    onChange={(e) =>
-                      setAvailabilityFormData((p) => ({
-                        ...p,
-                        prerequisite_node_id: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Enter node ID"
-                  />
-                </div>
-              )}
+              <p className="mt-1 text-xs text-gray-500">
+                {selectedTopicId
+                  ? 'Child must complete all topics up to and including the selected topic'
+                  : 'Book will be available as soon as child enrolls in this curriculum'}
+              </p>
             </div>
           )}
 
