@@ -1275,8 +1275,8 @@ export default function BookEditorPage() {
               <VoiceTagsInput
                 value={pageAudioText}
                 onChange={setPageAudioText}
-                placeholder="Enter text to generate audio (defaults to Arabic text above)..."
-                dir="rtl"
+                placeholder="Enter text to generate audio..."
+                dir="ltr"
                 rows={2}
               />
 
