@@ -7,15 +7,11 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, TextInput, Checkbox, Select } from './FormField';
+import { FormField, TextInput, Checkbox } from './FormField';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
 import { WordSelector } from '../WordSelector';
+import { cn } from '@/lib/utils';
 import type { BuildWordFromLettersConfig, LetterDisplayMode } from '@/lib/types/activity-configs';
-
-const LETTER_DISPLAY_MODE_OPTIONS: { value: LetterDisplayMode; label: string }[] = [
-  { value: 'contextual', label: 'Contextual (letters show in word form)' },
-  { value: 'isolated', label: 'Isolated (letters show in isolated form)' },
-];
 
 export function BuildWordFromLettersForm({
   config,
@@ -69,13 +65,47 @@ export function BuildWordFromLettersForm({
       {/* Letter Display Mode */}
       <FormField
         label="Letter Display Mode"
-        hint="How scattered letters appear: contextual shows letters in their word form (e.g., بـ for initial), isolated shows the base letter form (e.g., ب)"
+        hint="How the scattered letters appear for the child to drag"
       >
-        <Select
-          value={letterDisplayMode}
-          onChange={(value) => updateConfig({ letterDisplayMode: value as LetterDisplayMode })}
-          options={LETTER_DISPLAY_MODE_OPTIONS}
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => updateConfig({ letterDisplayMode: 'contextual' })}
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all',
+              letterDisplayMode === 'contextual'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+            )}
+          >
+            <div className="text-2xl font-arabic flex gap-1">
+              <span>بـ</span>
+              <span>ـا</span>
+              <span>ـب</span>
+            </div>
+            <div className="text-xs font-medium text-gray-600">Contextual</div>
+            <div className="text-xs text-gray-400 text-center">Letters in word form</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => updateConfig({ letterDisplayMode: 'isolated' })}
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all',
+              letterDisplayMode === 'isolated'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+            )}
+          >
+            <div className="text-2xl font-arabic flex gap-1">
+              <span>ب</span>
+              <span>ا</span>
+              <span>ب</span>
+            </div>
+            <div className="text-xs font-medium text-gray-600">Isolated</div>
+            <div className="text-xs text-gray-400 text-center">Letters in base form</div>
+          </button>
+        </div>
       </FormField>
 
       {/* Target Word - only show if not using child's name */}
