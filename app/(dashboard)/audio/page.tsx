@@ -8,13 +8,21 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { useAudio } from '@/lib/hooks/useAudio';
-import { AudioGrid } from '@/components/audio/AudioGrid';
-import { AudioCategoryFilter } from '@/components/audio/AudioCategoryFilter';
-import { AudioSearchBar } from '@/components/audio/AudioSearchBar';
 import { AudioUploadModal } from '@/components/audio/AudioUploadModal';
-import { SUPPORTED_AUDIO_TYPES } from '@/lib/types/audio';
-import type { AudioUploadData } from '@/lib/types/audio';
+import { PageHeader } from '@/components/shared/page-header';
+import { SearchInput } from '@/components/shared/search-input';
+import { CategoryFilter } from '@/components/shared/category-filter';
+import { MediaGrid } from '@/components/shared/media-grid';
+import { MediaCard } from '@/components/shared/media-card';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  AUDIO_CATEGORIES,
+  SUPPORTED_AUDIO_TYPES,
+  type AudioCategory,
+  type AudioUploadData,
+} from '@/lib/types/audio';
 
 export default function AudioPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -67,7 +75,6 @@ export default function AudioPage() {
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
-
       if (SUPPORTED_AUDIO_TYPES.includes(file.type)) {
         setDroppedFile(file);
         setUploadModalOpen(true);
@@ -82,100 +89,104 @@ export default function AudioPage() {
     setDroppedFile(null);
   };
 
+  const categories = Object.entries(AUDIO_CATEGORIES).map(([value, { label }]) => ({
+    value: value as AudioCategory,
+    label,
+  }));
+
   return (
     <div
-      className="min-h-screen bg-gray-50 py-8 relative"
+      className="min-h-screen bg-background py-8 relative"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {/* Drag Overlay */}
       {isDraggingOver && (
-        <div className="fixed inset-0 bg-purple-500 bg-opacity-20 z-50 flex items-center justify-center pointer-events-none">
-          <div className="bg-white rounded-lg shadow-2xl p-12 border-4 border-dashed border-purple-500">
+        <div className="fixed inset-0 bg-purple-500/20 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-background rounded-lg shadow-2xl p-12 border-4 border-dashed border-purple-500">
             <div className="text-center">
-              <div className="text-6xl mb-4">&#127925;</div>
-              <p className="text-2xl font-bold text-gray-900 mb-2">Drop audio here</p>
-              <p className="text-gray-600">to add it to your audio library</p>
+              <div className="text-6xl mb-4">🎵</div>
+              <p className="text-2xl font-bold text-foreground mb-2">Drop audio here</p>
+              <p className="text-muted-foreground">to add it to your audio library</p>
             </div>
           </div>
         </div>
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+        <PageHeader
+          title="Audio Library"
+          description="Upload once, use everywhere in your curriculum"
+          action={{
+            label: 'Add Audio',
+            icon: <Plus className="h-4 w-4 mr-2" />,
+            onClick: () => setUploadModalOpen(true),
+          }}
+        >
+          <div className="flex items-center gap-6 text-sm text-muted-foreground mt-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Audio Library</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Upload once, use everywhere in your curriculum
-              </p>
+              <span className="font-semibold text-foreground">{audioAssets.length}</span> audio
+              files
             </div>
-            <button
-              onClick={() => setUploadModalOpen(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
-            >
-              + Add Audio
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div className="flex items-center gap-6 text-sm text-gray-600 mt-4">
-            <div>
-              <span className="font-semibold text-gray-900">{audioAssets.length}</span> audio files
-            </div>
-            {selectedCategory && (
-              <div className="text-purple-600">
-                Filtered by category
-              </div>
-            )}
+            {selectedCategory && <div className="text-purple-600">Filtered by category</div>}
             {searchQuery && (
-              <div className="text-purple-600">
-                Search results for "{searchQuery}"
-              </div>
+              <div className="text-purple-600">Search results for &quot;{searchQuery}&quot;</div>
             )}
           </div>
-        </div>
+        </PageHeader>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <AudioSearchBar
+        <Card className="mb-6">
+          <CardContent className="p-4 space-y-4">
+            <SearchInput
               value={searchQuery}
               onChange={setSearchQuery}
+              placeholder="Search audio by name or tag..."
             />
-
-            {/* Category Filter */}
-            <AudioCategoryFilter
-              selectedCategory={selectedCategory}
-              onCategoryChange={setCategory}
+            <CategoryFilter
+              categories={categories}
+              selected={selectedCategory}
+              onChange={setCategory}
+              totalCount={audioAssets.length}
+              color="purple"
             />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Audio Grid */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <AudioGrid
-            audioAssets={audioAssets}
-            loading={loading}
-            error={error}
-            onDeleteAudio={removeAudio}
-            deletable={true}
-            emptyMessage={
-              searchQuery
-                ? `No audio found matching "${searchQuery}"`
-                : selectedCategory
-                ? 'No audio in this category yet'
-                : 'No audio yet. Click "Add Audio" to get started!'
-            }
-          />
-        </div>
+        <Card>
+          <CardContent className="p-6">
+            <MediaGrid
+              items={audioAssets}
+              loading={loading}
+              error={error}
+              emptyMessage={
+                searchQuery
+                  ? `No audio found matching "${searchQuery}"`
+                  : selectedCategory
+                  ? 'No audio in this category yet'
+                  : 'No audio yet. Click "Add Audio" to get started!'
+              }
+              emptyIcon="🎵"
+              renderItem={(audio) => (
+                <MediaCard
+                  key={audio.id}
+                  type="audio"
+                  id={audio.id}
+                  name={audio.name}
+                  displayName={audio.displayName}
+                  audioUrl={audio.url}
+                  duration={audio.durationMs}
+                  tags={audio.tags}
+                  category={AUDIO_CATEGORIES[audio.category]?.label}
+                  deletable
+                  onDelete={() => removeAudio(audio.id)}
+                />
+              )}
+            />
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Upload Modal */}
       <AudioUploadModal
         isOpen={uploadModalOpen}
         onClose={handleCloseModal}

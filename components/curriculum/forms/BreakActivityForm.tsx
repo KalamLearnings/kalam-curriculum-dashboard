@@ -20,6 +20,7 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
   const variant = config?.variant || 'tracing_lines';
   const duration = config?.duration || 30;
   const color = config?.color;
+  const linePattern = config?.linePattern;
   const cardCount = config?.cardCount || 6;
   const targetShape = config?.targetShape;
   const targetCount = config?.targetCount || 5;
@@ -48,6 +49,18 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
     { value: 'pink', label: 'Pink', icon: '🩷' },
   ];
 
+  const linePatternOptions = [
+    { value: 'straight', label: 'Straight', icon: '➖' },
+    { value: 'wavy', label: 'Wavy', icon: '〰️' },
+    { value: 'zigzag', label: 'Zigzag', icon: '⚡' },
+    { value: 'spiral', label: 'Spiral', icon: '🌀' },
+    { value: 'square', label: 'Square', icon: '⬜' },
+    { value: 'circle', label: 'Circle', icon: '⭕' },
+    { value: 'star', label: 'Star', icon: '⭐' },
+    { value: 'triangle', label: 'Triangle', icon: '🔺' },
+    { value: 'heart', label: 'Heart', icon: '❤️' },
+  ];
+
   // Only coloring needs duration
   const needsDuration = variant === 'coloring';
 
@@ -64,6 +77,29 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
           options={breakTypeOptions}
         />
       </FormField>
+
+      {variant === 'tracing_lines' && (
+        <FormField label="Line Pattern" required hint="Pattern or shape to trace">
+          <div className="grid grid-cols-3 gap-2">
+            {linePatternOptions.map((pattern) => (
+              <button
+                key={pattern.value}
+                type="button"
+                onClick={() => updateConfig({ linePattern: pattern.value })}
+                className={cn(
+                  'flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all',
+                  linePattern === pattern.value
+                    ? 'border-blue-500 bg-blue-50 shadow-md'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                )}
+              >
+                <span className="text-2xl mb-1">{pattern.icon}</span>
+                <span className="text-xs font-medium text-gray-700">{pattern.label}</span>
+              </button>
+            ))}
+          </div>
+        </FormField>
+      )}
 
       {variant === 'dot_tapping' && (
         <FormField label="Target Color" required hint="Color of dots the child should tap">

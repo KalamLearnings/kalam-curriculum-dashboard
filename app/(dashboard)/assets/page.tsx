@@ -8,12 +8,16 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { useAssets } from '@/lib/hooks/useAssets';
-import { AssetGrid } from '@/components/assets/AssetGrid';
-import { AssetCategoryFilter } from '@/components/assets/AssetCategoryFilter';
-import { AssetSearchBar } from '@/components/assets/AssetSearchBar';
 import { AssetUploadModal } from '@/components/assets/AssetUploadModal';
-import type { AssetUploadData } from '@/lib/types/assets';
+import { PageHeader } from '@/components/shared/page-header';
+import { SearchInput } from '@/components/shared/search-input';
+import { CategoryFilter } from '@/components/shared/category-filter';
+import { MediaGrid } from '@/components/shared/media-grid';
+import { MediaCard } from '@/components/shared/media-card';
+import { Card, CardContent } from '@/components/ui/card';
+import { ASSET_CATEGORIES, type AssetCategory, type AssetUploadData } from '@/lib/types/assets';
 
 export default function AssetsPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -30,7 +34,6 @@ export default function AssetsPage() {
     removeAsset,
     setCategory,
     setSearchQuery,
-    refetch,
   } = useAssets({ autoLoad: true });
 
   const handleUpload = async (data: AssetUploadData) => {
@@ -49,7 +52,6 @@ export default function AssetsPage() {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only hide overlay if leaving the main container
     if (e.currentTarget === e.target) {
       setIsDraggingOver(false);
     }
@@ -68,8 +70,6 @@ export default function AssetsPage() {
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
-
-      // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (validTypes.includes(file.type)) {
         setDroppedFile(file);
@@ -85,100 +85,103 @@ export default function AssetsPage() {
     setDroppedFile(null);
   };
 
+  const categories = Object.entries(ASSET_CATEGORIES).map(([value, { label, icon }]) => ({
+    value: value as AssetCategory,
+    label,
+    icon,
+  }));
+
   return (
     <div
-      className="min-h-screen bg-gray-50 py-8 relative"
+      className="min-h-screen bg-background py-8 relative"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {/* Drag Overlay */}
       {isDraggingOver && (
-        <div className="fixed inset-0 bg-blue-500 bg-opacity-20 z-50 flex items-center justify-center pointer-events-none">
-          <div className="bg-white rounded-lg shadow-2xl p-12 border-4 border-dashed border-blue-500">
+        <div className="fixed inset-0 bg-primary/20 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-background rounded-lg shadow-2xl p-12 border-4 border-dashed border-primary">
             <div className="text-center">
               <div className="text-6xl mb-4">📤</div>
-              <p className="text-2xl font-bold text-gray-900 mb-2">Drop image here</p>
-              <p className="text-gray-600">to add it to your asset library</p>
+              <p className="text-2xl font-bold text-foreground mb-2">Drop image here</p>
+              <p className="text-muted-foreground">to add it to your asset library</p>
             </div>
           </div>
         </div>
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+        <PageHeader
+          title="Asset Library"
+          description="Upload once, use everywhere in your curriculum"
+          action={{
+            label: 'Upload Asset',
+            icon: <Plus className="h-4 w-4 mr-2" />,
+            onClick: () => setUploadModalOpen(true),
+          }}
+        >
+          <div className="flex items-center gap-6 text-sm text-muted-foreground mt-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Asset Library</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Upload once, use everywhere in your curriculum
-              </p>
+              <span className="font-semibold text-foreground">{assets.length}</span> assets
             </div>
-            <button
-              onClick={() => setUploadModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              + Upload Asset
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div className="flex items-center gap-6 text-sm text-gray-600 mt-4">
-            <div>
-              <span className="font-semibold text-gray-900">{assets.length}</span> assets
-            </div>
-            {selectedCategory && (
-              <div className="text-blue-600">
-                Filtered by category
-              </div>
-            )}
+            {selectedCategory && <div className="text-primary">Filtered by category</div>}
             {searchQuery && (
-              <div className="text-blue-600">
-                Search results for "{searchQuery}"
-              </div>
+              <div className="text-primary">Search results for &quot;{searchQuery}&quot;</div>
             )}
           </div>
-        </div>
+        </PageHeader>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <AssetSearchBar
+        <Card className="mb-6">
+          <CardContent className="p-4 space-y-4">
+            <SearchInput
               value={searchQuery}
               onChange={setSearchQuery}
+              placeholder="Search assets by name or tag..."
             />
-
-            {/* Category Filter */}
-            <AssetCategoryFilter
-              selectedCategory={selectedCategory}
-              onCategoryChange={setCategory}
+            <CategoryFilter
+              categories={categories}
+              selected={selectedCategory}
+              onChange={setCategory}
+              totalCount={assets.length}
+              color="blue"
             />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Asset Grid */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <AssetGrid
-            assets={assets}
-            loading={loading}
-            error={error}
-            onDeleteAsset={removeAsset}
-            deletable={true}
-            emptyMessage={
-              searchQuery
-                ? `No assets found matching "${searchQuery}"`
-                : selectedCategory
-                ? 'No assets in this category yet'
-                : 'No assets uploaded yet. Click "Upload Asset" to get started!'
-            }
-          />
-        </div>
+        <Card>
+          <CardContent className="p-6">
+            <MediaGrid
+              items={assets}
+              loading={loading}
+              error={error}
+              emptyMessage={
+                searchQuery
+                  ? `No assets found matching "${searchQuery}"`
+                  : selectedCategory
+                  ? 'No assets in this category yet'
+                  : 'No assets uploaded yet. Click "Upload Asset" to get started!'
+              }
+              emptyIcon="📦"
+              renderItem={(asset) => (
+                <MediaCard
+                  key={asset.id}
+                  type="image"
+                  id={asset.id}
+                  name={asset.name}
+                  displayName={asset.displayName}
+                  previewUrl={asset.url}
+                  tags={asset.tags}
+                  category={ASSET_CATEGORIES[asset.category]?.label}
+                  deletable
+                  onDelete={() => removeAsset(asset.id)}
+                />
+              )}
+            />
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Upload Modal */}
       <AssetUploadModal
         isOpen={uploadModalOpen}
         onClose={handleCloseModal}

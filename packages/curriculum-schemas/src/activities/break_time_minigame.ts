@@ -38,7 +38,7 @@ export const BreakTimeMiniGameConfigSchema = z.object({
     .describe('Break duration in seconds'),
 
   // Tracing Lines variant options
-  linePattern: z.enum(['straight', 'wavy', 'zigzag', 'spiral'])
+  linePattern: z.enum(['straight', 'wavy', 'zigzag', 'spiral', 'square', 'circle', 'star', 'triangle', 'heart'])
     .optional()
     .describe('Pattern to trace (for tracing_lines variant)'),
 
