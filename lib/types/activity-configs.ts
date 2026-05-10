@@ -96,9 +96,12 @@ export interface BreakTimeMiniGameConfig {
 /**
  * Build Word from Letters Activity Config
  */
+export type LetterDisplayMode = 'contextual' | 'isolated';
+
 export interface BuildWordFromLettersConfig {
   targetWord?: string;
   useChildName?: boolean;
+  letterDisplayMode?: LetterDisplayMode;
   showConnectedForm?: boolean;
   highlightCorrectPositions?: boolean;
   scrambleLetters?: boolean;

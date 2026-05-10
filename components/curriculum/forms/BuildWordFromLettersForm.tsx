@@ -7,10 +7,15 @@
 
 import React from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, TextInput, Checkbox } from './FormField';
+import { FormField, TextInput, Checkbox, Select } from './FormField';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
 import { WordSelector } from '../WordSelector';
-import type { BuildWordFromLettersConfig } from '@/lib/types/activity-configs';
+import type { BuildWordFromLettersConfig, LetterDisplayMode } from '@/lib/types/activity-configs';
+
+const LETTER_DISPLAY_MODE_OPTIONS: { value: LetterDisplayMode; label: string }[] = [
+  { value: 'contextual', label: 'Contextual (letters show in word form)' },
+  { value: 'isolated', label: 'Isolated (letters show in isolated form)' },
+];
 
 export function BuildWordFromLettersForm({
   config,
@@ -20,6 +25,7 @@ export function BuildWordFromLettersForm({
 }: BaseActivityFormProps<BuildWordFromLettersConfig>) {
   const useChildName = config?.useChildName || false;
   const targetWord = config?.targetWord || '';
+  const letterDisplayMode = config?.letterDisplayMode || 'contextual';
   const wordMeaningEn = config?.wordMeaning?.en || '';
   const wordMeaningAr = config?.wordMeaning?.ar || '';
 
@@ -57,6 +63,18 @@ export function BuildWordFromLettersForm({
           checked={useChildName}
           onChange={handleUseChildNameChange}
           label="Use child's name"
+        />
+      </FormField>
+
+      {/* Letter Display Mode */}
+      <FormField
+        label="Letter Display Mode"
+        hint="How scattered letters appear: contextual shows letters in their word form (e.g., بـ for initial), isolated shows the base letter form (e.g., ب)"
+      >
+        <Select
+          value={letterDisplayMode}
+          onChange={(value) => updateConfig({ letterDisplayMode: value as LetterDisplayMode })}
+          options={LETTER_DISPLAY_MODE_OPTIONS}
         />
       </FormField>
 
