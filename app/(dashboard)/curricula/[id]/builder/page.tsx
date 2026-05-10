@@ -368,7 +368,8 @@ export default function CurriculumBuilderPage() {
 
   // Upload audio blob to Supabase Storage (shared utility)
   const uploadAudioToStorage = async (blob: Blob, filePath: string): Promise<string> => {
-    const { supabase } = await import('@/lib/supabase');
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
 
     const { data, error } = await supabase.storage
       .from('curriculum-audio')
