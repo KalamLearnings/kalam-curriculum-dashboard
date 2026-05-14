@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Pause, Trash2, Check, Copy } from 'lucide-react';
+import { Play, Pause, Trash2, Check, Link, Pencil } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,8 +29,10 @@ interface MediaCardProps {
   isSelected?: boolean;
   selectable?: boolean;
   deletable?: boolean;
+  editable?: boolean;
   onSelect?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
   duration?: number;
   audioUrl?: string;
   className?: string;
@@ -45,8 +47,10 @@ export function MediaCard({
   isSelected = false,
   selectable = false,
   deletable = false,
+  editable = false,
   onSelect,
   onDelete,
+  onEdit,
   duration,
   audioUrl,
   className,
@@ -180,7 +184,22 @@ export function MediaCard({
             onClick={handleCopyUrl}
             title="Copy URL"
           >
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copied ? <Check className="h-3 w-3" /> : <Link className="h-3 w-3" />}
+          </Button>
+        )}
+
+        {editable && onEdit && (
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute top-2 left-[4.5rem] h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            title="Edit"
+          >
+            <Pencil className="h-3 w-3" />
           </Button>
         )}
 

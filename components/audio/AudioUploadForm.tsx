@@ -9,7 +9,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
-import type { AudioCategory, AudioUploadData } from '@/lib/types/audio';
+import type { AudioAsset, AudioCategory, AudioUploadData } from '@/lib/types/audio';
 import { AUDIO_CATEGORIES, SUPPORTED_AUDIO_TYPES, MAX_AUDIO_FILE_SIZE } from '@/lib/types/audio';
 import { cn } from '@/lib/utils';
 import { VoiceTagsInput } from '@/components/ui/VoiceTagsInput';
@@ -22,18 +22,21 @@ interface AudioUploadFormProps {
   onUpload: (data: AudioUploadData) => Promise<void>;
   defaultCategory?: AudioCategory | null;
   initialFile?: File | null;
+  editingAudio?: AudioAsset | null;
 }
 
 export function AudioUploadForm({
   onUpload,
   defaultCategory,
   initialFile = null,
+  editingAudio = null,
 }: AudioUploadFormProps) {
+  const isEditing = !!editingAudio;
   const [mode, setMode] = useState<InputMode>(initialFile ? 'upload' : 'tts');
   const [file, setFile] = useState<File | null>(initialFile);
-  const [displayName, setDisplayName] = useState('');
-  const [category, setCategory] = useState<AudioCategory | null>(defaultCategory ?? null);
-  const [tags, setTags] = useState<string[]>([]);
+  const [displayName, setDisplayName] = useState(editingAudio?.displayName || '');
+  const [category, setCategory] = useState<AudioCategory | null>(editingAudio?.category || defaultCategory || null);
+  const [tags, setTags] = useState<string[]>(editingAudio?.tags || []);
   const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -219,23 +222,23 @@ export function AudioUploadForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let uploadFile: File;
+    let uploadFile: File | undefined;
 
-    if (mode === 'upload') {
-      if (!file) {
-        setError('Please select a file');
-        return;
-      }
+    // In edit mode, file is optional (only needed if replacing audio)
+    if (mode === 'upload' && file) {
       uploadFile = file;
-    } else {
-      if (!generatedBlob) {
-        setError('Please generate audio first');
-        return;
-      }
-      // Convert blob to file
+    } else if (mode === 'tts' && generatedBlob) {
       uploadFile = new File([generatedBlob.blob], `${displayName || 'tts-audio'}.mp3`, {
         type: 'audio/mpeg',
       });
+    } else if (!isEditing) {
+      // Not editing and no file - require file
+      if (mode === 'upload') {
+        setError('Please select a file');
+      } else {
+        setError('Please generate audio first');
+      }
+      return;
     }
 
     if (!displayName.trim()) {
@@ -254,7 +257,7 @@ export function AudioUploadForm({
     try {
       const uploadData: AudioUploadData = {
         displayName: displayName.trim(),
-        file: uploadFile,
+        file: uploadFile as File, // Will be undefined in edit mode without new audio
         category: category,
         tags,
       };
@@ -285,7 +288,8 @@ export function AudioUploadForm({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const hasAudio = mode === 'upload' ? !!file : !!generatedBlob;
+  const hasAudio = isEditing || (mode === 'upload' ? !!file : !!generatedBlob);
+  const hasNewAudio = (mode === 'upload' && !!file) || (mode === 'tts' && !!generatedBlob);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
@@ -295,6 +299,55 @@ export function AudioUploadForm({
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
       />
+
+      {/* Current Audio Preview (Edit Mode) */}
+      {isEditing && editingAudio && (
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-2">Current audio</p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!audioRef.current) return;
+                if (isPlaying) {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                } else {
+                  audioRef.current.src = editingAudio.url;
+                  audioRef.current.play();
+                }
+              }}
+              className={cn(
+                'w-10 h-10 rounded-full flex items-center justify-center transition-all',
+                isPlaying
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
+              )}
+            >
+              {isPlaying ? (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="4" width="4" height="16" />
+                  <rect x="14" y="4" width="4" height="16" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <polygon points="5,3 19,12 5,21" />
+                </svg>
+              )}
+            </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-700 truncate">{editingAudio.displayName}</p>
+              <p className="text-xs text-gray-500 truncate">{editingAudio.name}</p>
+            </div>
+          </div>
+          {!hasNewAudio && (
+            <p className="text-xs text-gray-400 mt-2">
+              Generate new audio below to replace, or just update the details.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Mode Selector */}
       <div className="flex rounded-lg bg-gray-100 p-1">
@@ -308,7 +361,7 @@ export function AudioUploadForm({
               : 'text-gray-600 hover:text-gray-900'
           )}
         >
-          Upload File
+          {isEditing ? 'Replace with File' : 'Upload File'}
         </button>
         <button
           type="button"
@@ -320,7 +373,7 @@ export function AudioUploadForm({
               : 'text-gray-600 hover:text-gray-900'
           )}
         >
-          Generate from Text
+          {isEditing ? 'Regenerate from Text' : 'Generate from Text'}
         </button>
       </div>
 
@@ -579,7 +632,7 @@ export function AudioUploadForm({
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
         )}
       >
-        {uploading ? 'Saving...' : 'Add Audio'}
+        {uploading ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Audio'}
       </button>
     </form>
   );

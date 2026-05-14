@@ -28,6 +28,7 @@ export default function AudioPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [droppedFile, setDroppedFile] = useState<File | null>(null);
+  const [editingAudio, setEditingAudio] = useState<typeof audioAssets[0] | null>(null);
 
   const {
     audioAssets,
@@ -37,6 +38,8 @@ export default function AudioPage() {
     searchQuery,
     uploadNewAudio,
     removeAudio,
+    updateAudio,
+    refetch,
     setCategory,
     setSearchQuery,
   } = useAudio({ autoLoad: true });
@@ -44,6 +47,28 @@ export default function AudioPage() {
   const handleUpload = async (data: AudioUploadData) => {
     await uploadNewAudio(data);
     setDroppedFile(null);
+  };
+
+  const handleUpdate = async (id: string, data: AudioUploadData) => {
+    // If there's a new file, we need to re-upload (replace)
+    if (data.file) {
+      // For now, delete and re-upload with same metadata
+      // TODO: Add a proper replace endpoint if needed
+      await removeAudio(id);
+      await uploadNewAudio(data);
+    } else {
+      // Just update metadata
+      await updateAudio(id, {
+        displayName: data.displayName,
+        tags: data.tags,
+      });
+    }
+    setEditingAudio(null);
+  };
+
+  const handleEdit = (audio: typeof audioAssets[0]) => {
+    setEditingAudio(audio);
+    setUploadModalOpen(true);
   };
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -87,6 +112,7 @@ export default function AudioPage() {
   const handleCloseModal = () => {
     setUploadModalOpen(false);
     setDroppedFile(null);
+    setEditingAudio(null);
   };
 
   const categories = Object.entries(AUDIO_CATEGORIES).map(([value, { label }]) => ({
@@ -179,7 +205,9 @@ export default function AudioPage() {
                   tags={audio.tags}
                   category={AUDIO_CATEGORIES[audio.category]?.label}
                   deletable
+                  editable
                   onDelete={() => removeAudio(audio.id)}
+                  onEdit={() => handleEdit(audio)}
                 />
               )}
             />
@@ -191,8 +219,10 @@ export default function AudioPage() {
         isOpen={uploadModalOpen}
         onClose={handleCloseModal}
         onUpload={handleUpload}
+        onUpdate={handleUpdate}
         defaultCategory={selectedCategory}
         initialFile={droppedFile}
+        editingAudio={editingAudio}
       />
     </div>
   );
