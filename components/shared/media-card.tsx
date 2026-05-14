@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Pause, Trash2, Check } from 'lucide-react';
+import { Play, Pause, Trash2, Check, Copy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +57,7 @@ export function MediaCard({
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handlePlayPause = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -89,6 +90,17 @@ export function MediaCard({
     if (selectable && onSelect) {
       onSelect();
     }
+  };
+
+  const handleCopyUrl = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const urlToCopy = audioUrl || previewUrl;
+    if (!urlToCopy) return;
+
+    navigator.clipboard.writeText(urlToCopy).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const formatDuration = (ms?: number) => {
@@ -158,6 +170,18 @@ export function MediaCard({
           <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center">
             <Check className="h-4 w-4" />
           </div>
+        )}
+
+        {(audioUrl || previewUrl) && (
+          <Button
+            variant={copied ? 'default' : 'secondary'}
+            size="icon"
+            className="absolute top-2 left-10 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={handleCopyUrl}
+            title="Copy URL"
+          >
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          </Button>
         )}
 
         {deletable && onDelete && (
