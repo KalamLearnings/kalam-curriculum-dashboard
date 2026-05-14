@@ -14,6 +14,7 @@ import {
   uploadAudioAsset,
   deleteAudioAsset,
   updateAudioAsset,
+  replaceAudioFile,
   type AudioFilters,
 } from '@/lib/services/audioService';
 
@@ -33,6 +34,7 @@ interface UseAudioReturn {
   uploadNewAudio: (data: AudioUploadData) => Promise<AudioAsset>;
   removeAudio: (audioId: string) => Promise<void>;
   updateAudio: (id: string, updates: Partial<Pick<AudioAsset, 'displayName' | 'tags' | 'metadata'>>) => Promise<AudioAsset>;
+  replaceAudio: (id: string, file: File, updates?: Partial<Pick<AudioAsset, 'displayName' | 'tags' | 'metadata'>>) => Promise<AudioAsset>;
   setCategory: (category: AudioCategory | undefined) => void;
   setSearchQuery: (query: string) => void;
   refetch: () => Promise<void>;
@@ -119,6 +121,24 @@ export function useAudio(options: UseAudioOptions = {}): UseAudioReturn {
     }
   }, []);
 
+  const replaceAudio = useCallback(async (
+    id: string,
+    file: File,
+    updates?: Partial<Pick<AudioAsset, 'displayName' | 'tags' | 'metadata'>>
+  ): Promise<AudioAsset> => {
+    setError(null);
+
+    try {
+      const updated = await replaceAudioFile(id, file, updates);
+      setAudioAssets(prev => prev.map(audio => audio.id === id ? updated : audio));
+      return updated;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to replace audio';
+      setError(errorMessage);
+      throw err;
+    }
+  }, []);
+
   const setCategory = useCallback((category: AudioCategory | undefined) => {
     setSelectedCategory(category);
   }, []);
@@ -141,6 +161,7 @@ export function useAudio(options: UseAudioOptions = {}): UseAudioReturn {
     uploadNewAudio,
     removeAudio,
     updateAudio,
+    replaceAudio,
     setCategory,
     setSearchQuery,
     refetch,

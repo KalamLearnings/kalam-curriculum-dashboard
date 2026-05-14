@@ -218,6 +218,72 @@ export async function updateAudioAsset(
 }
 
 /**
+ * Replaces an audio file at the same storage path (keeps the same URL)
+ */
+export async function replaceAudioFile(
+  id: string,
+  file: File,
+  updates?: Partial<Pick<AudioAsset, 'displayName' | 'tags' | 'metadata'>>
+): Promise<AudioAsset> {
+  const supabase = createClient();
+
+  validateAudioFile(file);
+
+  // Get the existing asset to find the storage path
+  const { data: asset, error: fetchError } = await supabase
+    .from('audio_assets')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) {
+    console.error('Error fetching audio asset for replacement:', fetchError);
+    throw new Error(`Failed to find audio asset: ${fetchError.message}`);
+  }
+
+  // Upload new file to the same path with upsert: true
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(asset.storage_path, file, {
+      cacheControl: '31536000',
+      upsert: true,
+    });
+
+  if (uploadError) {
+    console.error('Error replacing audio file:', uploadError);
+    throw new Error(`Failed to replace audio: ${uploadError.message}`);
+  }
+
+  // Update metadata
+  const updateData: Record<string, unknown> = {
+    file_size: file.size,
+    mime_type: file.type,
+    updated_at: new Date().toISOString(),
+  };
+  if (updates?.displayName !== undefined) updateData.display_name = updates.displayName;
+  if (updates?.tags !== undefined) updateData.tags = updates.tags;
+  if (updates?.metadata !== undefined) updateData.metadata = updates.metadata;
+
+  const { data: updatedRow, error: updateError } = await supabase
+    .from('audio_assets')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (updateError) {
+    console.error('Error updating audio asset after replacement:', updateError);
+    throw new Error(`Failed to update audio metadata: ${updateError.message}`);
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(asset.storage_path);
+
+  return rowToAudioAsset(updatedRow, publicUrl);
+}
+
+/**
  * Deletes an audio asset (both file and metadata)
  */
 export async function deleteAudioAsset(id: string): Promise<void> {

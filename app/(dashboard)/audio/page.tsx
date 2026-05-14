@@ -39,6 +39,7 @@ export default function AudioPage() {
     uploadNewAudio,
     removeAudio,
     updateAudio,
+    replaceAudio,
     refetch,
     setCategory,
     setSearchQuery,
@@ -50,12 +51,13 @@ export default function AudioPage() {
   };
 
   const handleUpdate = async (id: string, data: AudioUploadData) => {
-    // If there's a new file, we need to re-upload (replace)
     if (data.file) {
-      // For now, delete and re-upload with same metadata
-      // TODO: Add a proper replace endpoint if needed
-      await removeAudio(id);
-      await uploadNewAudio(data);
+      // Replace file at same storage path (keeps same URL)
+      await replaceAudio(id, data.file, {
+        displayName: data.displayName,
+        tags: data.tags,
+        metadata: data.metadata,
+      });
     } else {
       // Just update metadata (name, tags, and TTS metadata if present)
       await updateAudio(id, {
