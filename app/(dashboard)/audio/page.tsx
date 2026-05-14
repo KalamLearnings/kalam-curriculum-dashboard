@@ -57,10 +57,11 @@ export default function AudioPage() {
       await removeAudio(id);
       await uploadNewAudio(data);
     } else {
-      // Just update metadata
+      // Just update metadata (name, tags, and TTS metadata if present)
       await updateAudio(id, {
         displayName: data.displayName,
         tags: data.tags,
+        metadata: data.metadata,
       });
     }
     setEditingAudio(null);

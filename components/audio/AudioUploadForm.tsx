@@ -43,9 +43,13 @@ export function AudioUploadForm({
   const [isDragging, setIsDragging] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // TTS state
-  const [ttsText, setTtsText] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState(DEFAULT_VOICE.id);
+  // TTS state - prefill from metadata if editing a TTS-generated audio
+  const [ttsText, setTtsText] = useState(
+    (editingAudio?.metadata?.ttsText as string) || ''
+  );
+  const [selectedVoice, setSelectedVoice] = useState(
+    (editingAudio?.metadata?.voiceId as string) || DEFAULT_VOICE.id
+  );
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBlob, setGeneratedBlob] = useState<{ blob: Blob; blobUrl: string } | null>(null);
 
@@ -133,9 +137,15 @@ export function AudioUploadForm({
   const handlePlayPause = () => {
     if (!audioRef.current) return;
 
-    const audioUrl = mode === 'upload' && file
-      ? URL.createObjectURL(file)
-      : generatedBlob?.blobUrl;
+    // Priority: new generated blob > new uploaded file > existing audio (edit mode)
+    let audioUrl: string | undefined;
+    if (generatedBlob?.blobUrl) {
+      audioUrl = generatedBlob.blobUrl;
+    } else if (mode === 'upload' && file) {
+      audioUrl = URL.createObjectURL(file);
+    } else if (isEditing && editingAudio?.url) {
+      audioUrl = editingAudio.url;
+    }
 
     if (!audioUrl) return;
 
@@ -255,11 +265,19 @@ export function AudioUploadForm({
     setError(null);
 
     try {
+      // Include TTS metadata if audio was generated from text
+      const metadata: Record<string, unknown> = {};
+      if (mode === 'tts' && generatedBlob) {
+        metadata.ttsText = ttsText;
+        metadata.voiceId = selectedVoice;
+      }
+
       const uploadData: AudioUploadData = {
         displayName: displayName.trim(),
         file: uploadFile as File, // Will be undefined in edit mode without new audio
         category: category,
         tags,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       };
 
       await onUpload(uploadData);
@@ -299,55 +317,6 @@ export function AudioUploadForm({
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
       />
-
-      {/* Current Audio Preview (Edit Mode) */}
-      {isEditing && editingAudio && (
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-2">Current audio</p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!audioRef.current) return;
-                if (isPlaying) {
-                  audioRef.current.pause();
-                  audioRef.current.currentTime = 0;
-                } else {
-                  audioRef.current.src = editingAudio.url;
-                  audioRef.current.play();
-                }
-              }}
-              className={cn(
-                'w-10 h-10 rounded-full flex items-center justify-center transition-all',
-                isPlaying
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
-              )}
-            >
-              {isPlaying ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16" />
-                  <rect x="14" y="4" width="4" height="16" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <polygon points="5,3 19,12 5,21" />
-                </svg>
-              )}
-            </button>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-700 truncate">{editingAudio.displayName}</p>
-              <p className="text-xs text-gray-500 truncate">{editingAudio.name}</p>
-            </div>
-          </div>
-          {!hasNewAudio && (
-            <p className="text-xs text-gray-400 mt-2">
-              Generate new audio below to replace, or just update the details.
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Mode Selector */}
       <div className="flex rounded-lg bg-gray-100 p-1">
@@ -503,7 +472,7 @@ export function AudioUploadForm({
               )}
             </button>
 
-            {generatedBlob && (
+            {(generatedBlob || isEditing) && (
               <button
                 type="button"
                 onClick={handlePlayPause}
@@ -513,6 +482,7 @@ export function AudioUploadForm({
                     ? 'bg-green-600 text-white'
                     : 'bg-green-100 text-green-600 hover:bg-green-200'
                 )}
+                title={generatedBlob ? 'Play new audio' : 'Play current audio'}
               >
                 {isPlaying ? (
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
