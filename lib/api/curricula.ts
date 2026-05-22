@@ -255,12 +255,12 @@ export async function createNode(
 
 export async function updateNode(
   curriculumId: string,
-  topicId: string,
+  _topicId: string,
   nodeId: string,
   data: UpdateNode
 ): Promise<Node> {
   return fetchWithAuth<Node>(
-    `/curriculum/${curriculumId}/topics/${topicId}/nodes/${nodeId}`,
+    `/curriculum/${curriculumId}/nodes/${nodeId}`,
     {
       method: 'PUT',
       body: JSON.stringify(data),
