@@ -264,20 +264,27 @@ export function ArabicLetterGrid({
 
   // Handle haraka selection
   const handleHarakaChange = (haraka: HarakaType) => {
+    const newHaraka = haraka === 'none' ? undefined : haraka;
+
     if (multiSelect && lastClickedLetterId) {
       // Multi-select mode - update haraka for last clicked letter
       const currentRefs = getSelectedRefs();
       const newRefs = currentRefs.map(ref =>
         ref.letterId === lastClickedLetterId
-          ? { ...ref, haraka: haraka === 'none' ? undefined : haraka }
+          ? { ...ref, haraka: newHaraka }
           : ref
       );
+      onChange(newRefs);
+    } else if (!multiSelect && multiFormSelect && lastClickedLetterId) {
+      // Single letter + multi-form mode - update haraka for all forms of the letter
+      const currentRefs = getSelectedRefs();
+      const newRefs = currentRefs.map(ref => ({ ...ref, haraka: newHaraka }));
       onChange(newRefs);
     } else if (!multiSelect && value && !Array.isArray(value)) {
       // Single select mode - update haraka for selected letter
       onChange({
         ...value,
-        haraka: haraka === 'none' ? undefined : haraka
+        haraka: newHaraka
       });
     }
   };
@@ -285,6 +292,11 @@ export function ArabicLetterGrid({
   // Check if a haraka is selected
   const isHarakaSelected = (haraka: HarakaType): boolean => {
     if (multiSelect && lastClickedLetterId) {
+      const currentHaraka = getHarakaForLetter(lastClickedLetterId);
+      return haraka === 'none' ? !currentHaraka : currentHaraka === haraka;
+    }
+    if (!multiSelect && multiFormSelect && lastClickedLetterId) {
+      // Single letter + multi-form mode - check the first ref's haraka
       const currentHaraka = getHarakaForLetter(lastClickedLetterId);
       return haraka === 'none' ? !currentHaraka : currentHaraka === haraka;
     }
