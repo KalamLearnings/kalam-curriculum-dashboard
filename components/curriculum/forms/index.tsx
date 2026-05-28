@@ -34,6 +34,10 @@ interface TargetLetterActivityConfig {
   showLetterPositions?: boolean;
   /** Whether target letter supports multi-select (default: false) */
   targetLetterMultiSelect?: boolean;
+  /** Whether to show speed config (for game activities) */
+  showSpeedConfig?: boolean;
+  /** Field name for speed (default: 'balloonSpeed') */
+  speedField?: string;
 }
 
 const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActivityConfig>> = {
@@ -42,12 +46,16 @@ const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActiv
     targetCountHint: "Number of balloons to pop",
     targetLetterMultiSelect: true,
     showLetterPositions: false,
+    showSpeedConfig: true,
+    speedField: 'balloonSpeed',
   },
   letter_rain: {
     targetLetterHint: "The letters to catch",
     targetCountHint: "Number of letters to catch",
     targetLetterMultiSelect: true,
     showLetterPositions: false,
+    showSpeedConfig: true,
+    speedField: 'speed',
   },
   audio_letter_match: {
     targetLetterHint: "The letter matching the audio",
@@ -173,6 +181,8 @@ function createTargetLetterForm(activityType: ArticleType): React.ComponentType<
         }}
         showLetterPositions={config.showLetterPositions !== false}
         targetLetterMultiSelect={config.targetLetterMultiSelect}
+        showSpeedConfig={config.showSpeedConfig}
+        speedField={config.speedField}
       />
     );
   };

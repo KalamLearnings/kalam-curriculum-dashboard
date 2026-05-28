@@ -26,7 +26,19 @@ interface TargetLetterWithDistractorsFormProps extends BaseActivityFormProps {
   showLetterPositions?: boolean;
   /** Whether target letter supports multi-select (multiple letters + multiple forms) */
   targetLetterMultiSelect?: boolean;
+  /** Whether to show speed config (for game activities like balloons, fish, etc.) */
+  showSpeedConfig?: boolean;
+  /** Field name for speed in config (default: 'balloonSpeed', also supports 'speed') */
+  speedField?: string;
 }
+
+const SPEED_OPTIONS = [
+  { value: 0.5, label: 'Slow', description: 'Half speed - easier for beginners' },
+  { value: 0.75, label: 'Easy', description: 'Slightly slower than normal' },
+  { value: 1.0, label: 'Normal', description: 'Default speed' },
+  { value: 1.25, label: 'Fast', description: 'Slightly faster - more challenging' },
+  { value: 1.5, label: 'Very Fast', description: 'Much faster - for advanced learners' },
+];
 
 export function TargetLetterWithDistractorsForm({
   config,
@@ -36,6 +48,8 @@ export function TargetLetterWithDistractorsForm({
   targetLetterField = 'targetLetter',
   showLetterPositions = true,
   targetLetterMultiSelect = false,
+  showSpeedConfig = false,
+  speedField = 'balloonSpeed',
 }: TargetLetterWithDistractorsFormProps) {
   // Note: config type from @kalam/curriculum-schemas still expects old format
   // We're migrating to LetterReference format
@@ -47,6 +61,7 @@ export function TargetLetterWithDistractorsForm({
   const targetCount = typedConfig?.targetCount ?? '';
   const duration = typedConfig?.duration ?? '';
   const letterPositions: LetterPosition[] = typedConfig?.letterPositions || ['isolated'];
+  const speed = typedConfig?.[speedField] ?? 1.0;
 
   const updateConfig = (updates: Record<string, any>) => {
     onChange({ ...config, ...updates } as any);
@@ -150,6 +165,32 @@ export function TargetLetterWithDistractorsForm({
           />
         </FormField>
       </div>
+
+      {showSpeedConfig && (
+        <FormField
+          label="Game Speed"
+          hint="How fast items move (affects difficulty)"
+        >
+          <div className="grid grid-cols-5 gap-2">
+            {SPEED_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => updateConfig({ [speedField]: option.value })}
+                className={cn(
+                  'px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all flex flex-col items-center',
+                  speed === option.value
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-gray-50'
+                )}
+              >
+                <span>{option.label}</span>
+                <span className="text-xs text-gray-500">{option.value}x</span>
+              </button>
+            ))}
+          </div>
+        </FormField>
+      )}
     </div>
   );
 }

@@ -15,6 +15,8 @@ export function FishingActivityForm({ config, onChange, topic }: BaseActivityFor
       }}
       targetLetterMultiSelect={true}
       showLetterPositions={false}
+      showSpeedConfig={true}
+      speedField="fishSpeed"
     />
   );
 }
