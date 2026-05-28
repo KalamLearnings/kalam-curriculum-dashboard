@@ -20,6 +20,7 @@ import {
   OptionData,
 } from './shared';
 import type { MultipleChoiceQuestionConfig, MultipleChoiceOption } from '@/lib/types/activity-configs';
+import { normalizeArabicText } from '@/lib/utils/letterReference';
 
 // Content type options for display above cards
 const CONTENT_TYPE_OPTIONS = [
@@ -61,7 +62,9 @@ export function MultipleChoiceActivityForm({ config, onChange }: BaseActivityFor
   const handleUpdateOption = (index: number, field: 'text' | 'image' | 'isCorrect', value: any) => {
     const newOptions = [...options];
     if (field === 'text') {
-      newOptions[index].text = { en: '', ar: value };
+      // Normalize Arabic text to remove tatweel and other formatting characters
+      const normalizedValue = normalizeArabicText(value);
+      newOptions[index].text = { en: '', ar: normalizedValue };
     } else if (field === 'image') {
       newOptions[index].image = value;
     } else if (field === 'isCorrect') {
