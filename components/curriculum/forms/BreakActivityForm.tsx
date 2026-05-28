@@ -64,8 +64,8 @@ export function BreakActivityForm({ config, onChange }: BaseActivityFormProps<Br
   // Only coloring needs duration
   const needsDuration = variant === 'coloring';
 
-  // Card count options (multiples of 2, min 6, max 12)
-  const cardCountOptions = [6, 8, 10, 12];
+  // Card count options (multiples of 2, min 6, max 16)
+  const cardCountOptions = [6, 8, 10, 12, 14, 16];
 
   return (
     <div className="space-y-4">
