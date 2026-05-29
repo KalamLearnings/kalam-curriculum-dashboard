@@ -45,9 +45,7 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   const wordMeaning = config?.wordMeaning || '';
 
   const updateConfig = (updates: Partial<typeof config>) => {
-    const newConfig = { ...config, ...updates };
-    console.log('updateConfig:', { updates, newConfig });
-    onChange(newConfig);
+    onChange({ ...config, ...updates });
   };
 
   // Letters available to pick from (sourced from the target word).
@@ -68,12 +66,10 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
     const haraka = extractHaraka(letterWithHaraka);
     const form = determineLetterForm(index, wordLetters.length);
 
-    console.log('handleLetterSelect:', { index, letterWithHaraka, baseChar, haraka, form, allLettersCount: allLetters.length });
-
     // Look up the letter ID from the base character
     const letterData = allLetters.find(l => l.letter === baseChar);
     if (!letterData) {
-      console.warn(`Could not find letter ID for character: ${baseChar}`, { allLetters: allLetters.map(l => ({ id: l.id, letter: l.letter })) });
+      console.warn(`Could not find letter ID for character: ${baseChar}`);
       return;
     }
 
@@ -83,7 +79,6 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
       ...(haraka && { haraka }),
     };
 
-    console.log('Created letterRef:', letterRef);
     updateConfig({ targetLetter: letterRef, targetLetterIndex: index, targetCount: 1 });
   }, [wordLetters, allLetters, updateConfig]);
 
@@ -91,8 +86,6 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   const selectedLetterDisplay = selectedIndex !== undefined && selectedIndex >= 0
     ? wordLetters[selectedIndex]
     : undefined;
-
-  console.log('TapActivityForm render:', { targetLetter, selectedIndex, selectedLetterDisplay, wordLetters });
 
   return (
     <div className="space-y-4">
