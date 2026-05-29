@@ -66,16 +66,21 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   // Build a LetterReference when user selects a letter by index
   const handleLetterSelect = useCallback((index: number) => {
     const letterWithHaraka = wordLetters[index];
-    if (!letterWithHaraka) return;
+    if (!letterWithHaraka) {
+      console.warn('No letter at index', index);
+      return;
+    }
 
     const baseChar = stripDiacritics(letterWithHaraka);
     const haraka = extractHaraka(letterWithHaraka);
     const form = determineLetterForm(index, wordLetters.length);
 
+    console.log('handleLetterSelect:', { index, letterWithHaraka, baseChar, haraka, form, allLettersCount: allLetters.length });
+
     // Look up the letter ID from the base character
     const letterData = allLetters.find(l => l.letter === baseChar);
     if (!letterData) {
-      console.warn(`Could not find letter ID for character: ${baseChar}`);
+      console.warn(`Could not find letter ID for character: ${baseChar}`, { allLetters: allLetters.map(l => ({ id: l.id, letter: l.letter })) });
       return;
     }
 
@@ -85,6 +90,7 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
       ...(haraka && { haraka }),
     };
 
+    console.log('Created letterRef:', letterRef);
     updateConfig({ targetLetter: letterRef, targetCount: 1 });
   }, [wordLetters, allLetters, updateConfig]);
 
