@@ -29,12 +29,10 @@ function stripDiacritics(char: string): string {
   return char.replace(/[ً-ٰٟ]/g, '');
 }
 
-// Determine letter form based on position in word
-function determineLetterForm(index: number, totalLetters: number): LetterForm {
-  if (totalLetters === 1) return 'isolated';
-  if (index === 0) return 'initial';
-  if (index === totalLetters - 1) return 'final';
-  return 'medial';
+// For tap_letter_in_word, always use 'isolated' form since we're matching
+// against the base letter character as it appears in the word string
+function determineLetterForm(): LetterForm {
+  return 'isolated';
 }
 
 export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
@@ -64,7 +62,7 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
 
     const baseChar = stripDiacritics(letterWithHaraka);
     const haraka = extractHaraka(letterWithHaraka);
-    const form = determineLetterForm(index, wordLetters.length);
+    const form = determineLetterForm();
 
     // Look up the letter ID from the base character
     const letterData = allLetters.find(l => l.letter === baseChar);
