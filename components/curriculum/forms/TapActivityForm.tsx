@@ -53,17 +53,8 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   // Letters available to pick from (sourced from the target word).
   const wordLetters = useMemo(() => extractLettersFromWord(targetWord), [targetWord]);
 
-  // Find the currently selected index based on targetLetter reference
-  const selectedIndex = useMemo(() => {
-    if (!targetLetter || !isLetterReference(targetLetter)) return undefined;
-
-    // Resolve the targetLetter to a character with haraka for comparison
-    const targetChar = resolveLetterWithHaraka(targetLetter, allLetters);
-    if (!targetChar) return undefined;
-
-    // Find the index in wordLetters that matches
-    return wordLetters.findIndex(letter => letter === targetChar);
-  }, [targetLetter, allLetters, wordLetters]);
+  // Store the selected index directly in config for simplicity
+  const selectedIndex = config?.targetLetterIndex as number | undefined;
 
   // Build a LetterReference when user selects a letter by index
   const handleLetterSelect = useCallback((index: number) => {
@@ -93,7 +84,7 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
     };
 
     console.log('Created letterRef:', letterRef);
-    updateConfig({ targetLetter: letterRef, targetCount: 1 });
+    updateConfig({ targetLetter: letterRef, targetLetterIndex: index, targetCount: 1 });
   }, [wordLetters, allLetters, updateConfig]);
 
   // Get selected letter for display
