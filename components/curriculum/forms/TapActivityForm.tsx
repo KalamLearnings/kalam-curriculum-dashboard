@@ -45,7 +45,9 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   const wordMeaning = config?.wordMeaning || '';
 
   const updateConfig = (updates: Partial<typeof config>) => {
-    onChange({ ...config, ...updates });
+    const newConfig = { ...config, ...updates };
+    console.log('updateConfig:', { updates, newConfig });
+    onChange(newConfig);
   };
 
   // Letters available to pick from (sourced from the target word).
@@ -98,6 +100,8 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   const selectedLetterDisplay = selectedIndex !== undefined && selectedIndex >= 0
     ? wordLetters[selectedIndex]
     : undefined;
+
+  console.log('TapActivityForm render:', { targetLetter, selectedIndex, selectedLetterDisplay, wordLetters });
 
   return (
     <div className="space-y-4">
