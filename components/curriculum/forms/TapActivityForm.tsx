@@ -3,17 +3,11 @@ import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField, NumberInput } from './FormField';
 import { WordSelector } from '../WordSelector';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
-import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 import { WordLetterPicker, extractLettersFromWord } from './shared';
 
 export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
-  const { resolveToChar } = useLetterResolver();
-
   const targetWord = config?.targetWord || '';
-  // Resolve targetLetter - could be LetterReference or string from saved config
-  // Now includes harakat if present in the word
-  const targetLetter = resolveToChar(config?.targetLetter) || '';
-  const targetCount = config?.targetCount || 1;
+  const targetLetterIndex = config?.targetLetterIndex as number | undefined;
   const wordMeaning = config?.wordMeaning || '';
 
   const updateConfig = (updates: Partial<typeof config>) => {
@@ -23,35 +17,24 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   // Letters available to pick from (sourced from the target word).
   const letters = useMemo(() => extractLettersFromWord(targetWord), [targetWord]);
 
-  // Count occurrences of the selected letter (with haraka) in the word
-  const letterOccurrences = useMemo(() => {
-    if (!targetLetter || letters.length === 0) return 0;
-    return letters.filter(l => l === targetLetter).length;
-  }, [letters, targetLetter]);
+  // Get the selected letter for display purposes
+  const selectedLetter = targetLetterIndex !== undefined && targetLetterIndex >= 0
+    ? letters[targetLetterIndex]
+    : undefined;
 
-  // Auto-update targetCount when letter changes to match occurrences
-  // Only update if the user has selected a letter and the count doesn't match
-  useEffect(() => {
-    if (targetLetter && letterOccurrences > 0 && targetCount !== letterOccurrences) {
-      updateConfig({ targetCount: letterOccurrences });
-    }
-  }, [targetLetter, letterOccurrences]);
-
-  // Clear targetLetter only if user changes the word and the previously selected letter is no longer valid
-  // Don't clear on initial mount - only when uniqueLetters actually changes after being set
+  // Clear targetLetterIndex if word changes and index is out of bounds
   const [initialLoadComplete, setInitialLoadComplete] = React.useState(false);
 
   useEffect(() => {
     if (!initialLoadComplete && targetWord) {
-      // Mark initial load as complete once we have a word
       setInitialLoadComplete(true);
       return;
     }
 
-    if (initialLoadComplete && targetLetter && letters.length > 0 && !letters.includes(targetLetter)) {
-      updateConfig({ targetLetter: '' });
+    if (initialLoadComplete && targetLetterIndex !== undefined && targetLetterIndex >= letters.length) {
+      updateConfig({ targetLetterIndex: undefined });
     }
-  }, [letters, targetLetter, initialLoadComplete, targetWord]);
+  }, [letters, targetLetterIndex, initialLoadComplete, targetWord]);
 
   return (
     <div className="space-y-4">
@@ -75,21 +58,13 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
       <FormField label="Target Letter" hint="Select the letter to find in the word" required>
         <WordLetterPicker
           word={targetWord}
-          value={targetLetter}
-          onChange={(letter) => updateConfig({ targetLetter: letter })}
+          selectedIndex={targetLetterIndex}
+          onIndexChange={(index) => updateConfig({ targetLetterIndex: index })}
           emptyMessage="Enter a target word first to see available letters"
         />
-      </FormField>
-
-      <FormField label="Target Count" hint="How many instances to find (auto-calculated from word)" required>
-        <NumberInput
-          value={targetCount}
-          onChange={(value) => updateConfig({ targetCount: value })}
-          min={1}
-        />
-        {targetLetter && letterOccurrences > 0 && (
+        {selectedLetter && (
           <p className="text-xs text-blue-600 mt-1">
-            The letter "{targetLetter}" appears {letterOccurrences} time{letterOccurrences > 1 ? 's' : ''} in the word
+            Selected: "{selectedLetter}" at position {(targetLetterIndex ?? 0) + 1}
           </p>
         )}
       </FormField>

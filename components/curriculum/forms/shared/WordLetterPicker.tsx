@@ -46,10 +46,10 @@ export function extractLettersFromWord(word: string): string[] {
 export interface WordLetterPickerProps {
   /** The Arabic word to source letters from. */
   word: string;
-  /** Currently selected letter character (or empty string for none). */
-  value: string;
-  /** Called when a letter button is clicked. */
-  onChange: (letter: string) => void;
+  /** Currently selected index (or -1/undefined for none). */
+  selectedIndex?: number;
+  /** Called when a letter button is clicked with its index. */
+  onIndexChange: (index: number) => void;
   /** Optional clear handler. When provided, a "Clear selection" link is shown. */
   onClear?: () => void;
   /** Number of grid columns. Defaults to 6. */
@@ -82,8 +82,8 @@ export interface WordLetterPickerProps {
  */
 export function WordLetterPicker({
   word,
-  value,
-  onChange,
+  selectedIndex,
+  onIndexChange,
   onClear,
   columns = 6,
   emptyMessage = 'Enter a word first to see available letters',
@@ -99,7 +99,9 @@ export function WordLetterPicker({
     );
   }
 
-  const orderedLetters = reverseOrder ? [...letters].reverse() : letters;
+  // Create array with original indices before reversing for display
+  const lettersWithIndices = letters.map((letter, idx) => ({ letter, originalIndex: idx }));
+  const orderedLetters = reverseOrder ? [...lettersWithIndices].reverse() : lettersWithIndices;
 
   const gridColsClass =
     columns === 4
@@ -113,14 +115,14 @@ export function WordLetterPicker({
   return (
     <div className="space-y-2">
       <div className={cn('grid gap-2', gridColsClass)}>
-        {orderedLetters.map((letter, index) => (
+        {orderedLetters.map(({ letter, originalIndex }) => (
           <button
-            key={`${letter}-${index}`}
+            key={`${letter}-${originalIndex}`}
             type="button"
-            onClick={() => onChange(letter)}
+            onClick={() => onIndexChange(originalIndex)}
             className={cn(
               'aspect-square flex items-center justify-center text-4xl font-arabic rounded-lg border-2 transition-all hover:scale-105',
-              value === letter
+              selectedIndex === originalIndex
                 ? 'border-blue-500 bg-blue-50 shadow-md'
                 : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
             )}
@@ -130,7 +132,7 @@ export function WordLetterPicker({
         ))}
       </div>
 
-      {onClear && value && (
+      {onClear && selectedIndex !== undefined && selectedIndex >= 0 && (
         <button
           type="button"
           onClick={onClear}
