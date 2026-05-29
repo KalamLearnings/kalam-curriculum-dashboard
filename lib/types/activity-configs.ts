@@ -337,17 +337,21 @@ export interface SoundBlendConfig {
  * Draw lines to match items on the left to items on the right.
  * Supports letters, words, and images in any combination.
  */
-export type MatchItemType = 'letter' | 'word' | 'image';
+export type MatchItemType = 'letter' | 'word' | 'image' | 'audio';
 
 export interface MatchItem {
-  /** Type of content: letter, word, or image */
+  /** Type of content: letter, word, image, or audio */
   type: MatchItemType;
-  /** The content: letter char, word text, or image URL */
-  value: string;
+  /** The content: letter char, word text, or image URL (not used for audio) */
+  value?: string;
   /** Letter identifier (e.g., "ba", "alif") - for letters */
   letterId?: string;
   /** Letter form - for letters */
   form?: LetterPosition;
+  /** Audio URL - for audio type */
+  audioUrl?: string;
+  /** Audio asset ID - for audio type */
+  audioId?: string;
   /** Optional display label or alt text */
   label?: string;
 }

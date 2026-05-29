@@ -14,7 +14,9 @@ import { FormField, Checkbox } from './FormField';
 import { LetterSelector } from './shared/LetterSelector';
 import { WordSelector } from '../WordSelector';
 import { ImageLibraryModal } from './ImageLibraryModal';
+import { AudioPicker } from '@/components/audio/AudioPicker';
 import { useLetters } from '@/lib/hooks/useLetters';
+import type { AudioAsset } from '@/lib/types/audio';
 import type {
   MatchPairsConfig,
   MatchPair,
@@ -29,6 +31,7 @@ const ITEM_TYPE_OPTIONS: { value: MatchItemType; label: string; icon: string }[]
   { value: 'letter', label: 'Letter', icon: 'ا' },
   { value: 'word', label: 'Word', icon: '📖' },
   { value: 'image', label: 'Image', icon: '🖼️' },
+  { value: 'audio', label: 'Audio', icon: '🔊' },
 ];
 
 // Generate unique ID
@@ -58,7 +61,26 @@ function MatchItemEditor({ item, onChange, side, pairIndex }: MatchItemEditorPro
       letterId: undefined,
       form: undefined,
       label: undefined,
+      audioUrl: undefined,
+      audioId: undefined,
     });
+  };
+
+  const handleAudioChange = (audioId: string | undefined, audio?: AudioAsset) => {
+    if (audioId && audio) {
+      onChange({
+        ...item,
+        audioId,
+        audioUrl: audio.url,
+        value: undefined,
+      });
+    } else {
+      onChange({
+        ...item,
+        audioId: undefined,
+        audioUrl: undefined,
+      });
+    }
   };
 
   const handleLetterChange = (ref: LetterReference | LetterReference[] | null) => {
@@ -179,6 +201,31 @@ function MatchItemEditor({ item, onChange, side, pairIndex }: MatchItemEditorPro
             currentImage={item.value}
           />
         </>
+      )}
+
+      {item.type === 'audio' && (
+        <div className="space-y-2">
+          <AudioPicker
+            value={item.audioId}
+            onChange={handleAudioChange}
+            placeholder="Select audio file..."
+          />
+          {item.audioUrl && (
+            <div className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+              <span className="text-lg">🔊</span>
+              <span className="text-xs text-gray-600 truncate flex-1">
+                {item.audioUrl.split('/').pop()}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleAudioChange(undefined, undefined)}
+                className="text-xs text-red-600 hover:text-red-700"
+              >
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Optional label */}
@@ -312,11 +359,18 @@ export function MatchPairsActivityForm({ config, onChange, topic }: BaseActivity
   const getValidationStatus = () => {
     const errors: string[] = [];
 
+    const isItemEmpty = (item: MatchItem) => {
+      if (item.type === 'audio') {
+        return !item.audioUrl;
+      }
+      return !item.value;
+    };
+
     pairs.forEach((pair, i) => {
-      if (!pair.left.value) {
+      if (isItemEmpty(pair.left)) {
         errors.push(`Pair ${i + 1}: Left item is empty`);
       }
-      if (!pair.right.value) {
+      if (isItemEmpty(pair.right)) {
         errors.push(`Pair ${i + 1}: Right item is empty`);
       }
     });
@@ -403,6 +457,7 @@ export function MatchPairsActivityForm({ config, onChange, topic }: BaseActivity
           {pairs.filter(p => p.left.type === 'letter').length > 0 && 'Letters '}
           {pairs.filter(p => p.left.type === 'word' || p.right.type === 'word').length > 0 && 'Words '}
           {pairs.filter(p => p.left.type === 'image' || p.right.type === 'image').length > 0 && 'Images '}
+          {pairs.filter(p => p.left.type === 'audio' || p.right.type === 'audio').length > 0 && 'Audio '}
           will be displayed on screen. Student draws lines to connect matching items.
         </p>
       </div>
