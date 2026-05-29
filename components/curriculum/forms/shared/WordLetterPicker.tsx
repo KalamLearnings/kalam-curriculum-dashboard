@@ -2,11 +2,12 @@ import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Filter a word string down to its letter characters.
+ * Extract letters from an Arabic word, keeping harakat attached to their letters.
+ *
+ * For example, "بَبِبُبْ" returns ["بَ", "بِ", "بُ", "بْ"] - each letter with its diacritic.
  *
  * Strips:
  * - Whitespace
- * - Arabic harakat / diacritics (U+064B – U+065F)
  *
  * Preserves duplicates so the picker can surface every occurrence.
  * Exposed for callers that need to compute counts / occurrences alongside
@@ -14,11 +15,32 @@ import { cn } from '@/lib/utils';
  */
 export function extractLettersFromWord(word: string): string[] {
   if (!word) return [];
-  return word.split('').filter((char) => {
-    if (char.trim() === '') return false;
-    if (/[ً-ٟ]/.test(char)) return false;
-    return true;
-  });
+
+  const result: string[] = [];
+  const chars = word.split('');
+
+  for (let i = 0; i < chars.length; i++) {
+    const char = chars[i];
+
+    // Skip whitespace
+    if (char.trim() === '') continue;
+
+    // Skip standalone diacritics (they should be attached to previous letter)
+    if (/[ً-ٟ]/.test(char)) continue;
+
+    // Start with the base letter
+    let letterWithDiacritics = char;
+
+    // Collect any following diacritics
+    while (i + 1 < chars.length && /[ً-ٟ]/.test(chars[i + 1])) {
+      i++;
+      letterWithDiacritics += chars[i];
+    }
+
+    result.push(letterWithDiacritics);
+  }
+
+  return result;
 }
 
 export interface WordLetterPickerProps {

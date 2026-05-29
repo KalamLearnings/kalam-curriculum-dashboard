@@ -5,27 +5,16 @@ import { WordSelector } from '../WordSelector';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
 import { useLetterResolver } from '@/lib/hooks/useLetterResolver';
 import { WordLetterPicker, extractLettersFromWord } from './shared';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-type HarakaType = 'fatha' | 'damma' | 'kasra' | 'sukoon' | 'shadda';
-
-const HARAKA_OPTIONS: { value: HarakaType; label: string; arabic: string }[] = [
-  { value: 'fatha', label: 'Fatha', arabic: 'فَتْحَة' },
-  { value: 'damma', label: 'Damma', arabic: 'ضَمَّة' },
-  { value: 'kasra', label: 'Kasra', arabic: 'كَسْرَة' },
-  { value: 'sukoon', label: 'Sukoon', arabic: 'سُكُون' },
-  { value: 'shadda', label: 'Shadda', arabic: 'شَدَّة' },
-];
 
 export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   const { resolveToChar } = useLetterResolver();
 
   const targetWord = config?.targetWord || '';
   // Resolve targetLetter - could be LetterReference or string from saved config
+  // Now includes harakat if present in the word
   const targetLetter = resolveToChar(config?.targetLetter) || '';
   const targetCount = config?.targetCount || 1;
   const wordMeaning = config?.wordMeaning || '';
-  const targetHaraka = config?.targetHaraka as HarakaType | undefined;
 
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });
@@ -34,11 +23,11 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
   // Letters available to pick from (sourced from the target word).
   const letters = useMemo(() => extractLettersFromWord(targetWord), [targetWord]);
 
-  // Count occurrences of the selected letter in the word
+  // Count occurrences of the selected letter (with haraka) in the word
   const letterOccurrences = useMemo(() => {
-    if (!targetWord || !targetLetter) return 0;
-    return targetWord.split('').filter(char => char === targetLetter).length;
-  }, [targetWord, targetLetter]);
+    if (!targetLetter || letters.length === 0) return 0;
+    return letters.filter(l => l === targetLetter).length;
+  }, [letters, targetLetter]);
 
   // Auto-update targetCount when letter changes to match occurrences
   // Only update if the user has selected a letter and the count doesn't match
@@ -101,36 +90,6 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
         {targetLetter && letterOccurrences > 0 && (
           <p className="text-xs text-blue-600 mt-1">
             The letter "{targetLetter}" appears {letterOccurrences} time{letterOccurrences > 1 ? 's' : ''} in the word
-          </p>
-        )}
-      </FormField>
-
-      <FormField
-        label="Target Diacritic (Haraka)"
-        hint="Optional: require a specific diacritic on the letter"
-      >
-        <Select
-          value={targetHaraka || ''}
-          onValueChange={(value) => updateConfig({ targetHaraka: value || undefined })}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Any diacritic (default)" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Any diacritic (default)</SelectItem>
-            {HARAKA_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                <span className="flex items-center gap-2">
-                  <span className="font-arabic">{option.arabic}</span>
-                  <span className="text-muted-foreground">({option.label})</span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {targetHaraka && (
-          <p className="text-xs text-amber-600 mt-1">
-            Only taps on "{targetLetter}" with {targetHaraka} will count as correct
           </p>
         )}
       </FormField>
