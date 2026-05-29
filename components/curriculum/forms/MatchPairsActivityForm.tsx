@@ -16,6 +16,14 @@ import { WordSelector } from '../WordSelector';
 import { ImageLibraryModal } from './ImageLibraryModal';
 import { AudioPicker } from '@/components/audio/AudioPicker';
 import { useLetters } from '@/lib/hooks/useLetters';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Type, Image as ImageIcon, Volume2 } from 'lucide-react';
 import type { AudioAsset } from '@/lib/types/audio';
 import type {
   MatchPairsConfig,
@@ -26,12 +34,12 @@ import type {
 } from '@/lib/types/activity-configs';
 import type { LetterReference } from './ArabicLetterGrid';
 
-// Item type options
-const ITEM_TYPE_OPTIONS: { value: MatchItemType; label: string; icon: string }[] = [
-  { value: 'letter', label: 'Letter', icon: 'ا' },
-  { value: 'word', label: 'Word', icon: '📖' },
-  { value: 'image', label: 'Image', icon: '🖼️' },
-  { value: 'audio', label: 'Audio', icon: '🔊' },
+// Item type options with Lucide icons
+const ITEM_TYPE_OPTIONS: { value: MatchItemType; label: string; icon: React.ReactNode }[] = [
+  { value: 'letter', label: 'Letter', icon: <span className="font-arabic text-base">ا</span> },
+  { value: 'word', label: 'Word', icon: <Type className="w-4 h-4" /> },
+  { value: 'image', label: 'Image', icon: <ImageIcon className="w-4 h-4" /> },
+  { value: 'audio', label: 'Audio', icon: <Volume2 className="w-4 h-4" /> },
 ];
 
 // Generate unique ID
@@ -118,25 +126,32 @@ function MatchItemEditor({ item, onChange, side, pairIndex }: MatchItemEditorPro
     return null;
   };
 
+  const selectedOption = ITEM_TYPE_OPTIONS.find(opt => opt.value === item.type);
+
   return (
     <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-      {/* Type selector */}
-      <div className="flex gap-1 mb-3">
-        {ITEM_TYPE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => handleTypeChange(opt.value)}
-            className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors ${
-              item.type === opt.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
-            }`}
-          >
-            <span className="mr-1">{opt.icon}</span>
-            {opt.label}
-          </button>
-        ))}
+      {/* Type selector dropdown */}
+      <div className="mb-3">
+        <Select value={item.type} onValueChange={(value) => handleTypeChange(value as MatchItemType)}>
+          <SelectTrigger className="w-full h-9 bg-white">
+            <SelectValue>
+              <span className="flex items-center gap-2">
+                {selectedOption?.icon}
+                <span>{selectedOption?.label}</span>
+              </span>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {ITEM_TYPE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                <span className="flex items-center gap-2">
+                  {opt.icon}
+                  <span>{opt.label}</span>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Content editor based on type */}
