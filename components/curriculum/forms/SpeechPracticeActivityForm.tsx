@@ -23,6 +23,7 @@ export function SpeechPracticeActivityForm({ config, onChange, topic }: BaseActi
   // Stored under `letter` so the mobile app can consume it directly when
   // contentType === 'letter_in_word'.
   const focusLetter: string = typedConfig?.letter || '';
+  const focusLetterIndex: number = typedConfig?.letterIndex ?? -1;
   const passingScore = typedConfig?.passingScore || 60;
 
   const updateConfig = (updates: Record<string, any>) => {
@@ -49,10 +50,13 @@ export function SpeechPracticeActivityForm({ config, onChange, topic }: BaseActi
   // Pick a focus letter from inside the word — promotes contentType to
   // 'letter_in_word' so mobile assesses the whole word with focus on this
   // specific letter.
-  const handleFocusLetterChange = (letter: string) => {
+  const handleFocusLetterChange = (index: number) => {
+    const letters = extractLettersFromWord(word);
+    const letter = letters[index] || '';
     updateConfig({
       contentType: 'letter_in_word',
       letter,
+      letterIndex: index,
     });
   };
 
@@ -60,19 +64,20 @@ export function SpeechPracticeActivityForm({ config, onChange, topic }: BaseActi
     updateConfig({
       contentType: 'word',
       letter: undefined,
+      letterIndex: -1,
     });
   };
 
-  // If the word changes and the previously selected focus letter is no
-  // longer present in the new word, drop it so the saved config stays
-  // consistent with what the picker can actually display.
+  // If the word changes and the previously selected focus letter index is no
+  // longer valid, drop it so the saved config stays consistent.
   useEffect(() => {
-    if (!focusLetter) return;
+    if (focusLetterIndex < 0) return;
     const lettersInWord = extractLettersFromWord(word);
-    if (!lettersInWord.includes(focusLetter)) {
+    if (focusLetterIndex >= lettersInWord.length) {
       updateConfig({
         contentType: 'word',
         letter: undefined,
+        letterIndex: -1,
       });
     }
     // We intentionally only run this when the word changes.
@@ -150,8 +155,8 @@ export function SpeechPracticeActivityForm({ config, onChange, topic }: BaseActi
           >
             <WordLetterPicker
               word={word}
-              value={focusLetter}
-              onChange={handleFocusLetterChange}
+              selectedIndex={focusLetterIndex >= 0 ? focusLetterIndex : undefined}
+              onIndexChange={handleFocusLetterChange}
               onClear={handleClearFocusLetter}
               emptyMessage="Enter a word first to see available letters"
             />
