@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Sparkles, LayoutList, Network } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, LayoutList, Network, Search } from 'lucide-react';
 import { useCurriculum } from '@/lib/hooks/useCurriculum';
 import { useTopics, useDeleteTopic, useUpdateTopic, useReorderTopics } from '@/lib/hooks/useTopics';
 import { useAllNodes, useDeleteNode, useUpdateNode } from '@/lib/hooks/useNodes';
@@ -358,6 +358,32 @@ export default function CurriculumBuilderPage() {
     }
   };
 
+  // Open an activity in the form pane by pasting its ID (Phase 1: current curriculum).
+  const [activitySearchId, setActivitySearchId] = useState('');
+
+  const handleOpenActivityById = () => {
+    const id = activitySearchId.trim();
+    if (!id) return;
+
+    const activity = allActivities?.find((a) => a.id === id);
+    if (!activity) {
+      toast.error('Activity not found in this curriculum');
+      return;
+    }
+
+    // Article carries node_id; derive the topic that owns that node.
+    const topicId = nodes?.find((n) => n.id === activity.node_id)?.topic_id ?? null;
+    if (!topicId) {
+      toast.error('Could not locate the topic for this activity');
+      return;
+    }
+
+    selectActivity(activity.id, activity.node_id, topicId);
+    if (!expandedTopics.has(topicId)) toggleTopic(topicId);
+    if (!expandedNodes.has(activity.node_id)) toggleNode(activity.node_id);
+    setActivitySearchId('');
+  };
+
   // Handle new activity type selection - now uses store action
   const handleNewActivityType = (type: ArticleType) => {
     startCreatingActivity(type);
@@ -509,6 +535,21 @@ export default function CurriculumBuilderPage() {
           <h1 className="text-base font-semibold">
             {curriculum?.title?.en || 'Curriculum Builder'}
           </h1>
+
+          {/* Open an activity directly by pasting its ID */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={activitySearchId}
+              onChange={(e) => setActivitySearchId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleOpenActivityById();
+              }}
+              placeholder="Open activity by ID…"
+              className="w-56 pl-8 pr-2 py-1 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
