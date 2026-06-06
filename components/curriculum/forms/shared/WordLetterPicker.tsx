@@ -46,10 +46,23 @@ export function extractLettersFromWord(word: string): string[] {
 export interface WordLetterPickerProps {
   /** The Arabic word to source letters from. */
   word: string;
-  /** Currently selected index (or -1/undefined for none). */
+  /**
+   * Currently selected index (single-select mode).
+   * Ignored when `selectedIndices` is provided.
+   */
   selectedIndex?: number;
-  /** Called when a letter button is clicked with its index. */
-  onIndexChange: (index: number) => void;
+  /**
+   * Called when a letter button is clicked, with its index (single-select mode).
+   * Optional when using multi-select via `onToggleIndex`.
+   */
+  onIndexChange?: (index: number) => void;
+  /**
+   * Currently selected indices (multi-select mode). When provided, every index in
+   * this set is highlighted and clicking a button toggles it via `onToggleIndex`.
+   */
+  selectedIndices?: number[];
+  /** Called to toggle an index when in multi-select mode. */
+  onToggleIndex?: (index: number) => void;
   /** Optional clear handler. When provided, a "Clear selection" link is shown. */
   onClear?: () => void;
   /** Number of grid columns. Defaults to 6. */
@@ -84,12 +97,36 @@ export function WordLetterPicker({
   word,
   selectedIndex,
   onIndexChange,
+  selectedIndices,
+  onToggleIndex,
   onClear,
   columns = 6,
   emptyMessage = 'Enter a word first to see available letters',
   reverseOrder = true,
 }: WordLetterPickerProps) {
   const letters = useMemo(() => extractLettersFromWord(word), [word]);
+
+  // Multi-select mode is active when a selectedIndices array is supplied.
+  const multiSelect = selectedIndices !== undefined;
+  const selectedSet = useMemo(
+    () => new Set(selectedIndices ?? []),
+    [selectedIndices]
+  );
+
+  const isSelected = (index: number) =>
+    multiSelect ? selectedSet.has(index) : selectedIndex === index;
+
+  const handleClick = (index: number) => {
+    if (multiSelect) {
+      onToggleIndex?.(index);
+    } else {
+      onIndexChange?.(index);
+    }
+  };
+
+  const hasSelection = multiSelect
+    ? selectedSet.size > 0
+    : selectedIndex !== undefined && selectedIndex >= 0;
 
   if (letters.length === 0) {
     return (
@@ -119,10 +156,10 @@ export function WordLetterPicker({
           <button
             key={`${letter}-${originalIndex}`}
             type="button"
-            onClick={() => onIndexChange(originalIndex)}
+            onClick={() => handleClick(originalIndex)}
             className={cn(
               'aspect-square flex items-center justify-center text-4xl font-arabic rounded-lg border-2 transition-all hover:scale-105',
-              selectedIndex === originalIndex
+              isSelected(originalIndex)
                 ? 'border-blue-500 bg-blue-50 shadow-md'
                 : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
             )}
@@ -132,7 +169,7 @@ export function WordLetterPicker({
         ))}
       </div>
 
-      {onClear && selectedIndex !== undefined && selectedIndex >= 0 && (
+      {onClear && hasSelection && (
         <button
           type="button"
           onClick={onClear}

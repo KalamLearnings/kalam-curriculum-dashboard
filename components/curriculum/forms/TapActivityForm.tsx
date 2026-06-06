@@ -1,6 +1,7 @@
-import React, { useMemo, useEffect, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
-import { FormField, NumberInput } from './FormField';
+import type { TapLetterInWordConfig } from '@/lib/types/activity-configs';
+import { FormField } from './FormField';
 import { WordSelector } from '../WordSelector';
 import { ActivityWordStatus } from '@/components/words/ActivityWordStatus';
 import { WordLetterPicker, extractLettersFromWord } from './shared';
@@ -10,7 +11,8 @@ import {
   HarakaType,
   HARAKA_CHARS,
   isLetterReference,
-  resolveLetterWithHaraka,
+  createLetterReference,
+  stripTatweel,
   LetterForm,
 } from '@/lib/utils/letterReference';
 
@@ -35,59 +37,156 @@ function determineLetterForm(): LetterForm {
   return 'isolated';
 }
 
-export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
+export function TapActivityForm({
+  config,
+  onChange,
+}: BaseActivityFormProps<TapLetterInWordConfig>) {
   const { letters: allLetters } = useLetters();
 
   const targetWord = config?.targetWord || '';
-  const targetLetter = config?.targetLetter;
   const wordMeaning = config?.wordMeaning || '';
 
-  const updateConfig = (updates: Partial<typeof config>) => {
+  const updateConfig = (updates: Partial<TapLetterInWordConfig>) => {
     onChange({ ...config, ...updates });
   };
 
-  // Letters available to pick from (sourced from the target word).
+  // Letters available to pick from (sourced from the target word), as logical
+  // letters (base letter + trailing diacritics = one entry).
   const wordLetters = useMemo(() => extractLettersFromWord(targetWord), [targetWord]);
 
-  // Store the selected index directly in config for simplicity
-  const selectedIndex = config?.targetLetterIndex as number | undefined;
+  // Resolve a stored `targetLetter` (object LetterReference OR raw character string)
+  // to its base character, so we can locate it among the word's logical letters.
+  const resolveTargetBaseChar = useCallback(
+    (targetLetter: unknown): string | undefined => {
+      if (isLetterReference(targetLetter)) {
+        const letterData = allLetters.find((l) => l.id === targetLetter.letterId);
+        return letterData?.letter;
+      }
+      if (typeof targetLetter === 'string' && targetLetter.trim() !== '') {
+        // Could be a letter ID or an actual character.
+        const byId = allLetters.find((l) => l.id === targetLetter);
+        if (byId) return byId.letter;
+        return stripDiacritics(stripTatweel(targetLetter));
+      }
+      return undefined;
+    },
+    [allLetters]
+  );
 
-  // Build a LetterReference when user selects a letter by index
-  const handleLetterSelect = useCallback((index: number) => {
-    const letterWithHaraka = wordLetters[index];
-    if (!letterWithHaraka) {
-      console.warn('No letter at index', index);
-      return;
+  // Derive the selected logical indices from config, supporting every stored shape:
+  //   1. New format: config.targetIndices (authoritative).
+  //   2. Legacy single-index hint: config.targetLetterIndex.
+  //   3. Legacy targetLetter (object or string) with no index — locate it in the word.
+  const selectedIndices = useMemo<number[]>(() => {
+    // 1. New format.
+    if (Array.isArray(config?.targetIndices) && config.targetIndices.length > 0) {
+      return (config.targetIndices as number[]).filter(
+        (i) => i >= 0 && i < wordLetters.length
+      );
     }
 
-    const baseChar = stripDiacritics(letterWithHaraka);
-    const haraka = extractHaraka(letterWithHaraka);
-    const form = determineLetterForm();
-
-    // Look up the letter ID from the base character
-    const letterData = allLetters.find(l => l.letter === baseChar);
-    if (!letterData) {
-      console.warn(`Could not find letter ID for character: ${baseChar}`);
-      return;
+    // 2. Legacy single-index hint.
+    if (
+      typeof config?.targetLetterIndex === 'number' &&
+      config.targetLetterIndex >= 0 &&
+      config.targetLetterIndex < wordLetters.length
+    ) {
+      return [config.targetLetterIndex];
     }
 
-    const letterRef: LetterReference = {
-      letterId: letterData.id,
-      form,
-      ...(haraka && { haraka }),
-    };
+    // 3. Derive from targetLetter by matching base characters in the word.
+    const baseChar = resolveTargetBaseChar(config?.targetLetter);
+    if (!baseChar) return [];
 
-    updateConfig({ targetLetter: letterRef, targetLetterIndex: index, targetCount: 1 });
-  }, [wordLetters, allLetters, updateConfig]);
+    const matches: number[] = [];
+    wordLetters.forEach((letter, idx) => {
+      if (stripDiacritics(letter) === baseChar) matches.push(idx);
+    });
 
-  // Get selected letter for display
-  const selectedLetterDisplay = selectedIndex !== undefined && selectedIndex >= 0
-    ? wordLetters[selectedIndex]
-    : undefined;
+    if (matches.length === 0) return [];
+    if (matches.length === 1) return matches;
+
+    // Multiple occurrences: only auto-select all when the stored targetCount says so.
+    // Otherwise it's ambiguous which occurrence was intended — leave unselected so the
+    // author re-picks explicitly.
+    const targetCount = config?.targetCount;
+    if (typeof targetCount === 'number' && targetCount === matches.length) {
+      return matches;
+    }
+    return [];
+  }, [config, wordLetters, resolveTargetBaseChar]);
+
+  // Build a LetterReference for the letter at a given logical index.
+  const buildLetterRef = useCallback(
+    (index: number): LetterReference | undefined => {
+      const letterWithHaraka = wordLetters[index];
+      if (!letterWithHaraka) return undefined;
+
+      const baseChar = stripDiacritics(letterWithHaraka);
+      const haraka = extractHaraka(letterWithHaraka);
+      const form = determineLetterForm();
+
+      const letterData = allLetters.find((l) => l.letter === baseChar);
+      if (!letterData) {
+        console.warn(`Could not find letter ID for character: ${baseChar}`);
+        return undefined;
+      }
+
+      return createLetterReference(letterData.id, form, haraka);
+    },
+    [wordLetters, allLetters]
+  );
+
+  // Persist a new set of selected indices: update targetIndices + targetCount, and
+  // keep targetLetter (a LetterReference for the first selection) for display/audio.
+  const commitIndices = useCallback(
+    (indices: number[]) => {
+      const sorted = [...indices].sort((a, b) => a - b);
+
+      // Drop the legacy single-index hint; targetIndices is now authoritative.
+      const { targetLetterIndex: _removed, ...rest } = config ?? ({} as TapLetterInWordConfig);
+
+      if (sorted.length === 0) {
+        const { targetLetter: _t, ...withoutLetter } = rest;
+        onChange({ ...withoutLetter, targetIndices: [], targetCount: 1 });
+        return;
+      }
+
+      const firstRef = buildLetterRef(sorted[0]);
+      onChange({
+        ...rest,
+        targetIndices: sorted,
+        targetCount: sorted.length,
+        ...(firstRef ? { targetLetter: firstRef } : {}),
+      });
+    },
+    [config, onChange, buildLetterRef]
+  );
+
+  const handleToggleIndex = useCallback(
+    (index: number) => {
+      const set = new Set(selectedIndices);
+      if (set.has(index)) {
+        set.delete(index);
+      } else {
+        set.add(index);
+      }
+      commitIndices(Array.from(set));
+    },
+    [selectedIndices, commitIndices]
+  );
+
+  const handleClear = useCallback(() => commitIndices([]), [commitIndices]);
+
+  // Human-readable summary of the current selection.
+  const selectedLettersDisplay = selectedIndices
+    .slice()
+    .sort((a, b) => a - b)
+    .map((i) => wordLetters[i])
+    .filter(Boolean);
 
   return (
     <div className="space-y-4">
-
       <WordSelector
         value={targetWord}
         onChange={(word) => updateConfig({ targetWord: word })}
@@ -104,17 +203,22 @@ export function TapActivityForm({ config, onChange }: BaseActivityFormProps) {
         />
       )}
 
-      <FormField label="Target Letter" hint="Select the letter to find in the word" required>
+      <FormField
+        label="Target Letters"
+        hint="Tap each letter the child must find. Selecting a position pins that exact letter (form + haraka + occurrence)."
+        required
+      >
         <WordLetterPicker
           word={targetWord}
-          selectedIndex={selectedIndex}
-          onIndexChange={handleLetterSelect}
+          selectedIndices={selectedIndices}
+          onToggleIndex={handleToggleIndex}
+          onClear={handleClear}
           emptyMessage="Enter a target word first to see available letters"
         />
-        {selectedLetterDisplay && isLetterReference(targetLetter) && (
+        {selectedLettersDisplay.length > 0 && (
           <p className="text-xs text-blue-600 mt-1">
-            Selected: "{selectedLetterDisplay}" (letterId: {targetLetter.letterId}, form: {targetLetter.form}
-            {targetLetter.haraka && `, haraka: ${targetLetter.haraka}`})
+            Selected {selectedLettersDisplay.length}:{' '}
+            {selectedLettersDisplay.map((l) => `"${l}"`).join(', ')}
           </p>
         )}
       </FormField>
