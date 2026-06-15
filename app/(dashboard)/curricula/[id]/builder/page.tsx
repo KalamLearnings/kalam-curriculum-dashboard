@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Sparkles, LayoutList, Network, Search } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, LayoutList, Network, Search, Copy } from 'lucide-react';
 import { useCurriculum } from '@/lib/hooks/useCurriculum';
 import { useTopics, useDeleteTopic, useUpdateTopic, useReorderTopics } from '@/lib/hooks/useTopics';
 import { useAllNodes, useDeleteNode, useUpdateNode } from '@/lib/hooks/useNodes';
@@ -535,6 +535,22 @@ export default function CurriculumBuilderPage() {
           <h1 className="text-base font-semibold">
             {curriculum?.title?.en || 'Curriculum Builder'}
           </h1>
+
+          {/* Selected activity ID - click to copy */}
+          {currentActivity && (
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(currentActivity.id);
+                toast.success('Activity ID copied');
+              }}
+              title="Click to copy activity ID"
+              className="flex items-center gap-1.5 px-2 py-1 text-xs font-mono text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              <span className="truncate max-w-[220px]">{currentActivity.id}</span>
+              <Copy className="w-3 h-3 shrink-0 text-gray-400" />
+            </button>
+          )}
 
           {/* Open an activity directly by pasting its ID */}
           <div className="relative">
