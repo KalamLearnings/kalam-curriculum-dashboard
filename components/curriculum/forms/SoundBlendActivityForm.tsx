@@ -4,6 +4,7 @@ import { FormField, TextInput } from './FormField';
 import { LetterSelector } from './shared/LetterSelector';
 import { cn } from '@/lib/utils';
 import { useLetters } from '@/lib/hooks/useLetters';
+import { applyHaraka } from '@/lib/utils/letterReference';
 import type { SoundBlendConfig, SoundSegment, SoundDuration, BlendSpeed, BlendContentType } from '@/lib/types/activity-configs';
 import type { LetterReference } from './ArabicLetterGrid';
 
@@ -265,8 +266,12 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
     const letterData = letters.find(l => l.id === ref.letterId);
     if (!letterData) return;
 
-    // Get the letter form
-    const letterChar = letterData.forms?.[ref.form] || letterData.letter;
+    // Get the letter form, then bake in the selected haraka. The sound_blend
+    // schema stores the diacritic directly in the sound/word strings (e.g.
+    // "عُ"), so the haraka from the picker MUST be applied here - otherwise the
+    // letter renders bare in the app. (This was the bug: ref.haraka was dropped.)
+    const baseChar = letterData.forms?.[ref.form] || letterData.letter;
+    const letterChar = applyHaraka(baseChar, ref.haraka);
 
     // For letters, create a single segment with short duration
     const segment: SoundSegment = {
