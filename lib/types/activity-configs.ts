@@ -18,7 +18,18 @@ export type HarakaType = 'fatha' | 'damma' | 'kasra' | 'sukoon' | 'shadda';
 export type ShapeType = 'circle' | 'square' | 'triangle' | 'star' | 'rectangle' | 'diamond' | 'oval' | 'heart';
 export type SoundDuration = 1 | 2 | 3;
 export type BlendContentType = 'letter' | 'word';
-export type BlendSpeed = 'none' | 'slow' | 'fast';
+/**
+ * Reading mode for word blending. New values: segmented → blended → fluent.
+ * Legacy 'none'/'slow'/'fast' are still accepted for back-compat (normalized
+ * by the backend: none/slow → segmented, fast → blended).
+ */
+export type BlendSpeed =
+  | 'segmented'
+  | 'blended'
+  | 'fluent'
+  | 'none'
+  | 'slow'
+  | 'fast';
 
 /**
  * Show Letter or Word Activity Config

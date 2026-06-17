@@ -204,7 +204,13 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
   const contentType: BlendContentType = typedConfig?.contentType || 'word';
   const word = typedConfig?.word || '';
   const segments = typedConfig?.segments || [];
-  const speed: BlendSpeed = typedConfig?.speed || (contentType === 'letter' ? 'none' : 'slow');
+  const speed: BlendSpeed = typedConfig?.speed || (contentType === 'letter' ? 'none' : 'segmented');
+  // Treat legacy values as their modern equivalents for the picker UI.
+  const normalizedSpeed: BlendSpeed =
+    speed === 'slow' || speed === 'none' ? 'segmented' : speed === 'fast' ? 'blended' : speed;
+  // Segmented mode shows letters in isolated forms; blended/fluent keep the
+  // connected/contextual word.
+  const useIsolatedForms = normalizedSpeed === 'segmented';
   const requiredSlides = typedConfig?.requiredSlides || 2;
   const showBothSpeeds = typedConfig?.showBothSpeeds || false;
   const transliteration = typedConfig?.transliteration || '';
@@ -217,19 +223,17 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
   // Auto-detect segments when word changes
   useEffect(() => {
     if (word && segments.length === 0 && contentType === 'word') {
-      const useIsolated = speed === 'slow';
-      const detected = autoDetectSegments(word, useIsolated);
+      const detected = autoDetectSegments(word, useIsolatedForms);
       if (detected.length > 0) {
         updateConfig({ segments: detected });
       }
     }
   }, [word]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-detect segments when speed changes (only for words)
+  // Re-detect segments when the reading mode changes (only for words)
   useEffect(() => {
-    if (word && segments.length > 0 && contentType === 'word' && speed !== 'none') {
-      const useIsolated = speed === 'slow';
-      const detected = autoDetectSegments(word, useIsolated);
+    if (word && segments.length > 0 && contentType === 'word') {
+      const detected = autoDetectSegments(word, useIsolatedForms);
       updateConfig({ segments: detected });
     }
   }, [speed]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -244,19 +248,18 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
         speed: 'none',
       });
     } else {
-      // Switch to word mode: set speed to 'slow' by default
+      // Switch to word mode: default to the first blending stage (segmented).
       updateConfig({
         contentType: newContentType,
         word: '',
         segments: [],
-        speed: 'slow',
+        speed: 'segmented',
       });
     }
   };
 
   const handleWordChange = (newWord: string) => {
-    const useIsolated = speed === 'slow';
-    const detected = autoDetectSegments(newWord, useIsolated);
+    const detected = autoDetectSegments(newWord, useIsolatedForms);
     updateConfig({ word: newWord, segments: detected });
   };
 
@@ -292,22 +295,21 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
   };
 
   const handleRedetect = () => {
-    const useIsolated = speed === 'slow';
-    const detected = autoDetectSegments(word, useIsolated);
+    const detected = autoDetectSegments(word, useIsolatedForms);
     updateConfig({ segments: detected });
   };
 
-  // Get speed hint text
+  // Hint text for the selected reading mode.
   const getSpeedHint = () => {
-    switch (speed) {
-      case 'slow':
-        return 'Slow: Turtle slider for beginners';
-      case 'fast':
-        return 'Fast: Rabbit slider for advanced readers';
-      case 'none':
-        return 'No speed indicator (square slider)';
+    switch (normalizedSpeed) {
+      case 'segmented':
+        return 'Segmented: isolated letters, turtle slider (sound out each letter)';
+      case 'blended':
+        return 'Blended: contextual letter forms, rabbit slider';
+      case 'fluent':
+        return 'Fluent: connected whole word with a single filling bar';
       default:
-        return 'Select a speed mode';
+        return 'Select a reading mode';
     }
   };
 
@@ -452,62 +454,64 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
         </FormField>
       )}
 
-      {/* Speed Selector */}
-      <FormField
-        label="Reading Speed"
-        hint={getSpeedHint()}
-      >
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => updateConfig({ speed: 'none' })}
-            className={cn(
-              'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
-              speed === 'none'
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-blue-300'
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span>⬜</span>
-              <span className="font-medium">None</span>
-            </div>
-            <span className="text-xs text-gray-500">Square slider</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => updateConfig({ speed: 'slow' })}
-            className={cn(
-              'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
-              speed === 'slow'
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-blue-300'
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span>🐢</span>
-              <span className="font-medium">Slow</span>
-            </div>
-            <span className="text-xs text-gray-500">Turtle slider</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => updateConfig({ speed: 'fast' })}
-            className={cn(
-              'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
-              speed === 'fast'
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-blue-300'
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span>🐇</span>
-              <span className="font-medium">Fast</span>
-            </div>
-            <span className="text-xs text-gray-500">Rabbit slider</span>
-          </button>
-        </div>
-      </FormField>
+      {/* Reading Mode Selector — words only (letters always use the square slider) */}
+      {contentType === 'word' && (
+        <FormField
+          label="Reading Mode"
+          hint={getSpeedHint()}
+        >
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => updateConfig({ speed: 'segmented' })}
+              className={cn(
+                'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
+                normalizedSpeed === 'segmented'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-blue-300'
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <span>🐢</span>
+                <span className="font-medium">Segmented</span>
+              </div>
+              <span className="text-xs text-gray-500">Isolated letters</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => updateConfig({ speed: 'blended' })}
+              className={cn(
+                'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
+                normalizedSpeed === 'blended'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-blue-300'
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <span>🐇</span>
+                <span className="font-medium">Blended</span>
+              </div>
+              <span className="text-xs text-gray-500">Contextual letters</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => updateConfig({ speed: 'fluent' })}
+              className={cn(
+                'flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all min-w-[100px]',
+                normalizedSpeed === 'fluent'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-blue-300'
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <span>📖</span>
+                <span className="font-medium">Fluent</span>
+              </div>
+              <span className="text-xs text-gray-500">Connected word</span>
+            </button>
+          </div>
+        </FormField>
+      )}
 
       {/* Required Slides */}
       <FormField
@@ -527,44 +531,50 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
         </div>
       </FormField>
 
-      {/* Show Both Speeds Toggle */}
-      <FormField
-        label="Display Mode"
-        hint="Show both turtle (slow) and rabbit (fast) sliders side by side"
-      >
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showBothSpeeds}
-            onChange={(e) => updateConfig({ showBothSpeeds: e.target.checked })}
-            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <div className="flex flex-col">
-            <span className="font-medium">Show both speeds side by side</span>
-            <span className="text-sm text-gray-500">
-              Displays turtle (slow) and rabbit (fast) sliders together
-            </span>
-          </div>
-        </label>
-        {showBothSpeeds && (
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Preview:</strong> Both sliders will be shown - on tablets they appear side by side,
-              on phones they stack vertically.
-            </p>
-            <div className="flex gap-4 mt-2 justify-center">
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-2xl">🐢</span>
-                <span className="text-xs">Slow</span>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-2xl">🐇</span>
-                <span className="text-xs">Fast</span>
+      {/* Progression Toggle — words only */}
+      {contentType === 'word' && (
+        <FormField
+          label="Display Mode"
+          hint="Show the full blending progression (segmented → blended → fluent) in sequence"
+        >
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showBothSpeeds}
+              onChange={(e) => updateConfig({ showBothSpeeds: e.target.checked })}
+              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div className="flex flex-col">
+              <span className="font-medium">Show the full progression</span>
+              <span className="text-sm text-gray-500">
+                Steps the child through segmented → blended → fluent
+              </span>
+            </div>
+          </label>
+          {showBothSpeeds && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Preview:</strong> The child progresses through all three stages -
+                on tablets they appear side by side, on phones they sequence as pages.
+              </p>
+              <div className="flex gap-4 mt-2 justify-center">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-2xl">🐢</span>
+                  <span className="text-xs">Segmented</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-2xl">🐇</span>
+                  <span className="text-xs">Blended</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-2xl">📖</span>
+                  <span className="text-xs">Fluent</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </FormField>
+          )}
+        </FormField>
+      )}
 
       {/* Optional Fields */}
       <div className="border-t pt-4 space-y-4">
