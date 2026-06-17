@@ -211,7 +211,6 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
   // Segmented mode shows letters in isolated forms; blended/fluent keep the
   // connected/contextual word.
   const useIsolatedForms = normalizedSpeed === 'segmented';
-  const requiredSlides = typedConfig?.requiredSlides || 2;
   const showBothSpeeds = typedConfig?.showBothSpeeds || false;
   const transliteration = typedConfig?.transliteration || '';
   const meaning = typedConfig?.meaning || '';
@@ -513,23 +512,6 @@ export function SoundBlendActivityForm({ config, onChange, topic }: BaseActivity
         </FormField>
       )}
 
-      {/* Required Slides */}
-      <FormField
-        label="Required Slides"
-        hint="How many times must the child slide to complete"
-      >
-        <div className="flex items-center gap-2">
-          <input
-            type="range"
-            min={1}
-            max={5}
-            value={requiredSlides}
-            onChange={(e) => updateConfig({ requiredSlides: parseInt(e.target.value) })}
-            className="flex-1"
-          />
-          <span className="w-8 text-center font-medium">{requiredSlides}</span>
-        </div>
-      </FormField>
 
       {/* Progression Toggle — words only */}
       {contentType === 'word' && (
