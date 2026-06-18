@@ -66,11 +66,6 @@ export async function getAudioAssets(filters?: AudioFilters): Promise<AudioAsset
     query = query.eq('category', filters.category);
   }
 
-  if (filters?.searchQuery) {
-    const searchTerm = `%${filters.searchQuery}%`;
-    query = query.or(`display_name.ilike.${searchTerm},name.ilike.${searchTerm}`);
-  }
-
   if (filters?.tags && filters.tags.length > 0) {
     query = query.contains('tags', filters.tags);
   }
@@ -82,7 +77,21 @@ export async function getAudioAssets(filters?: AudioFilters): Promise<AudioAsset
     throw new Error(`Failed to fetch audio assets: ${error.message}`);
   }
 
-  return (data || []).map((row: AudioAssetRow) => {
+  let rows = (data || []) as AudioAssetRow[];
+
+  // Search is filtered client-side so it can substring-match across the `tags`
+  // text[] array as well as display_name/name. PostgREST `.or()` ilike can't
+  // substring-match array elements, and `tags.cs.{...}` is exact-contains only.
+  if (filters?.searchQuery) {
+    const q = filters.searchQuery.toLowerCase();
+    rows = rows.filter((row) =>
+      row.display_name?.toLowerCase().includes(q) ||
+      row.name?.toLowerCase().includes(q) ||
+      (row.tags || []).some((tag) => tag.toLowerCase().includes(q))
+    );
+  }
+
+  return rows.map((row: AudioAssetRow) => {
     const { data: { publicUrl } } = supabase.storage
       .from(BUCKET_NAME)
       .getPublicUrl(row.storage_path);
