@@ -38,6 +38,8 @@ interface TargetLetterActivityConfig {
   showSpeedConfig?: boolean;
   /** Field name for speed (default: 'balloonSpeed') */
   speedField?: string;
+  /** Whether to show an audio picker for the target letter's sound */
+  showTargetAudio?: boolean;
 }
 
 const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActivityConfig>> = {
@@ -60,6 +62,7 @@ const targetLetterActivityConfigs: Partial<Record<ArticleType, TargetLetterActiv
   audio_letter_match: {
     targetLetterHint: "The letter matching the audio",
     targetCountHint: "Number of correct matches",
+    showTargetAudio: true,
   },
   letter_discrimination: {
     targetLetterHint: "The correct letter to identify",
@@ -183,6 +186,7 @@ function createTargetLetterForm(activityType: ArticleType): React.ComponentType<
         targetLetterMultiSelect={config.targetLetterMultiSelect}
         showSpeedConfig={config.showSpeedConfig}
         speedField={config.speedField}
+        showTargetAudio={config.showTargetAudio}
       />
     );
   };

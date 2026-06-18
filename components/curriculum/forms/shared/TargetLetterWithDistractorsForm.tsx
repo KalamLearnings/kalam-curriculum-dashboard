@@ -3,6 +3,8 @@ import { BaseActivityFormProps } from '../ActivityFormProps';
 import { FormField, NumberInput } from '../FormField';
 import { LetterSelector } from './LetterSelector';
 import { cn } from '@/lib/utils';
+import { AudioPicker } from '@/components/audio/AudioPicker';
+import type { AudioAsset } from '@/lib/types/audio';
 import type { LetterReference } from '../ArabicLetterGrid';
 import type { LetterPosition } from '@/lib/types/activity-configs';
 
@@ -30,6 +32,8 @@ interface TargetLetterWithDistractorsFormProps extends BaseActivityFormProps {
   showSpeedConfig?: boolean;
   /** Field name for speed in config (default: 'balloonSpeed', also supports 'speed') */
   speedField?: string;
+  /** Whether to show an audio picker for the target letter's sound */
+  showTargetAudio?: boolean;
 }
 
 const SPEED_OPTIONS = [
@@ -50,6 +54,7 @@ export function TargetLetterWithDistractorsForm({
   targetLetterMultiSelect = false,
   showSpeedConfig = false,
   speedField = 'balloonSpeed',
+  showTargetAudio = false,
 }: TargetLetterWithDistractorsFormProps) {
   // Note: config type from @kalam/curriculum-schemas still expects old format
   // We're migrating to LetterReference format
@@ -62,9 +67,19 @@ export function TargetLetterWithDistractorsForm({
   const duration = typedConfig?.duration ?? '';
   const letterPositions: LetterPosition[] = typedConfig?.letterPositions || ['isolated'];
   const speed = typedConfig?.[speedField] ?? 1.0;
+  const targetLetterAudioUrl: string | undefined = typedConfig?.targetLetterAudioUrl || undefined;
+  const targetLetterAudioId: string | undefined = typedConfig?.targetLetterAudioId || undefined;
 
   const updateConfig = (updates: Record<string, any>) => {
     onChange({ ...config, ...updates } as any);
+  };
+
+  const handleTargetAudioChange = (audioId: string | undefined, audio?: AudioAsset) => {
+    if (audioId && audio) {
+      updateConfig({ targetLetterAudioUrl: audio.url, targetLetterAudioId: audioId });
+    } else {
+      updateConfig({ targetLetterAudioUrl: undefined, targetLetterAudioId: undefined });
+    }
   };
 
   const toggleLetterPosition = (position: LetterPosition) => {
@@ -101,6 +116,36 @@ export function TargetLetterWithDistractorsForm({
           />
         )}
       </FormField>
+
+      {showTargetAudio && (
+        <FormField
+          label="Target Letter Audio"
+          hint="The sound played for the target letter (learners match this audio)"
+        >
+          <div className="space-y-2">
+            <AudioPicker
+              value={targetLetterAudioId}
+              onChange={handleTargetAudioChange}
+              placeholder="Select audio file..."
+            />
+            {targetLetterAudioUrl && (
+              <div className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+                <span className="text-lg">🔊</span>
+                <span className="text-xs text-gray-600 truncate flex-1">
+                  {targetLetterAudioUrl.split('/').pop()}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleTargetAudioChange(undefined, undefined)}
+                  className="text-xs text-red-600 hover:text-red-700"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+          </div>
+        </FormField>
+      )}
 
       <FormField label="Distractor Letters" hint="Select letters and their forms" required>
         <LetterSelector
