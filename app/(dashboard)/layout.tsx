@@ -393,7 +393,7 @@ export default function DashboardLayout({
 
           {/* Cross-link to the new Studio dashboard */}
           <a
-            href="https://studio.kalamkidslearning.com"
+            href="https://silly-lamington-b63257.netlify.app"
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
