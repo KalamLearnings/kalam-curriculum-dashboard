@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BaseActivityFormProps } from './ActivityFormProps';
 import { FormField } from './FormField';
 import { LetterSelector } from './shared/LetterSelector';
@@ -40,6 +40,18 @@ export function DragHarakaToLetterForm({ config, onChange, topic }: BaseActivity
   const updateConfig = (updates: Partial<typeof config>) => {
     onChange({ ...config, ...updates });
   };
+
+  // The Haraka Type selector shows 'fatha' pre-selected by default (line above),
+  // but that default is display-only — it isn't written to the config until the
+  // author clicks a haraka. Persist it on mount so saving without an explicit
+  // click still captures harakaType. Only writes when it's actually missing, so
+  // existing activities and author selections are never overwritten.
+  useEffect(() => {
+    if (!config?.harakaType) {
+      updateConfig({ harakaType });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Get the display character for a letter reference
   const getLetterDisplay = (ref: LetterReference | null): string => {
