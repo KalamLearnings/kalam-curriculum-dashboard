@@ -8,7 +8,7 @@ export function pageNarrationText(displayText: string, narrationText: string): s
 
   return narrationText
     .replace(/\[[^\]\r\n]*\]/g, (tag) =>
-      performanceTags.has(tag.toLowerCase()) ? '' : tag
+      performanceTags.has(tag.toLowerCase()) ? ' ' : tag
     )
     .split(/\r?\n/)
     .map((line) => line.replace(/[^\S\r\n]+/g, ' ').trim())

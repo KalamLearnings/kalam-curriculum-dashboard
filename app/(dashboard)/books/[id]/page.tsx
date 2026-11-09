@@ -111,6 +111,8 @@ export default function BookEditorPage() {
   const [pageAudioVoice, setPageAudioVoice] = useState(DEFAULT_VOICE.id);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const pageDraftId = useRef(0);
+  // Regeneration can refresh automatic copy until the author edits or reloads it.
+  const pageTextIsAuthored = useRef(false);
 
   // Delete availability confirmation
   const [deleteAvailConfirmOpen, setDeleteAvailConfirmOpen] = useState(false);
@@ -203,6 +205,7 @@ export default function BookEditorPage() {
   };
   const handleOpenPageModal = (page?: BookPage) => {
     pageDraftId.current += 1;
+    pageTextIsAuthored.current = Boolean(page?.text.trim());
     setIsGeneratingAudio(false);
     if (page) {
       setEditingPage(page);
@@ -301,7 +304,7 @@ export default function BookEditorPage() {
       setPageFormData((p) => ({
         ...p,
         audio_url: publicUrl,
-        text: pageNarrationText(p.text, textToGenerate),
+        text: pageNarrationText(pageTextIsAuthored.current ? p.text : '', textToGenerate),
       }));
       toast.success('Audio generated and uploaded!');
     } catch (err) {
@@ -1263,7 +1266,11 @@ export default function BookEditorPage() {
             <textarea
               id="book-page-text"
               value={pageFormData.text}
-              onChange={(e) => setPageFormData((p) => ({ ...p, text: e.target.value }))}
+              onChange={(e) => {
+                const text = e.target.value;
+                pageTextIsAuthored.current = Boolean(text.trim());
+                setPageFormData((p) => ({ ...p, text }));
+              }}
               className="w-full px-3 py-2 border rounded-md"
               rows={3}
             />

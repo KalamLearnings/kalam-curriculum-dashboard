@@ -116,8 +116,10 @@ function currentAudio() {
 }
 
 async function generateAudio() {
+  const successCount = mocks.success.mock.calls.length + 1;
   fireEvent.click(screen.getByRole('button', { name: /Generate Audio/ }));
-  await waitFor(() => expect(mocks.success).toHaveBeenCalledWith('Audio generated and uploaded!'));
+  await waitFor(() => expect(mocks.success).toHaveBeenCalledTimes(successCount));
+  expect(mocks.success).toHaveBeenLastCalledWith('Audio generated and uploaded!');
 }
 
 function saveAndReopen(saveLabel = 'Save Changes') {
@@ -213,6 +215,59 @@ describe('BookEditorPage narration text persistence', () => {
     expect(screen.getByLabelText('Text', { exact: true })).toHaveValue(display);
   });
 
+  it('updates automatically filled text and audio together when regenerating, then saves and reopens both', async () => {
+    const regeneratedAudio = 'https://assets.invalid/regenerated.mp3';
+    mocks.getPublicUrl
+      .mockReturnValueOnce({ data: { publicUrl: generatedAudio } })
+      .mockReturnValueOnce({ data: { publicUrl: regeneratedAudio } });
+    editPage();
+    setNarration('[happy] First narration.');
+    await generateAudio();
+    expect(screen.getByLabelText('Text', { exact: true })).toHaveValue('First narration.');
+    expect(currentAudio()).toBe(generatedAudio);
+
+    setNarration('[gentle] Revised narration.');
+    await generateAudio();
+
+    expect(JSON.parse(mocks.fetch.mock.calls[1][1].body).text).toBe('[gentle] Revised narration.');
+    expect(screen.getByLabelText('Text', { exact: true })).toHaveValue('Revised narration.');
+    expect(currentAudio()).toBe(regeneratedAudio);
+    saveAndReopen();
+    expect(mocks.updatePage.mock.calls[0][0].data).toMatchObject({
+      text: 'Revised narration.',
+      audio_url: regeneratedAudio,
+    });
+    expect(screen.getByLabelText('Text', { exact: true })).toHaveValue('Revised narration.');
+    expect(currentAudio()).toBe(regeneratedAudio);
+  });
+
+  it('preserves a manual display edit made while regenerated audio is uploading', async () => {
+    const regeneratedAudio = 'https://assets.invalid/regenerated.mp3';
+    mocks.getPublicUrl
+      .mockReturnValueOnce({ data: { publicUrl: generatedAudio } })
+      .mockReturnValueOnce({ data: { publicUrl: regeneratedAudio } });
+    editPage();
+    setNarration('[happy] First narration.');
+    await generateAudio();
+
+    const upload = deferred<{ data: { path: string }; error: null }>();
+    mocks.upload.mockReturnValueOnce(upload.promise);
+    setNarration('[gentle] Revised narration.');
+    const regeneration = generateAudio();
+    await waitFor(() => expect(mocks.upload).toHaveBeenCalledTimes(2));
+    const display = '  My own display text.\nWith فَانُوس!  ';
+    fireEvent.change(screen.getByLabelText('Text', { exact: true }), { target: { value: display } });
+    await act(async () => { upload.resolve({ data: { path: 'books/regenerated.mp3' }, error: null }); });
+    await regeneration;
+
+    expect(screen.getByLabelText('Text', { exact: true })).toHaveValue(display);
+    expect(currentAudio()).toBe(regeneratedAudio);
+    saveAndReopen();
+    expect(mocks.updatePage.mock.calls[0][0].data).toMatchObject({ text: display, audio_url: regeneratedAudio });
+    expect(screen.getByLabelText('Text', { exact: true })).toHaveValue(display);
+    expect(currentAudio()).toBe(regeneratedAudio);
+  });
+
   it('keeps Save disabled through generation and upload and uses the submitted narration snapshot', async () => {
     const generation = deferred<ReturnType<typeof ttsResponse>>();
     const upload = deferred<{ data: { path: string }; error: null }>();
@@ -238,8 +293,15 @@ describe('BookEditorPage narration text persistence', () => {
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
     expect(screen.getByLabelText('Text', { exact: true })).toHaveValue('This was submitted.');
     expect(currentAudio()).toBe(generatedAudio);
+    setNarration('[gentle] A later draft without regenerating.');
     saveAndReopen();
+    expect(mocks.fetch).toHaveBeenCalledOnce();
+    expect(mocks.updatePage.mock.calls[0][0].data).toMatchObject({
+      text: 'This was submitted.',
+      audio_url: generatedAudio,
+    });
     expect(screen.getByLabelText('Text', { exact: true })).toHaveValue('This was submitted.');
+    expect(currentAudio()).toBe(generatedAudio);
   });
 
   it('does not replace audio or prefill display on TTS failure, while allowing a deliberate text save', async () => {
@@ -321,5 +383,19 @@ describe('BookEditorPage narration text persistence', () => {
       audio_url: originalAudio,
     });
     expect(screen.getByLabelText('Text', { exact: true })).toHaveValue('أهلاً يا صديقي [أزرق]!\nWelcome [A].');
+  });
+
+  it.each([
+    { narration: 'Hello[pause]world [A]', display: 'Hello world [A]' },
+    { narration: 'مرحبًا[pause]صديقي [أزرق]', display: 'مرحبًا صديقي [أزرق]' },
+  ])('keeps words separate when saving a voice tag without surrounding spaces: $narration', ({ narration, display }) => {
+    editPage();
+    setNarration(narration);
+
+    saveAndReopen();
+
+    expect(mocks.fetch).not.toHaveBeenCalled();
+    expect(mocks.updatePage.mock.calls[0][0].data).toMatchObject({ text: display, audio_url: originalAudio });
+    expect(screen.getByLabelText('Text', { exact: true })).toHaveValue(display);
   });
 });
