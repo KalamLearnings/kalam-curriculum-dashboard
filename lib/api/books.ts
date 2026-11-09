@@ -66,6 +66,17 @@ export interface BookPage {
   created_at: string;
 }
 
+// Older deployments return text_ar; keep that wire detail outside the editor.
+type BookPageResponse = Omit<BookPage, 'text'> & {
+  text?: string;
+  text_ar?: string;
+};
+
+function normalizeBookPage(page: BookPageResponse): BookPage {
+  const { text_ar, ...rest } = page;
+  return { ...rest, text: page.text ?? text_ar ?? '' };
+}
+
 export interface Book {
   id: string;
   shop_item_id: string;
@@ -268,14 +279,16 @@ export async function deleteBook(bookId: string): Promise<void> {
 // ============================================================================
 
 export async function listPages(bookId: string): Promise<BookPage[]> {
-  return fetchWithAuth<BookPage[]>(`/books/admin/${bookId}/pages`);
+  const pages = await fetchWithAuth<BookPageResponse[]>(`/books/admin/${bookId}/pages`);
+  return pages.map(normalizeBookPage);
 }
 
 export async function createPage(bookId: string, data: CreatePageRequest): Promise<BookPage> {
-  return fetchWithAuth<BookPage>(`/books/admin/${bookId}/pages`, {
+  const page = await fetchWithAuth<BookPageResponse>(`/books/admin/${bookId}/pages`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return normalizeBookPage(page);
 }
 
 export async function updatePage(
@@ -283,10 +296,11 @@ export async function updatePage(
   pageId: string,
   data: UpdatePageRequest
 ): Promise<BookPage> {
-  return fetchWithAuth<BookPage>(`/books/admin/${bookId}/pages/${pageId}`, {
+  const page = await fetchWithAuth<BookPageResponse>(`/books/admin/${bookId}/pages/${pageId}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+  return normalizeBookPage(page);
 }
 
 export async function deletePage(bookId: string, pageId: string): Promise<void> {
