@@ -9,28 +9,7 @@
 
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
-
-const VOICE_TAGS = [
-  // Emotions & Tones (for kids)
-  '[excited]',
-  '[happy]',
-  '[cheerful]',
-  '[encouraging]',
-  '[proud]',
-  '[calm]',
-  '[gentle]',
-  '[friendly]',
-  '[playful]',
-  '[curious]',
-  '[surprised]',
-  // Delivery styles
-  '[whispers]',
-  '[giggles]',
-  // Pauses
-  '[pause]',
-  '[short pause]',
-  '[long pause]',
-] as const;
+import { VOICE_TAGS } from '@/lib/constants/voiceTags';
 
 interface VoiceTagsInputProps {
   value: string;

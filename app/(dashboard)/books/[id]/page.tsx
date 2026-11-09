@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useBook,
@@ -25,6 +25,7 @@ import { VoiceTagsInput } from '@/components/ui/VoiceTagsInput';
 import { VoiceSelector } from '@/components/curriculum/shared/VoiceSelector';
 import { AudioPicker } from '@/components/audio/AudioPicker';
 import { DEFAULT_VOICE } from '@/lib/constants/voices';
+import { pageNarrationText } from '@/lib/books/pageNarrationText';
 import type { AudioAsset } from '@/lib/types/audio';
 import type { LetterReference } from '@/components/curriculum/forms/ArabicLetterGrid';
 import type {
@@ -109,6 +110,7 @@ export default function BookEditorPage() {
   const [pageAudioText, setPageAudioText] = useState('');
   const [pageAudioVoice, setPageAudioVoice] = useState(DEFAULT_VOICE.id);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const pageDraftId = useRef(0);
 
   // Delete availability confirmation
   const [deleteAvailConfirmOpen, setDeleteAvailConfirmOpen] = useState(false);
@@ -194,7 +196,14 @@ export default function BookEditorPage() {
   };
 
   // Page handlers
+  const handleClosePageModal = () => {
+    pageDraftId.current += 1;
+    setPageModalOpen(false);
+    setIsGeneratingAudio(false);
+  };
   const handleOpenPageModal = (page?: BookPage) => {
+    pageDraftId.current += 1;
+    setIsGeneratingAudio(false);
     if (page) {
       setEditingPage(page);
       setPageFormData({
@@ -230,6 +239,7 @@ export default function BookEditorPage() {
     }
 
     setIsGeneratingAudio(true);
+    const draftId = pageDraftId.current;
 
     try {
       const { createClient, getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders } = await import('@/lib/supabase/client');
@@ -287,26 +297,37 @@ export default function BookEditorPage() {
         .from('curriculum-audio')
         .getPublicUrl(uploadData.path);
 
-      setPageFormData((p) => ({ ...p, audio_url: publicUrl }));
+      if (draftId !== pageDraftId.current) return;
+      setPageFormData((p) => ({
+        ...p,
+        audio_url: publicUrl,
+        text: pageNarrationText(p.text, textToGenerate),
+      }));
       toast.success('Audio generated and uploaded!');
     } catch (err) {
+      if (draftId !== pageDraftId.current) return;
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate audio';
       toast.error(errorMessage);
     } finally {
-      setIsGeneratingAudio(false);
+      if (draftId === pageDraftId.current) setIsGeneratingAudio(false);
     }
   };
 
   const handleSavePage = () => {
+    if (isGeneratingAudio) return;
+    const data = {
+      ...pageFormData,
+      text: pageNarrationText(pageFormData.text, pageAudioText),
+    };
     if (editingPage) {
       updatePage(
-        { bookId, pageId: editingPage.id, data: pageFormData as UpdatePageRequest },
-        { onSuccess: () => setPageModalOpen(false) }
+        { bookId, pageId: editingPage.id, data: data as UpdatePageRequest },
+        { onSuccess: handleClosePageModal }
       );
     } else {
       createPage(
-        { bookId, data: pageFormData },
-        { onSuccess: () => setPageModalOpen(false) }
+        { bookId, data },
+        { onSuccess: handleClosePageModal }
       );
     }
   };
@@ -1153,7 +1174,7 @@ export default function BookEditorPage() {
       {/* Page Modal */}
       <Modal
         isOpen={pageModalOpen}
-        onClose={() => setPageModalOpen(false)}
+        onClose={handleClosePageModal}
         title={editingPage ? `Edit Page ${editingPage.page_number}` : 'Add Page'}
         size="lg"
       >
@@ -1236,10 +1257,11 @@ export default function BookEditorPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="book-page-text" className="block text-sm font-medium text-gray-700 mb-1">
               Text
             </label>
             <textarea
+              id="book-page-text"
               value={pageFormData.text}
               onChange={(e) => setPageFormData((p) => ({ ...p, text: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md"
@@ -1277,6 +1299,9 @@ export default function BookEditorPage() {
                 dir="ltr"
                 rows={2}
               />
+              <p className="text-xs text-gray-500">
+                Narration also becomes the page text when Text is empty. Voice tags are removed.
+              </p>
 
               <VoiceSelector
                 value={pageAudioVoice}
@@ -1322,14 +1347,15 @@ export default function BookEditorPage() {
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
-              onClick={() => setPageModalOpen(false)}
+              onClick={handleClosePageModal}
               className="px-4 py-2 text-sm text-gray-700 bg-white border rounded-md hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSavePage}
-              className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              disabled={isGeneratingAudio}
+              className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {editingPage ? 'Save Changes' : 'Add Page'}
             </button>
