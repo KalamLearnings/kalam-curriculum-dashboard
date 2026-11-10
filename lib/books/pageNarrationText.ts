@@ -2,11 +2,9 @@ import { VOICE_TAGS } from '@/lib/constants/voiceTags';
 
 const performanceTags: ReadonlySet<string> = new Set(VOICE_TAGS);
 
-/** Explicit page copy wins; narration supplies missing copy without TTS performance cues. */
-export function pageNarrationText(displayText: string, narrationText: string): string {
-  if (displayText.trim()) return displayText;
-
-  return narrationText
+/** Derive readable page copy from the single source without supported TTS performance cues. */
+export function pageNarrationText(text: string): string {
+  return text
     .replace(/\[[^\]\r\n]*\]/g, (tag) =>
       performanceTags.has(tag.toLowerCase()) ? ' ' : tag
     )

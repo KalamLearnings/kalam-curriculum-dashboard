@@ -2,7 +2,7 @@
  * React Query hooks for book operations
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
   listBooks,
   getBook,
@@ -114,14 +114,27 @@ export function useBookPages(bookId: string | null) {
   });
 }
 
+async function cacheSavedPage(queryClient: QueryClient, bookId: string, savedPage: BookPage) {
+  const queryKey = ['book-pages', bookId];
+  // A read started before this save must not replace its newer result.
+  await queryClient.cancelQueries({ queryKey });
+  queryClient.setQueryData<BookPage[]>(queryKey, (pages) => {
+    if (!pages) return pages;
+    return [...pages.filter((page) => page.id !== savedPage.id), savedPage]
+      .sort((left, right) => left.page_number - right.page_number);
+  });
+  // Reopening the editor can use the saved result while the refresh is pending.
+  void queryClient.invalidateQueries({ queryKey });
+}
+
 export function useCreatePage() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ bookId, data }: { bookId: string; data: CreatePageRequest }) =>
       createPage(bookId, data),
-    onSuccess: (_, { bookId }) => {
-      queryClient.invalidateQueries({ queryKey: ['book-pages', bookId] });
+    onSuccess: async (savedPage, { bookId }) => {
+      await cacheSavedPage(queryClient, bookId, savedPage);
       queryClient.invalidateQueries({ queryKey: ['book', bookId] });
       toast.success('Page created successfully');
     },
@@ -144,8 +157,8 @@ export function useUpdatePage() {
       pageId: string;
       data: UpdatePageRequest;
     }) => updatePage(bookId, pageId, data),
-    onSuccess: (_, { bookId }) => {
-      queryClient.invalidateQueries({ queryKey: ['book-pages', bookId] });
+    onSuccess: async (savedPage, { bookId }) => {
+      await cacheSavedPage(queryClient, bookId, savedPage);
       toast.success('Page updated successfully');
     },
     onError: (error: Error) => {

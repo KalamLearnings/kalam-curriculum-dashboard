@@ -9,6 +9,7 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  closeOnEscape?: boolean;
 }
 
 const sizeClasses = {
@@ -18,10 +19,10 @@ const sizeClasses = {
   xl: 'max-w-6xl',
 };
 
-export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md', closeOnEscape = true }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && closeOnEscape) onClose();
     };
 
     if (isOpen) {
@@ -33,7 +34,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, closeOnEscape]);
 
   if (!isOpen) return null;
 

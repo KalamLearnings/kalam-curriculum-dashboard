@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { VOICE_TAGS } from '@/lib/constants/voiceTags';
 
 interface VoiceTagsInputProps {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -22,6 +23,7 @@ interface VoiceTagsInputProps {
 }
 
 export function VoiceTagsInput({
+  id,
   value,
   onChange,
   placeholder = 'Enter text...',
@@ -66,6 +68,7 @@ export function VoiceTagsInput({
     >
       {/* Text Input Area */}
       <textarea
+        id={id}
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -18,6 +18,7 @@ import type { AudioAsset } from '@/lib/types/audio';
 interface AudioPickerProps {
   value?: string;
   onChange: (audioId: string | undefined, audio?: AudioAsset) => void;
+  onOpenChange?: (isOpen: boolean) => void;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -25,6 +26,7 @@ interface AudioPickerProps {
 export function AudioPicker({
   value,
   onChange,
+  onOpenChange,
   placeholder = 'Select audio...',
   disabled = false,
 }: AudioPickerProps) {
@@ -43,10 +45,15 @@ export function AudioPicker({
     autoLoad: true,
   });
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    onOpenChange?.(open);
+  };
+
   const handleSelect = (audio: AudioAsset) => {
     setSelectedAudio(audio);
     onChange(audio.id, audio);
-    setIsOpen(false);
+    handleOpenChange(false);
   };
 
   const handleClear = () => {
@@ -65,7 +72,7 @@ export function AudioPicker({
           ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'cursor-pointer hover:border-purple-300'}
           ${currentAudio ? 'border-purple-200 bg-purple-50' : 'border-gray-200'}
         `}
-        onClick={() => !disabled && setIsOpen(true)}
+        onClick={() => !disabled && handleOpenChange(true)}
       >
         {currentAudio ? (
           <>
@@ -111,7 +118,7 @@ export function AudioPicker({
       {/* Selection Modal */}
       <Modal
         isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        onClose={() => handleOpenChange(false)}
         title="Select Audio"
         size="xl"
       >

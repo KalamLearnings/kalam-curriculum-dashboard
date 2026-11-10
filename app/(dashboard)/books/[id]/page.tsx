@@ -107,12 +107,17 @@ export default function BookEditorPage() {
   const [pageToDelete, setPageToDelete] = useState<BookPage | null>(null);
 
   // TTS generation state for page audio
-  const [pageAudioText, setPageAudioText] = useState('');
   const [pageAudioVoice, setPageAudioVoice] = useState(DEFAULT_VOICE.id);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [isSavingPage, setIsSavingPage] = useState(false);
+  const [pageAudioNeedsRegeneration, setPageAudioNeedsRegeneration] = useState(false);
+  const [pageAudioAssetId, setPageAudioAssetId] = useState<string>();
+  const [pageAudioPickerOpen, setPageAudioPickerOpen] = useState(false);
+  const [audioPickerKey, setAudioPickerKey] = useState(0);
   const pageDraftId = useRef(0);
-  // Regeneration can refresh automatic copy until the author edits or reloads it.
-  const pageTextIsAuthored = useRef(false);
+  const pageSaveDraftId = useRef<number | null>(null);
+  const pageGenerationId = useRef(0);
+  const pageAudioSource = useRef<string | null>(null);
 
   // Delete availability confirmation
   const [deleteAvailConfirmOpen, setDeleteAvailConfirmOpen] = useState(false);
@@ -198,15 +203,30 @@ export default function BookEditorPage() {
   };
 
   // Page handlers
+  const resetPageAudioPicker = () => {
+    setPageAudioPickerOpen(false);
+    setAudioPickerKey((key) => key + 1);
+  };
   const handleClosePageModal = () => {
+    if (pageSaveDraftId.current === pageDraftId.current) return;
     pageDraftId.current += 1;
+    pageGenerationId.current += 1;
     setPageModalOpen(false);
+    setPageImagePickerOpen(false);
+    setPageAudioPickerOpen(false);
     setIsGeneratingAudio(false);
   };
   const handleOpenPageModal = (page?: BookPage) => {
+    if (pageSaveDraftId.current === pageDraftId.current) return;
     pageDraftId.current += 1;
-    pageTextIsAuthored.current = Boolean(page?.text.trim());
+    pageGenerationId.current += 1;
+    pageAudioSource.current = page?.audio_url && page.text.trim() ? page.text : null;
+    setPageAudioAssetId(undefined);
+    resetPageAudioPicker();
+    setPageImagePickerOpen(false);
     setIsGeneratingAudio(false);
+    setIsSavingPage(false);
+    setPageAudioNeedsRegeneration(false);
     if (page) {
       setEditingPage(page);
       setPageFormData({
@@ -215,9 +235,8 @@ export default function BookEditorPage() {
         background_image_url: page.background_image_url,
         text: page.text,
         audio_url: page.audio_url || '',
+        word_timings: page.word_timings ?? [],
       });
-      // Pre-fill TTS text with page text
-      setPageAudioText(page.text || '');
     } else {
       setEditingPage(null);
       setPageFormData({
@@ -226,28 +245,77 @@ export default function BookEditorPage() {
         background_image_url: '',
         text: '',
         audio_url: '',
+        word_timings: [],
       });
-      setPageAudioText('');
     }
     setPageAudioVoice(DEFAULT_VOICE.id);
     setPageModalOpen(true);
   };
 
+  const handlePageTextChange = (text: string) => {
+    pageGenerationId.current += 1;
+    setIsGeneratingAudio(false);
+    const changedAudioSource = pageAudioSource.current !== null && text !== pageAudioSource.current;
+    if (changedAudioSource || isGeneratingAudio) setPageAudioNeedsRegeneration(true);
+    if (changedAudioSource) {
+      pageAudioSource.current = null;
+      setPageAudioAssetId(undefined);
+      resetPageAudioPicker();
+    }
+    setPageFormData((page) => ({
+      ...page,
+      text,
+      ...(changedAudioSource ? { audio_url: '' } : {}),
+      word_timings: [],
+    }));
+  };
+
+  const handlePageAudioSelection = (audioId?: string, audio?: AudioAsset) => {
+    const transcript = typeof audio?.metadata?.ttsText === 'string' ? audio.metadata.ttsText : '';
+    const text = pageNarrationText(pageFormData.text);
+    if (audio?.url && transcript && text && text.replace(/\s+/g, ' ') !== pageNarrationText(transcript).replace(/\s+/g, ' ')) {
+      toast.error('This audio has different words. Clear Text first to use its transcript.');
+      resetPageAudioPicker();
+      return;
+    }
+    pageGenerationId.current += 1;
+    setIsGeneratingAudio(false);
+    const nextText = text ? pageFormData.text : transcript;
+    pageAudioSource.current = audio?.url && pageNarrationText(nextText) ? nextText : null;
+    setPageAudioNeedsRegeneration(false);
+    setPageAudioAssetId(audio?.url ? audioId : undefined);
+    if (!audio?.url) resetPageAudioPicker();
+    setPageFormData((page) => ({
+      ...page,
+      text: nextText,
+      audio_url: audio?.url ?? '',
+      word_timings: [],
+    }));
+  };
+
   // Generate TTS audio for page
   const handleGeneratePageAudio = async () => {
-    const textToGenerate = pageAudioText.trim() || pageFormData.text.trim();
-    if (!textToGenerate) {
+    if (isSavingPage || isGeneratingAudio) return;
+    const sourceText = pageFormData.text;
+    const textToGenerate = sourceText.trim();
+    const displayText = pageNarrationText(sourceText);
+    if (!displayText) {
       toast.error('Please enter text for audio generation');
       return;
     }
 
     setIsGeneratingAudio(true);
     const draftId = pageDraftId.current;
+    const generationId = ++pageGenerationId.current;
+    const isCurrentGeneration = () =>
+      draftId === pageDraftId.current && generationId === pageGenerationId.current;
 
     try {
       const { createClient, getEnvironmentBaseUrl, getEdgeFunctionAuthHeaders } = await import('@/lib/supabase/client');
+      if (!isCurrentGeneration()) return;
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
+      if (!isCurrentGeneration()) return;
 
       if (!session?.access_token) {
         throw new Error('Not authenticated. Please log in.');
@@ -262,6 +330,8 @@ export default function BookEditorPage() {
         },
         body: JSON.stringify({
           text: textToGenerate,
+          timestamps: true,
+          display_text: displayText,
           voice_id: pageAudioVoice,
         }),
       });
@@ -273,6 +343,7 @@ export default function BookEditorPage() {
 
       const ttsData = await ttsResponse.json();
       const audioData = ttsData.data || ttsData;
+      if (!isCurrentGeneration()) return;
 
       // Convert base64 to blob
       const binaryString = atob(audioData.audio_data);
@@ -300,37 +371,52 @@ export default function BookEditorPage() {
         .from('curriculum-audio')
         .getPublicUrl(uploadData.path);
 
-      if (draftId !== pageDraftId.current) return;
+      if (!isCurrentGeneration()) return;
+      pageAudioSource.current = sourceText;
+      setPageAudioNeedsRegeneration(false);
+      setPageAudioAssetId(undefined);
+      resetPageAudioPicker();
       setPageFormData((p) => ({
         ...p,
         audio_url: publicUrl,
-        text: pageNarrationText(pageTextIsAuthored.current ? p.text : '', textToGenerate),
+        word_timings: audioData.word_timings ?? [],
       }));
       toast.success('Audio generated and uploaded!');
     } catch (err) {
-      if (draftId !== pageDraftId.current) return;
+      if (!isCurrentGeneration()) return;
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate audio';
       toast.error(errorMessage);
     } finally {
-      if (draftId === pageDraftId.current) setIsGeneratingAudio(false);
+      if (isCurrentGeneration()) setIsGeneratingAudio(false);
     }
   };
 
   const handleSavePage = () => {
-    if (isGeneratingAudio) return;
+    if (isGeneratingAudio || pageSaveDraftId.current === pageDraftId.current) return;
+    const draftId = pageDraftId.current;
+    pageSaveDraftId.current = draftId;
+    setIsSavingPage(true);
     const data = {
       ...pageFormData,
-      text: pageNarrationText(pageFormData.text, pageAudioText),
+      text: pageNarrationText(pageFormData.text),
+    };
+    const releaseSave = () => {
+      if (pageSaveDraftId.current === draftId) pageSaveDraftId.current = null;
+      if (draftId === pageDraftId.current) setIsSavingPage(false);
+    };
+    const onSuccess = () => {
+      releaseSave();
+      if (draftId === pageDraftId.current) handleClosePageModal();
     };
     if (editingPage) {
       updatePage(
         { bookId, pageId: editingPage.id, data: data as UpdatePageRequest },
-        { onSuccess: handleClosePageModal }
+        { onSuccess, onError: releaseSave }
       );
     } else {
       createPage(
         { bookId, data },
-        { onSuccess: handleClosePageModal }
+        { onSuccess, onError: releaseSave }
       );
     }
   };
@@ -1178,10 +1264,11 @@ export default function BookEditorPage() {
       <Modal
         isOpen={pageModalOpen}
         onClose={handleClosePageModal}
+        closeOnEscape={!pageImagePickerOpen && !pageAudioPickerOpen}
         title={editingPage ? `Edit Page ${editingPage.page_number}` : 'Add Page'}
         size="lg"
       >
-        <div className="p-6 space-y-4">
+        <fieldset disabled={isSavingPage} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1263,33 +1350,42 @@ export default function BookEditorPage() {
             <label htmlFor="book-page-text" className="block text-sm font-medium text-gray-700 mb-1">
               Text
             </label>
-            <textarea
+            <VoiceTagsInput
               id="book-page-text"
               value={pageFormData.text}
-              onChange={(e) => {
-                const text = e.target.value;
-                pageTextIsAuthored.current = Boolean(text.trim());
-                setPageFormData((p) => ({ ...p, text }));
-              }}
-              className="w-full px-3 py-2 border rounded-md"
+              onChange={handlePageTextChange}
+              placeholder="Enter the page text..."
+              dir="ltr"
               rows={3}
+              disabled={isSavingPage}
             />
+            <p className="mt-1 text-xs text-gray-500">
+              These words appear on the page and are read aloud. Voice tags affect audio only.
+            </p>
+            {pageFormData.audio_url && !pageNarrationText(pageFormData.text) && (
+              <p className="mt-1 text-sm text-amber-700">
+                This audio has no saved text. Enter its exact wording to show it on the page.
+              </p>
+            )}
           </div>
 
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700">
               Page Audio (optional)
             </label>
+            {pageAudioNeedsRegeneration && (
+              <p role="status" className="text-sm text-amber-700">
+                Text changed. Generate narration again or choose matching audio.
+              </p>
+            )}
 
             {/* Current audio URL display */}
             {pageFormData.audio_url && (
               <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-md">
-                <audio controls className="h-8 flex-1">
-                  <source src={pageFormData.audio_url} type="audio/mpeg" />
-                </audio>
+                <audio key={pageFormData.audio_url} src={pageFormData.audio_url} controls className="h-8 flex-1" />
                 <button
                   type="button"
-                  onClick={() => setPageFormData((p) => ({ ...p, audio_url: '' }))}
+                  onClick={() => handlePageAudioSelection()}
                   className="px-2 py-1 text-xs text-red-600 border border-red-300 rounded hover:bg-red-50"
                 >
                   Remove
@@ -1299,17 +1395,6 @@ export default function BookEditorPage() {
 
             {/* TTS Generator */}
             <div className="border rounded-md p-3 space-y-3 bg-gray-50">
-              <VoiceTagsInput
-                value={pageAudioText}
-                onChange={setPageAudioText}
-                placeholder="Enter text to generate audio..."
-                dir="ltr"
-                rows={2}
-              />
-              <p className="text-xs text-gray-500">
-                Narration also becomes the page text when Text is empty. Voice tags are removed.
-              </p>
-
               <VoiceSelector
                 value={pageAudioVoice}
                 onChange={setPageAudioVoice}
@@ -1319,7 +1404,7 @@ export default function BookEditorPage() {
               <button
                 type="button"
                 onClick={handleGeneratePageAudio}
-                disabled={isGeneratingAudio}
+                disabled={isGeneratingAudio || isSavingPage}
                 className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isGeneratingAudio ? (
@@ -1342,11 +1427,11 @@ export default function BookEditorPage() {
                 Or select from Audio Library
               </label>
               <AudioPicker
-                onChange={(audioId, audio) => {
-                  if (audio?.url) {
-                    setPageFormData((p) => ({ ...p, audio_url: audio.url }));
-                  }
-                }}
+                key={audioPickerKey}
+                value={pageAudioAssetId}
+                onChange={handlePageAudioSelection}
+                onOpenChange={setPageAudioPickerOpen}
+                disabled={isSavingPage}
                 placeholder="Select narration audio..."
               />
             </div>
@@ -1361,13 +1446,13 @@ export default function BookEditorPage() {
             </button>
             <button
               onClick={handleSavePage}
-              disabled={isGeneratingAudio}
+              disabled={isGeneratingAudio || isSavingPage}
               className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
-              {editingPage ? 'Save Changes' : 'Add Page'}
+              {isSavingPage ? 'Saving...' : editingPage ? 'Save Changes' : 'Add Page'}
             </button>
           </div>
-        </div>
+        </fieldset>
       </Modal>
 
       {/* Availability Modal */}
